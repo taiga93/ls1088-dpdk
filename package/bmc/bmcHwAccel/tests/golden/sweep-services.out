@@ -1,0 +1,2 @@
+{"status":0,"message":"Tăng tốc phần cứng: connections of blocked machines to take out","commands":["conntrack -D -f ipv6 -s fd00::10 -d 2001:db8::7","conntrack -D -r 192.168.5.30 -q 198.51.100.5","conntrack -D -s 192.0.2.99 -d 198.51.100.5","conntrack -D -s 192.168.5.10 -d 203.0.113.7","conntrack -D -s 192.168.5.20 -d 198.51.100.5"]}
+exit=0

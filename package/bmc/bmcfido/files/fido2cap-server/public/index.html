@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <script src="/index.es5.umd.min.js"></script>
+  <script src="/ua-parser.pack.js"></script>
+  <title>Security Key Authentication</title>
+  <link rel="stylesheet" href="/styles.css?v=20260605-fido-session-polish">
+  <link rel="shortcut icon" href="/img/iconnho.png" type="image/x-icon">
+</head>
+
+<body class="page-shell-view">
+  <div id="toast-container"></div>
+
+  <div class="container login-layout">
+    <section class="left">
+      <div class="page-shell-eyebrow">FIDO2</div>
+      <h1>Welcome to BMC</h1>
+
+      <div class="page-shell-meta">
+        <span class="page-shell-pill">Security Key</span>
+        <span class="page-shell-pill">Passwordless</span>
+      </div>
+
+      <div class="hero-brand">
+        <img class="hero-logo" src="/img/logoBMC.png" alt="BMC Logo">
+      </div>
+    </section>
+
+    <section class="right">
+      <div class="login-box page-shell-card">
+        <div class="card-body">
+          <div class="page-shell-eyebrow">Login</div>
+          <h2 id="pageTitle">USER LOGIN</h2>
+
+          <section id="noAdminSection" hidden class="message-panel warning">
+            <p>Admin is not registered!</p>
+            <span>Please register an administrator account.</span>
+            <button type="button" class="login-btn secondary" onclick="window.location='/admin'">Open Admin Panel</button>
+          </section>
+
+          <section id="alreadyAuthenticatedSection" hidden class="message-panel success auth-state-panel">
+            <p>Already authenticated</p>
+            <span>
+              Current user: <strong id="alreadyAuthenticatedUser">--</strong>. This browser already has an active FIDO session.
+            </span>
+            <div class="button-row">
+              <button type="button" class="login-btn" id="btnOpenSessionPanel" onclick="window.location='/user/'">Open User Panel</button>
+              <button type="button" class="login-btn secondary" onclick="if (window.confirm('Are you sure you want to log out?')) window.location='/logout';">Log out</button>
+            </div>
+          </section>
+
+          <section id="userSection">
+            <div class="field" id="user">
+              <input id="username" type="text" placeholder="Username" autocomplete="username" spellcheck="false" />
+            </div>
+
+            <div class="options" id="discoverable">
+              <input type="checkbox" id="nonDiscoverable" />
+              <label for="nonDiscoverable">Login with Security Key</label>
+            </div>
+
+            <p id="usernameError" class="error" aria-live="polite"></p>
+
+            <button type="button" class="login-btn" id="btnUsername">LOGIN WITH FIDO</button>
+          </section>
+
+          <section id="authentication" hidden class="page-shell-panel">
+            <h2>Use your Security Key</h2>
+
+            <img id="authGif" class="loading" src="/loading.gif" alt="Authenticating..." width="100">
+
+            <div>
+              <p><strong id="errorTitle"></strong></p>
+              <p id="errorDetail" class="error"></p>
+            </div>
+
+            <p id="authInfo" class="page-shell-helper"></p>
+
+            <button type="button" id="btnAuthBegin" class="login-btn neutral" hidden>
+              Try again
+            </button>
+
+            <div id="information" class="information">
+              Use your <strong>Security Key</strong> to log in.
+            </div>
+          </section>
+
+          <p id="authSuccess" class="success" aria-live="polite"></p>
+
+          <section id="sessionWarningPanel" hidden class="page-shell-panel session-warning-panel">
+            <div class="session-warning-header">
+              <div>
+                <div class="page-shell-eyebrow">Session Monitor</div>
+                <h3 id="sessionWarningTitle" class="section-title">Session Monitor</h3>
+              </div>
+              <span id="sessionWarningState" class="session-warning-badge" data-tone="warning">Ending Soon</span>
+            </div>
+
+            <p id="sessionWarningMessage" class="page-shell-helper">
+              Less than 5 minutes remain before this client session expires.
+            </p>
+
+            <div class="session-warning-grid">
+              <div class="summary-card">
+                <p class="summary-label">Time Remaining</p>
+                <p id="sessionWarningCountdown" class="summary-value session-warning-value">--:--:--</p>
+              </div>
+              <div class="summary-card">
+                <p class="summary-label">Expires At</p>
+                <p id="sessionWarningExpiresAt" class="summary-value session-warning-meta">--</p>
+              </div>
+              <div class="summary-card">
+                <p class="summary-label">Authorized User</p>
+                <p id="sessionWarningUser" class="summary-value session-warning-meta">--</p>
+              </div>
+            </div>
+
+            <div class="button-row">
+              <button type="button" hidden id="btnEnableSessionNotification" class="login-btn secondary">
+                Enable Browser Notification
+              </button>
+              <button type="button" id="btnLogoutSession" class="login-btn secondary">
+                Log out session
+              </button>
+            </div>
+          </section>
+
+          <div id="imgError" hidden class="status-illustration">
+            <img src="/img/failure.png" alt="Error" width="100">
+          </div>
+
+          <p id="errorRedirect" class="error"></p>
+
+          <button type="button" id="btnRedirectChrome" class="login-btn secondary" hidden>
+            Open in another browser
+          </button>
+
+          <button type="button" id="btnReload" class="login-btn neutral" hidden onclick="window.location.reload();">
+            Reload page
+          </button>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    const { browserSupportsWebAuthn, startAuthentication } = SimpleWebAuthnBrowser;
+
+    const elemButton = document.querySelector('#btnAuthBegin');
+    const elemInfo = document.querySelector('#information');
+    const elemSuccess = document.querySelector('#authSuccess');
+    const elemAuthInfo = document.querySelector('#authInfo');
+    const elemErrorDetail = document.querySelector('#errorDetail');
+    const elemErrorRedirect = document.querySelector('#errorRedirect');
+    const elemErrorTitle = document.querySelector('#errorTitle');
+    const elemGif = document.querySelector('#authGif');
+    const elemUsername = document.querySelector('#username');
+    const elemUser = document.querySelector('#user');
+    const elemDiscoverable = document.querySelector('#discoverable');
+    const elemNonDiscoverable = document.querySelector('#nonDiscoverable');
+    const elemUserSection = document.querySelector('#userSection');
+    const elemAuthentication = document.querySelector('#authentication');
+    const elemUsernameError = document.querySelector('#usernameError');
+    const elemImgError = document.querySelector('#imgError');
+    const elemAlreadyAuthenticated = document.querySelector('#alreadyAuthenticatedSection');
+    const elemAlreadyAuthenticatedUser = document.querySelector('#alreadyAuthenticatedUser');
+    const elemOpenSessionPanel = document.querySelector('#btnOpenSessionPanel');
+    let alreadyAuthenticated = false;
+
+    function showError(title, message) {
+      elemErrorTitle.innerHTML = title || "Operation cancelled";
+      elemErrorDetail.innerHTML = message;
+      elemAuthInfo.innerHTML = '';
+
+      elemButton.hidden = false;
+
+      elemGif.hidden = true;
+      elemUserSection.hidden = true;
+    }
+
+    function showRedirect() {
+      let os = new UAParser(window.navigator.userAgent).getOS().name;
+      let redirection_url = '';
+
+      if (os == "Android") {
+        redirection_url = 'android-app://com.android.chrome/https/' + window.location.href.split('://')[1];
+      } else if (os == "iOS" || os == "macOS") {
+        redirection_url = 'googlechrome://' + window.location.href.split('://')[1];
+      } else {
+        redirection_url = window.location.href;
+      }
+
+      elemUserSection.style.display = 'none';
+      elemImgError.hidden = false;
+      elemErrorRedirect.innerHTML = "This browser on " + os + " may not support Security Keys. Copy the URL into another browser or try the button below.";
+
+      const btnRedirect = document.querySelector('#btnRedirectChrome');
+      btnRedirect.hidden = false;
+      btnRedirect.addEventListener('click', async () => {
+        window.open(redirection_url, '_blank');
+      });
+    }
+
+    if (!SimpleWebAuthnBrowser.browserSupportsWebAuthn()) showRedirect()
+    else {
+      function getUsername() {
+        if (elemUsername.value != '' || elemNonDiscoverable.checked) {
+          elemUserSection.hidden = true;
+          elemAuthentication.hidden = false;
+          return true;
+        } else {
+          elemUsernameError.innerHTML = "Please, enter your username or check the box.";
+          return false;
+        }
+      }
+
+      const elemNoAdminSection = document.querySelector('#noAdminSection');
+
+      async function checkConfig() {
+        try {
+          if (alreadyAuthenticated) return;
+          const resp = await fetch('/api/config-status');
+          const config = await resp.json();
+          if (config && config.administratorConfigured === false) {
+            elemUserSection.hidden = true;
+            elemNoAdminSection.hidden = false;
+          }
+        } catch (e) {
+          console.error("Failed to check config status", e);
+        }
+      }
+
+      async function parseUserDetailsResponse(response) {
+        const text = await response.text();
+
+        try {
+          return JSON.parse(text);
+        } catch (error) {
+          return null;
+        }
+      }
+
+      async function checkExistingSession() {
+        try {
+          const resp = await fetch('/api/user-details', { cache: 'no-store' });
+          const user = await parseUserDetailsResponse(resp);
+
+          if (user && user.username) {
+            if (user.isAdmin) {
+              window.location = '/admin/';
+              return;
+            }
+
+            alreadyAuthenticated = true;
+            document.body.classList.add('has-active-session');
+            document.querySelector('#pageTitle').textContent = 'Active FIDO Session';
+            elemAlreadyAuthenticatedUser.textContent = user.username;
+            elemOpenSessionPanel.textContent = user.isAdmin ? 'Open Admin Panel' : 'Open User Panel';
+            elemOpenSessionPanel.onclick = function () {
+              window.location = user.isAdmin ? '/admin/' : '/user/';
+            };
+            elemUserSection.hidden = true;
+            elemAuthentication.hidden = true;
+            elemNoAdminSection.hidden = true;
+            elemAlreadyAuthenticated.hidden = false;
+            return;
+          }
+        } catch (error) {
+          console.error("Failed to check current user session", error);
+        }
+
+        checkConfig();
+      }
+
+      checkExistingSession();
+
+      document.querySelector('#btnUsername').addEventListener('click', authenticationCall);
+      document.querySelector('#btnAuthBegin').addEventListener('click', authenticationCall);
+
+      document.querySelector('#username').addEventListener('keydown', (event) => {
+        if (event.keyCode === 13) authenticationCall();
+      });
+      document.querySelector('#username').value = localStorage.getItem('username');
+
+      elemNonDiscoverable.addEventListener('change', async () => {
+        if (elemNonDiscoverable.checked) {
+          elemUser.classList.add('hidden');
+        } else {
+          elemUser.classList.remove('hidden');
+        }
+      });
+
+      async function authenticationCall() {
+        if (alreadyAuthenticated) {
+          elemUserSection.hidden = true;
+          elemAuthentication.hidden = true;
+          elemAlreadyAuthenticated.hidden = false;
+          return;
+        }
+
+        if (!getUsername()) return;
+
+        elemSuccess.innerHTML = '';
+        elemErrorTitle.innerHTML = '';
+        elemErrorDetail.innerHTML = '';
+        elemGif.hidden = false;
+        elemAuthInfo.innerHTML = 'Wait and follow the instructions of your browser.';
+        elemButton.hidden = true;
+
+        const resp = await fetch('/api/authentication?' + new URLSearchParams({
+          'username': elemUsername.value.toLowerCase().trim(),
+          'nonDiscoverable': !elemNonDiscoverable.checked
+        }));
+
+        localStorage.setItem('username', elemUsername.value.toLowerCase().trim());
+
+        let asseResp;
+        try {
+          const opts = await resp.json();
+          asseResp = await SimpleWebAuthnBrowser.startAuthentication(opts);
+        } catch (error) {
+          let os = new UAParser(window.navigator.userAgent).getOS().name;
+          if (error.name == "UnknownError" || error.name == "NotReadableError" || error.name == "InvalidStateError") {
+            showError("Try again", "The key you have registered has not connected correctly. Try again, or try another key.");
+          } else if (error.name == "SecurityError") {
+            showRedirect();
+          } else if (error.name == "NotAllowedError" && error.message.indexOf("failed") !== -1 && (os == "iOS" || os == "macOS")) {
+            showRedirect();
+          } else {
+            showError("Operation cancelled", "Try again using the button below.");
+          }
+          throw new Error(error);
+        }
+
+        elemAuthInfo.innerHTML = 'Verifying your identity ...';
+        elemButton.hidden = true;
+        elemInfo.hidden = true;
+        elemDiscoverable.hidden = true;
+        elemUser.style.display = "none";
+
+        const verificationResp = await fetch('/api/authentication', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(asseResp),
+        });
+
+        elemAuthInfo.innerHTML = '';
+        elemGif.hidden = true;
+        elemButton.hidden = false;
+        elemInfo.hidden = false;
+        elemDiscoverable.hidden = false;
+
+        try {
+          const verificationJSON = await verificationResp.json();
+          if (verificationJSON && verificationJSON.verified) {
+            elemSuccess.innerHTML = `User authenticated!`;
+            window.location = verificationJSON.isAdmin ? '/admin/' : '/user/';
+          } else {
+            showError("We couldn't verify your identity", "Something might be failing or this key is no longer registered. Make sure not to move the key during the process.");
+          }
+        } catch (error) {
+          showError("We couldn't verify your identity", "Something might be failing or this key is no longer registered. Make sure not to move the key during the process.");
+        }
+      };
+    }
+  </script>
+  <script src="/session-warning.js?v=20260609-no-auto-logout"></script>
+</body>
+
+</html>

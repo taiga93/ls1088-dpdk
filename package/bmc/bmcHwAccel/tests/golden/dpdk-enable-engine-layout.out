@@ -1,0 +1,2 @@
+{"status":0,"message":"Tăng tốc phần cứng enabled","uci_batch":"set bmchwaccel.global=global\nset bmchwaccel.global.enabled='1'","enabled":true,"reboot_required":false,"action":"start","commands":["/etc/init.d/bmchwaccel-syncd start"]}
+exit=0

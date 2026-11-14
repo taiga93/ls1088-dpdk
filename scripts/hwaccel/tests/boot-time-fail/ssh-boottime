@@ -1,0 +1,17 @@
+@kernel
+[    4.270001] fsl-fman_xmdio 1afd000.mdio: MDC frequency set to 2491103 Hz (was 1353965 Hz)
+[    6.301234] Aquantia AQR113C 0x0000000001afd000:00: loading firmware version 'v5.4.6 NXP Inverness 011720 10:39:37' from 'FS'
+[   11.402345] Aquantia AQR113C 0x0000000001afd000:00: CRC mismatch: calculated 0x1234 PHY 0x4321
+[   11.402399] Aquantia AQR113C 0x0000000001afd000:00: firmware loading failed: -22
+[   11.452216] fsl-fman 1a00000.fman: FMan-Controller code (ver 210.10.1) (0x6a0412)
+[   11.459216] fsl_mac 1af0000.ethernet: FMan MAC address: 02:00:00:46:00:04
+[   11.902345] fsl_dpa: Probed interface eth0
+[   11.912345] fsl_dpa: Probed interface eth1
+[   11.922345] fsl_dpa: Probed interface eth2
+[   11.932345] fsl_dpa: Probed interface eth3
+[   11.942345] fsl_dpa: Probed interface eth4
+[   11.952345] fsl_dpa: Probed interface eth5
+[   36.512345] br-lan: port 1(eth1) entered forwarding state
+@phy
+port=eth4
+phy=

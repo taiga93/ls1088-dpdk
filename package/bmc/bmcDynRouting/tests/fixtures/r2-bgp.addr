@@ -1,0 +1,3 @@
+1: lo    inet 127.0.0.1/8 scope host lo\       valid_lft forever preferred_lft forever
+2: br-lan    inet 192.168.2.1/24 brd 192.168.2.255 scope global br-lan\       valid_lft forever preferred_lft forever
+3: eth0    inet 198.51.100.6/29 brd 198.51.100.7 scope global eth0\       valid_lft 43188sec preferred_lft 43188sec

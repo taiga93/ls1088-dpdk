@@ -1,0 +1,2 @@
+pc1=192.168.1.10
+refused=Multi-WAN is enabled on this board; the item sets up two WANs of its own and needs it disabled

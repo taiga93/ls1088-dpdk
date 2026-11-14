@@ -1,0 +1,2 @@
+{"status":0,"message":"Tăng tốc phần cứng disabled; restart the router to remove it completely","uci_batch":"set bmchwaccel.global=global\nset bmchwaccel.global.enabled='0'","enabled":false,"reboot_required":true,"action":"stop","commands":["bmchwaccel-ctl flush"]}
+exit=0

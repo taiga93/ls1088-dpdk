@@ -1,0 +1,7 @@
+boot_id=33333333-cccc
+init=complete
+status={"status":0,"message":"Tăng tốc phần cứng is on","state":"on","enabled":true,"accelerated":12,"on_cpu":[]}
+modules=2
+trouble=1
+@trouble
+[   41.200000] cdx: cdx_ioc_set_dpa_params::failed to add entry, error -12

@@ -1,0 +1,7 @@
+mode=nac
+chilli=
+radiusd=2203
+gateway=
+lan_dhcp=0
+user=Error: no such table: radcheck 
+status={"status":0,"message":"Tăng tốc phần cứng is on","state":"on","enabled":true,"accelerated":0,"on_cpu":[]}

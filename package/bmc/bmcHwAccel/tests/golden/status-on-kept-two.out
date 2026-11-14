@@ -1,0 +1,2 @@
+{"status":0,"message":"Tăng tốc phần cứng is on","state":"on","enabled":true,"reboot_required":false,"accelerated":12,"ipsec_sa":0,"on_cpu":[{"scope":"wan","device":"eth0","reason":"bmcqos"},{"scope":"wan","device":"eth1","reason":"other"}]}
+exit=0

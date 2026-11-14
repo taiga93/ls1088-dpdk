@@ -1,0 +1,7 @@
+carried=104000
+cpu=16
+rules=1
+said={ "status": 0, "message": "Rule added"}
+passed=104010
+cpu_under=0
+counted=0

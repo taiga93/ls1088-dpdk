@@ -1,0 +1,2 @@
+{"status":-1,"message":"usage: bmcdynrouting [--dry-run] router-id get|set, ospf get|set, rip get|set, bgp get|set, interface list, link list|available-ports|add|del, status ospf neighbors|routes|database|interfaces, status rip routes|interfaces, status bgp peers|routes, apply"}
+exit=1

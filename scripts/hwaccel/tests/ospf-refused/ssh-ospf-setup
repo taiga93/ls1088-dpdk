@@ -1,0 +1,2 @@
+pc1=192.168.1.10
+refused=OSPF is enabled on this board; the item sets up OSPF of its own and needs it disabled

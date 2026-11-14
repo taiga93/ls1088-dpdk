@@ -1,0 +1,17 @@
+#!/bin/sh
+# Fake ssh for acceptance-test.sh. The remote command is the last argument; it
+# carries a "# hwaccel:<tag>" line and optional ITEM=, ACTION=, WAN= and
+# VLANS='<id> <id>' assignments. Each call is logged to $FIXTURE_LOG and
+# answered from $FIXTURE/ssh-<tag>[-<item>][-<action>][-<wan>][-<id>-<id>].
+for a; do cmd=$a; done
+get() { printf '%s\n' "$cmd" | sed -n "s/^$1=\([a-z0-9-]*\).*/\1/p" | head -1; }
+tag=$(printf '%s\n' "$cmd" | sed -n 's/^# hwaccel:\([a-z]*\).*/\1/p' | head -1)
+item=$(get ITEM)
+action=$(get ACTION)
+wan=$(get WAN)
+vlans=$(printf '%s\n' "$cmd" | sed -n "s/^VLANS='\([0-9 ]*\)'.*/\1/p" | head -1 | tr ' ' '-')
+[ -f "$FIXTURE/ssh-down" ] && exit 255
+echo "ssh $tag${item:+ $item}${action:+ $action}${wan:+ $wan}${vlans:+ $vlans}" >> "$FIXTURE_LOG"
+f="$FIXTURE/ssh-$tag${item:+-$item}${action:+-$action}${wan:+-$wan}${vlans:+-$vlans}"
+[ -f "$f" ] && cat "$f"
+exit 0

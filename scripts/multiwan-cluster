@@ -1,0 +1,477 @@
+#!/usr/bin/env bash
+# Cụm ảo Multi-WAN: R1 with `wan` on ISP-A and `wan2` on ISP-B, a LAN client and an accounting VLAN client (R2),
+# a branch router over Link định tuyến with OSPF (R3). Runs on the VMs, switches and serial consoles of
+# scripts/dynrouting-cluster (same image); R1's Multi-WAN is configured only through the bmcmultiwan CLI. See
+# multiwan-virtual/README.md. Written for bash 3.2 (macOS) as well.
+
+set -euo pipefail
+
+root=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
+dynr="$root/scripts/dynrouting-cluster"
+python=${PYTHON3:-python3}
+export DYNR_CLUSTER_STATE=${MWAN_CLUSTER_STATE:-"${TMPDIR:-/tmp}/bmc-multiwan-cluster"}
+export DYNR_CLUSTER_PORT_BASE=${MWAN_CLUSTER_PORT_BASE:-20200}
+export DYNR_VIRTUAL_OUTPUT=${DYNR_VIRTUAL_OUTPUT:-"$root/build/dynrouting-virtual"}
+state=$DYNR_CLUSTER_STATE
+# Chuyển WAN budget of the acceptance check, and the failed rounds before Mất Internet set on both WANs with
+# `bmcmultiwan wan set --down`: the product default (3) is reported 25-30 s after the upstream is cut. With 2,
+# mwan3track alone needs up to 5 + 2 x 2 + 5 + 2 x 2 = 18 s; on TCG Chuyển WAN measured 17-22 s, hence 25 s.
+switch_max=${MWAN_SWITCH_MAX_SECONDS:-25}
+track_down=${MWAN_TRACK_DOWN:-2}
+
+# Addresses of the topology.
+wan_ip=203.0.113.2
+wan2_ip=198.51.100.3
+isp_a_gw=203.0.113.1
+isp_b_gw=198.51.100.1
+client_ip=192.168.1.100
+acct_ip=192.168.10.100
+
+usage() {
+	cat <<'EOF'
+Usage: scripts/multiwan-cluster <command> [arguments]
+
+Commands:
+  build                       Build the image (scripts/dynrouting-cluster build: DynRouting + Multi-WAN).
+  up                          Start the VMs and configure the whole topology; R1 through bmcmultiwan.
+  down                        Stop and remove the Cụm ảo Multi-WAN.
+  check                       Every acceptance check on a cluster that `up` configured.
+  accept                      up, then check (the cluster is left up).
+  upstream <ispa|ispb> <cut|restore>
+                              Cut or restore the ISP's way to the fake Internet (its link stays up).
+  status | exec | set_link | cable | power | capture
+                              As in scripts/dynrouting-cluster, on this cluster's state directory.
+EOF
+}
+
+die() {
+	echo "$*" >&2
+	exit 1
+}
+
+fail() {
+	echo "FAIL: $*" >&2
+	exit 1
+}
+
+pass() {
+	echo "PASS: $*"
+}
+
+note() {
+	echo "NOTE: $*"
+}
+
+step() {
+	printf '\n=== %s\n' "$*"
+}
+
+monotonic_ms() {
+	"$python" -c 'import time; print(int(time.monotonic() * 1000))'
+}
+
+# wait_until TIMEOUT_S WHAT COMMAND...: the command is run again every second.
+wait_until() {
+	local timeout_s=$1 what=$2 started
+	shift 2
+	started=$(monotonic_ms)
+	until "$@" >/dev/null 2>&1; do
+		if (( $(monotonic_ms) - started >= timeout_s * 1000 )); then
+			echo "$what did not happen within ${timeout_s}s" >&2
+			return 1
+		fi
+		sleep 1
+	done
+}
+
+# Output of shell command $2 on VM $1, without the console's echo of the command line.
+# The colour codes that ip-full prints on a console are taken out.
+vm_output() {
+	"$dynr" exec "$1" "echo '@@''BEGIN'; $2; echo '@@''END'" | tr -d '\r' | sed $'s/\033\\[[0-9;]*m//g' |
+		sed -n '/^@@BEGIN$/,/^@@END$/p' | sed '1d;$d'
+}
+
+# Starts shell command $2 on VM $1 as a daemon (a serial command ending in `&` is a syntax error).
+daemon() {
+	vm_output "$1" "( $2 </dev/null >/dev/null 2>&1 & )" >/dev/null
+}
+
+# Runs shell command $2 on VM $1 in the background (it may outlast the console's 30 s limit), waits for it and
+# prints its output.
+bg() {
+	vm_output "$1" "rm -f /tmp/mwan-bg.out /tmp/mwan-bg.rc; ( ($2 >/tmp/mwan-bg.out 2>&1; echo \$? >/tmp/mwan-bg.rc) </dev/null >/dev/null 2>&1 & )" >/dev/null
+	wait_until 180 "$2 on $1" bg_done "$1" || return 1
+	vm_output "$1" 'cat /tmp/mwan-bg.out'
+}
+
+bg_done() {
+	test "$(vm_output "$1" 'test -f /tmp/mwan-bg.rc && echo done')" = done
+}
+
+# `TOOL ARGS` (bmcmultiwan or bmcdynrouting) on VM $1; the JSON reply must have status 0. Arguments must not
+# contain spaces or quotes.
+cli_ok() {
+	local vm=$1 reply
+	shift
+	reply=$(bg "$vm" "$*") || fail "$* on $vm did not finish"
+	echo "$vm: $* -> $reply" >&2
+	case "$reply" in '{"status":0'*) ;; *) fail "$* on $vm: $reply" ;; esac
+}
+
+# json_eval EXPRESSION: a Python expression over the JSON document on stdin (bound to `d`).
+json_eval() {
+	"$python" -c 'import json, sys; d = json.load(sys.stdin); print(eval(sys.argv[1]))' "$1"
+}
+
+booted() {
+	test "$(vm_output "$1" "logread | grep -q 'procd: - init complete -' && echo yes")" = yes
+}
+
+# Internet state of WAN $1 in `bmcmultiwan status`.
+internet() {
+	vm_output r1 'bmcmultiwan status' |
+		json_eval "next((w['internet'] for w in d['wans'] if w['name'] == '$1'), 'absent') if d['status'] == 0 else d['message']"
+}
+
+internet_is() {
+	test "$(internet "$1")" = "$2"
+}
+
+# Packets of the mangle PREROUTING counter rules of VM $1 whose comment is $2.
+count() {
+	vm_output "$1" "iptables -t mangle -L PREROUTING -n -v -x | awk '/\\/\\* $2 \\*\\// { sum += \$1 } END { print sum + 0 }'"
+}
+
+add_counter() {
+	vm_output "$1" "iptables -t mangle -I PREROUTING $3 -m comment --comment $2" >/dev/null
+}
+
+# The check server at 9.9.9.9 answers "<isp> <source address it sees>".
+# LAN client (R2, source 192.168.1.100) and router R1 go through busybox wget, the accounting client through socat
+# (wget cannot pick the source address).
+http_from() {
+	case "$1" in
+		client) vm_output r2 'wget -q -T 2 -O - http://9.9.9.9/ 2>/dev/null' ;;
+		router) vm_output r1 'wget -q -T 2 -O - http://9.9.9.9/ 2>/dev/null' ;;
+		acct) vm_output r2 "echo GET | socat -t 3 - TCP4:9.9.9.9:80,bind=$acct_ip,connect-timeout=3 2>/dev/null | tail -n 1" ;;
+		*) die "unknown client: $1" ;;
+	esac
+}
+
+http_is() {
+	test "$(http_from "$1")" = "$2"
+}
+
+via_isp_a="ispa $wan_ip"
+via_isp_b="ispb $wan2_ip"
+
+# --- up: boot, then the whole topology ---
+
+upstream() {
+	local gw
+	case "$1" in
+		ispa) gw=$isp_a_gw ;;
+		ispb) gw=$isp_b_gw ;;
+		*) die "unknown ISP: $1" ;;
+	esac
+	case "$2" in
+		# Everything R1 sends to the fake Internet is dropped on the ISP; the ISP's own address still answers, so
+		# the link and ARP stay up, as when an ISP loses its upstream.
+		cut) vm_output "$1" "iptables -F upstream_cut; iptables -A upstream_cut -i eth0 ! -d $gw -j DROP" >/dev/null ;;
+		restore) vm_output "$1" 'iptables -F upstream_cut' >/dev/null ;;
+		*) die 'upstream action must be cut or restore' ;;
+	esac
+	echo "$1 upstream: $2"
+}
+
+# ISP-A and ISP-B each carry the fake Internet on their loopback: 1.1.1.1 and 8.8.8.8 (ping targets and DNS
+# servers) and the check server 9.9.9.9. The DNS name isp.bmc-test.net resolves to 9.9.9.1 on ISP-A and 9.9.9.2
+# on ISP-B, so the answer tells which ISP a query went
+# through.
+configure_isp() {
+	local isp=$1 answer=$2
+	vm_output "$isp" "for ip in 1.1.1.1 8.8.8.8 9.9.9.9; do ip addr add \$ip/32 dev lo; done
+		iptables -N upstream_cut; iptables -I INPUT -j upstream_cut; /etc/init.d/dnsmasq stop" >/dev/null
+	vm_output "$isp" "dnsmasq -C /dev/null --no-resolv --no-hosts --bind-interfaces --listen-address=1.1.1.1 \
+		--listen-address=8.8.8.8 --address=/isp.bmc-test.net/$answer --pid-file=/var/run/isp-dns.pid" >/dev/null
+	daemon "$isp" "socat TCP-LISTEN:80,bind=9.9.9.9,reuseaddr,fork SYSTEM:'echo HTTP/1.0 200 OK; echo; echo $isp \$SOCAT_PEERADDR'"
+	# A long TCP connection: one line a second for 5 minutes.
+	daemon "$isp" "socat TCP-LISTEN:81,bind=9.9.9.9,reuseaddr,fork SYSTEM:'i=0; while [ \$i -lt 300 ]; do echo $isp; sleep 1; i=\$((i + 1)); done'"
+	add_counter "$isp" to10 '-d 10.0.0.0/8'
+}
+
+# An interface on the accounting VLAN 10 of br-lan ($2 = address/prefix) on VM $1, through netifd.
+add_acct_vlan() {
+	vm_output "$1" "uci set network.acct=interface; uci set network.acct.device=br-lan.10; uci set network.acct.proto=static
+		uci set network.acct.ipaddr=$2; uci commit network" >/dev/null
+}
+
+has_address() {
+	vm_output "$1" 'ip -4 addr show' | grep -q "inet $2/"
+}
+
+has_route() {
+	vm_output "$1" "ip -4 route show $2" | grep -q "$3"
+}
+
+lan_reaches() {
+	test "$(vm_output r2 "ping -c 1 -W 2 -I $acct_ip 192.168.10.1 >/dev/null && ping -c 1 -W 2 9.9.9.9 >/dev/null && echo ok")" = ok
+}
+
+configure_lan() {
+	# R1: the accounting VLAN in the lan zone; ISP-A's gateway on `wan` (the bootstrap's static wan has none).
+	vm_output r1 "uci set network.wan.gateway=$isp_a_gw" >/dev/null
+	add_acct_vlan r1 192.168.10.1/24
+	vm_output r1 "i=0; while n=\$(uci -q get firewall.@zone[\$i].name); do [ \$n != lan ] || uci add_list firewall.@zone[\$i].network=acct; i=\$((i + 1)); done; uci commit firewall" >/dev/null
+	bg r1 '/etc/init.d/network reload; /etc/init.d/firewall reload' >/dev/null
+	wait_until 60 'R1 default route via ISP-A' has_route r1 default "via $isp_a_gw dev eth1" || fail "R1 routes: $(vm_output r1 'ip -4 route')"
+	wait_until 60 'R1 on the accounting VLAN' has_address r1 192.168.10.1 || fail "R1 addresses: $(vm_output r1 'ip -4 addr')"
+
+	# R2 carries both LAN clients: 192.168.1.100 on br-lan (bridged to R1's by cable l12) and 192.168.10.100 on
+	# VLAN 10, each with a default route through R1. R2's own LAN 192.168.2.0/24 and WAN stay unused.
+	"$dynr" cable l12 plug >/dev/null
+	add_acct_vlan r2 $acct_ip/24
+	bg r2 '/etc/init.d/network reload' >/dev/null
+	wait_until 60 'R2 on the accounting VLAN' has_address r2 $acct_ip || fail "R2 addresses: $(vm_output r2 'ip -4 addr')"
+	vm_output r2 "ip addr add $client_ip/24 dev br-lan; ip route replace default via 192.168.1.1 src $client_ip
+		ip rule add from $acct_ip lookup 110; ip route add default via 192.168.10.1 table 110" >/dev/null
+	daemon r2 "socat TCP-LISTEN:8000,bind=$client_ip,reuseaddr,fork SYSTEM:'echo lan-server \$SOCAT_PEERADDR'"
+	wait_until 60 'LAN clients reaching R1 and 9.9.9.9' lan_reaches || fail 'the LAN clients cannot reach R1 / 9.9.9.9'
+}
+
+# R3: the branch with LAN 10.20.0.0/16, OSPF with R1 over Link định tuyến R1 eth3 - R3 eth1 (10.0.13.0/30). R1
+# also announces the accounting VLAN (passive) so that the branch can answer it.
+configure_branch() {
+	vm_output r3 "uci set network.lan.ipaddr=10.20.0.1/16; uci commit network" >/dev/null
+	bg r3 '/etc/init.d/network reload' >/dev/null
+	cli_ok r1 bmcdynrouting link add eth3 10.0.13.1/30
+	cli_ok r3 bmcdynrouting link add eth1 10.0.13.2/30
+	"$dynr" cable l13 plug >/dev/null
+	cli_ok r1 bmcdynrouting router-id set --router-id 1.1.1.1
+	cli_ok r3 bmcdynrouting router-id set --router-id 3.3.3.3
+	cli_ok r1 bmcdynrouting ospf set --enabled 1 --interface lan --passive 1 --interface acct --passive 1 --interface link_eth3
+	cli_ok r3 bmcdynrouting ospf set --enabled 1 --interface lan --passive 1 --interface link_eth1
+	wait_until 180 'R1 learning 10.20.0.0/16 by OSPF' has_route r1 10.20.0.0/16 'via 10.0.13.2 dev eth3 proto ospf' ||
+		fail "R1 routes: $(vm_output r1 'ip -4 route')"
+	wait_until 60 'R3 learning 192.168.10.0/24 by OSPF' has_route r3 192.168.10.0/24 'via 10.0.13.1' ||
+		fail "R3 routes: $(vm_output r3 'ip -4 route')"
+	add_counter r3 branch "-s $acct_ip -d 10.20.0.1"
+}
+
+# R1's Multi-WAN, through the CLI only: wan2 on the free port eth4, Luật chọn WAN "accounting VLAN -> ISP-B first".
+configure_multiwan() {
+	cli_ok r1 bmcmultiwan wan add --name wan2 --port eth4 --proto static --ipaddr $wan2_ip --netmask 255.255.255.0 \
+		--gateway $isp_b_gw --dns 8.8.8.8
+	cli_ok r1 bmcmultiwan wan set --name wan --down "$track_down"
+	cli_ok r1 bmcmultiwan wan set --name wan2 --down "$track_down"
+	cli_ok r1 bmcmultiwan set --enabled 1
+	cli_ok r1 bmcmultiwan apply
+	cli_ok r1 bmcmultiwan policy set --name b_first --wan wan2 --wan wan
+	cli_ok r1 bmcmultiwan rule set --name acct --policy b_first --src-ip 192.168.10.0/24
+	wait_until 120 'wan online' internet_is wan online || fail "wan: $(internet wan)"
+	wait_until 120 'wan2 online' internet_is wan2 online || fail "wan2: $(internet wan2)"
+}
+
+# Port forward on the wan zone (it holds wan and wan2): TCP 8080 -> LAN server 192.168.1.100:8000.
+configure_port_forward() {
+	vm_output r1 "uci add firewall redirect >/dev/null; uci set firewall.@redirect[-1].name=pf_lan_server
+		uci set firewall.@redirect[-1].src=wan; uci set firewall.@redirect[-1].src_dport=8080
+		uci set firewall.@redirect[-1].dest=lan; uci set firewall.@redirect[-1].dest_ip=$client_ip
+		uci set firewall.@redirect[-1].dest_port=8000; uci set firewall.@redirect[-1].proto=tcp
+		uci set firewall.@redirect[-1].target=DNAT; uci commit firewall" >/dev/null
+	bg r1 '/etc/init.d/firewall reload' >/dev/null
+}
+
+up() {
+	local started vm
+	started=$(monotonic_ms)
+	"$dynr" up
+	step 'Waiting for every VM to finish booting'
+	for vm in r1 r2 r3 ispa ispb; do wait_until 300 "$vm finishing boot" booted "$vm" || fail "$vm did not boot"; done
+	step 'ISP-A and ISP-B: fake Internet (1.1.1.1, 8.8.8.8, check server 9.9.9.9)'
+	configure_isp ispa 9.9.9.1
+	configure_isp ispb 9.9.9.2
+	# An answer from R1 to an inbound wan2 connection that leaks out of `wan` reaches ISP-A.
+	add_counter ispa leak "-s $wan2_ip"
+	step 'LAN client 192.168.1.100 and accounting VLAN client 192.168.10.100 (R2)'
+	configure_lan
+	step 'Branch R3 over Link định tuyến, OSPF'
+	configure_branch
+	step 'R1 Multi-WAN through bmcmultiwan'
+	configure_multiwan
+	step 'Port forward on the wan zone'
+	configure_port_forward
+	printf '\nCụm ảo Multi-WAN up and configured in %ss (%s)\n' $(( ($(monotonic_ms) - started) / 1000 )) "$state"
+}
+
+# --- acceptance checks ---
+
+# Answer to isp.bmc-test.net from DNS server 8.8.8.8, asked by the LAN client or by the router itself. The
+# product's DNS server on port 53 (bmcfirewall) is not in this image; its upstream queries leave the router like
+# the router's query here.
+dns_from() {
+	case "$1" in
+		client) vm_output r2 'nslookup isp.bmc-test.net 8.8.8.8 2>&1' ;;
+		router) vm_output r1 'nslookup isp.bmc-test.net 8.8.8.8 2>&1' ;;
+		*) die "unknown client: $1" ;;
+	esac | awk '/^Name:/ { name = 1 } name && /^Address/ { sub(/.*: */, ""); print; exit }'
+}
+
+# $1 = 60: wait up to 60 s for the accounting client's first connection through ISP-B (right after `up` or a
+# mwan3 restart); 0: every connection must already go the right way.
+check_rules() {
+	local wait_s=${1:-60}
+	step 'Luật chọn WAN: the accounting VLAN goes out through ISP-B, the other client through ISP-A'
+	if [ "$wait_s" = 0 ]; then
+		http_is acct "$via_isp_b" || fail "accounting client: '$(http_from acct)'"
+	else
+		wait_until "$wait_s" 'accounting client through ISP-B' http_is acct "$via_isp_b" || fail "accounting client: '$(http_from acct)'"
+	fi
+	test "$(http_from client)" = "$via_isp_a" || fail "LAN client: '$(http_from client)'"
+	test "$(http_from router)" = "$via_isp_a" || fail "router: '$(http_from router)'"
+	test "$(dns_from client)" = 9.9.9.1 || fail "LAN client DNS: '$(dns_from client)'"
+	test "$(dns_from router)" = 9.9.9.1 || fail "router DNS: '$(dns_from router)'"
+	pass "check server sees the accounting client as $wan2_ip (ISP-B), the LAN client and the router as $wan_ip (ISP-A); DNS through ISP-A"
+}
+
+check_branch() {
+	local r0 a0 b0 dr da db
+	step 'Route cụ thể: the accounting client reaches the branch LAN over Link định tuyến'
+	r0=$(count r3 branch)
+	a0=$(count ispa to10)
+	b0=$(count ispb to10)
+	vm_output r2 "i=0; while [ \$i -lt 5 ]; do echo x | socat -u - UDP4-SENDTO:10.20.0.1:5555,bind=$acct_ip; i=\$((i + 1)); done" >/dev/null
+	sleep 1
+	dr=$(( $(count r3 branch) - r0 )) da=$(( $(count ispa to10) - a0 )) db=$(( $(count ispb to10) - b0 ))
+	(( dr >= 5 && da == 0 && db == 0 )) || fail "accounting -> 10.20.0.1: R3 +$dr, ISP-A +$da, ISP-B +$db"
+	pass "5 datagrams accounting -> 10.20.0.1 reached R3 from $acct_ip (not NATed), none went to an ISP"
+}
+
+check_inbound() {
+	local a0 got
+	step 'Inbound: the port forward is reachable from the ISP-B side through wan2'
+	a0=$(count ispa leak)
+	# Source 9.9.9.9, which ISP-A carries too: an answer leaking out of `wan` would never reach the client.
+	got=$(vm_output ispb "echo hi | socat -t 3 - TCP4:$wan2_ip:8080,bind=9.9.9.9,connect-timeout=5 2>/dev/null")
+	test "$got" = 'lan-server 9.9.9.9' || fail "port forward on wan2 answered '$got'"
+	(( $(count ispa leak) == a0 )) || fail 'an answer to the inbound wan2 connection went out through ISP-A'
+	pass "$wan2_ip:8080 from 9.9.9.9 behind ISP-B -> LAN server, answered through wan2 (the client's default is ISP-A)"
+}
+
+# A reload must not touch the steering at all: the first connection after it must already go the right way. A
+# restart flushes mwan3's mangle chains; bmcMultiWAN's firewall include restarts mwan3, so a short gap is allowed.
+check_firewall() {
+	local op
+	for op in reload restart; do
+		step "/etc/init.d/firewall $op keeps the steering"
+		bg r1 "/etc/init.d/firewall $op" >/dev/null
+		if [ "$op" = reload ]; then check_rules 0; else check_rules 60; fi
+		check_branch
+		check_inbound
+		pass "after a firewall $op: Luật chọn WAN, route cụ thể and the port forward on wan2 all still right"
+	done
+}
+
+# Polls LAN client or router $1 until wget of the check server and a DNS query to 8.8.8.8 both go through
+# ISP-B, then prints the milliseconds since $2 (or "timeout" after 90 s).
+switched_after() {
+	local who=$1 started=$2 vm=r2 reply
+	[ "$who" = client ] || vm=r1
+	while (( $(monotonic_ms) - started < 90000 )); do
+		reply=$(vm_output "$vm" "r=\$(wget -q -T 1 -O - http://9.9.9.9/ 2>/dev/null); echo \"\$r\"
+			case \"\$r\" in ispb*) nslookup isp.bmc-test.net 8.8.8.8 2>&1 ;; esac") || true
+		if grep -qx "$via_isp_b" <<<"$reply" && grep -q 'Address.*9\.9\.9\.2' <<<"$reply"; then
+			echo $(( $(monotonic_ms) - started ))
+			return 0
+		fi
+	done
+	echo timeout
+}
+
+stream_bytes() {
+	vm_output r2 'wc -c < /tmp/stream.out'
+}
+
+seconds() {
+	echo "$(($1 / 1000)).$(($1 % 1000 / 100))s"
+}
+
+check_switch() {
+	local started client_ms router_ms status leak0 b0 b1
+	step "Chuyển WAN: ISP-A upstream cut (link up) -> LAN client and router through ISP-B within ${switch_max}s"
+	test "$(http_from client)" = "$via_isp_a" || fail "LAN client before the cut: '$(http_from client)'"
+	test "$(http_from router)" = "$via_isp_a" || fail "router before the cut: '$(http_from router)'"
+	started=$(monotonic_ms)
+	upstream ispa cut
+	switched_after client "$started" >"$state/switch-client.ms" &
+	switched_after router "$started" >"$state/switch-router.ms" &
+	wait
+	client_ms=$(cat "$state/switch-client.ms") router_ms=$(cat "$state/switch-router.ms")
+	note "wget + DNS through ISP-B after: LAN client ${client_ms:-?} ms, router ${router_ms:-?} ms (mwan3 down=$track_down)"
+	case "$client_ms$router_ms" in
+		''|*[!0-9]*) fail "traffic did not move to ISP-B within 90 s (client '$client_ms', router '$router_ms')" ;;
+	esac
+	(( client_ms <= switch_max * 1000 && router_ms <= switch_max * 1000 )) ||
+		fail "Chuyển WAN took longer than ${switch_max}s"
+	status=$(vm_output r1 'bmcmultiwan status')
+	test "$(json_eval "[w['internet'] for w in d['wans']], d['default_policy_wan']" <<<"$status")" = "(['lost', 'online'], 'wan2')" ||
+		fail "status after the cut: $status"
+	pass "LAN client after $(seconds "$client_ms"), router after $(seconds "$router_ms") (budget ${switch_max}s): wget and DNS through ISP-B; status: wan lost, default on wan2"
+
+	step 'Upstream of ISP-A restored: new connections back on ISP-A, a long TCP connection stays on ISP-B'
+	vm_output r2 'rm -f /tmp/stream.out' >/dev/null
+	vm_output r2 '( (socat -u TCP4:9.9.9.9:81 CREATE:/tmp/stream.out </dev/null >/dev/null 2>&1 & echo $! >/tmp/stream.pid) )' >/dev/null
+	sleep 3
+	test "$(vm_output r2 'sort -u /tmp/stream.out')" = ispb || fail "long TCP connection: '$(vm_output r2 'cat /tmp/stream.out')'"
+	# Once masqueraded to wan2's address, a packet of this connection routed out of `wan` would reach ISP-A.
+	leak0=$(count ispa leak)
+	upstream ispa restore
+	started=$(monotonic_ms)
+	wait_until 120 'wan online again' internet_is wan online || fail "wan: $(internet wan)"
+	note "wan online again after $(( ($(monotonic_ms) - started) / 1000 ))s"
+	wait_until 30 'LAN client back on ISP-A' http_is client "$via_isp_a" || fail "LAN client: '$(http_from client)'"
+	test "$(http_from router)" = "$via_isp_a" || fail "router: '$(http_from router)'"
+	test "$(http_from acct)" = "$via_isp_b" || fail "accounting client: '$(http_from acct)'"
+	test "$(dns_from client)" = 9.9.9.1 || fail "LAN client DNS: '$(dns_from client)'"
+	b0=$(stream_bytes)
+	sleep 10
+	b1=$(stream_bytes)
+	(( b1 >= b0 + 40 )) || fail "the long TCP connection stalled ($b0 -> $b1 bytes in 10 s)"
+	test "$(vm_output r2 'sort -u /tmp/stream.out')" = ispb || fail "long TCP connection: '$(vm_output r2 'cat /tmp/stream.out')'"
+	(( $(count ispa leak) == leak0 )) || fail 'packets of the long TCP connection went out through ISP-A'
+	vm_output r2 'kill $(cat /tmp/stream.pid)' >/dev/null
+	pass "new connections and DNS of the LAN client and router on ISP-A again; the TCP connection opened during the cut still receives from ISP-B ($b0 -> $b1 bytes in 10 s), none of its packets reached ISP-A"
+}
+
+check() {
+	test -d "$state" || die "Cụm ảo Multi-WAN is not running: $state"
+	# A check that failed half-way may have left an upstream cut or the long connection open.
+	upstream ispa restore >/dev/null
+	upstream ispb restore >/dev/null
+	vm_output r2 'test ! -f /tmp/stream.pid || kill $(cat /tmp/stream.pid) 2>/dev/null; rm -f /tmp/stream.pid' >/dev/null
+	wait_until 120 'wan online' internet_is wan online || fail "wan: $(internet wan)"
+	wait_until 120 'wan2 online' internet_is wan2 online || fail "wan2: $(internet wan2)"
+	check_rules
+	check_branch
+	check_inbound
+	check_firewall
+	check_switch
+}
+
+accept() {
+	local started
+	started=$(monotonic_ms)
+	up
+	check
+	printf '\nPASS: every check in %ss; the cluster is still up (%s down)\n' \
+		$(( ($(monotonic_ms) - started) / 1000 )) "$0"
+}
+
+case "${1:-help}" in
+	help|-h|--help) usage ;;
+	up|check|accept) "$1" ;;
+	build|down|status) "$dynr" "$1" ;;
+	exec|set_link|cable|power|capture) "$dynr" "$@" ;;
+	upstream) shift; [ $# = 2 ] || die 'usage: upstream <ispa|ispb> <cut|restore>'; upstream "$@" ;;
+	*) usage >&2; exit 2 ;;
+esac

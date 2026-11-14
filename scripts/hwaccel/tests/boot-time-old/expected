@@ -1,0 +1,29 @@
+== board root@192.168.1.1 ==
+Linux OpenWrt 6.12.94 #0 SMP Thu Oct  1 08:00:00 2026 aarch64 GNU/Linux
+[    1.812345] fsl-fman 1a00000.fman: FMan-Controller code (ver 210.10.1)
+[   34.101010] cdx: FMAN firmware 210.10.1 - ASK supported
+eth0 soc:fsl,dpaa:ethernet@2 02:00:00:46:00:00
+eth1 soc:fsl,dpaa:ethernet@3 02:00:00:46:00:01
+eth2 soc:fsl,dpaa:ethernet@4 02:00:00:46:00:02
+eth3 soc:fsl,dpaa:ethernet@5 02:00:00:46:00:03
+eth4 soc:fsl,dpaa:ethernet@8 02:00:00:46:00:04
+eth5 soc:fsl,dpaa:ethernet@9 02:00:00:46:00:05
+br-lan           UP             02:00:00:46:00:01 <BROADCAST,MULTICAST,UP,LOWER_UP>
+eth0             UP             02:00:00:46:00:00 <BROADCAST,MULTICAST,UP,LOWER_UP>
+eth1             UP             02:00:00:46:00:01 <BROADCAST,MULTICAST,UP,LOWER_UP>
+== results ==
+boot-time      PASS  PHY firmware upload about 27.2 s from second 6.3 (to the FMan line; this kernel does not log the time); MDC not set by the kernel; ports probed at second 33.9 to 34.0 (eth0 eth1 eth2 eth3 eth4 eth5); br-lan forwarding at second 58.5; eth4 PHY: Aquantia AQR113C
+               | [    6.301234] Aquantia AQR113C 0x0000000001afd000:00: loading firmware version 'v5.4.6 NXP Inverness 011720 10:39:37' from 'FS'
+               | [   33.457216] fsl-fman 1a00000.fman: FMan-Controller code (ver 210.10.1) (0x6a0412)
+               | [   33.902345] fsl_dpa: Probed interface eth0
+               | [   33.912345] fsl_dpa: Probed interface eth1
+               | [   33.922345] fsl_dpa: Probed interface eth2
+               | [   33.932345] fsl_dpa: Probed interface eth3
+               | [   33.942345] fsl_dpa: Probed interface eth4
+               | [   33.952345] fsl_dpa: Probed interface eth5
+               | [   58.512345] br-lan: port 1(eth1) entered forwarding state
+RESULT: PASS
+exit=0
+-- calls --
+ssh info
+ssh boottime

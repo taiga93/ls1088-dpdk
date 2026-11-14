@@ -1,0 +1,2 @@
+{"status":-1,"message":"dns dns.example is not an IPv4 address","field":"dns"}
+exit=1

@@ -1,0 +1,2 @@
+{"status":-1,"message":"passive of interface lan must be 0 or 1","field":"interfaces"}
+exit=1

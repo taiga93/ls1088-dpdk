@@ -1,0 +1,2 @@
+{"status":-1,"message":"--router-id is no longer an OSPF option: use \"router-id set --router-id ID\"","field":"router_id"}
+exit=1

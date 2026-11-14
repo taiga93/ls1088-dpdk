@@ -1,0 +1,8 @@
+kernel=6.12.94
+cdx=cdx: FMAN firmware 106.4.18 lacks ASK support (need package >= 209). Load the ASK microcode in U-Boot.
+cdx_ctrl=no
+status={"status":0,"message":"Tăng tốc phần cứng is unavailable: the microcode of the network hardware does not support it","state":"unavailable","reason":"microcode","enabled":true,"accelerated":0,"on_cpu":[]}
+starts=
+logged=Mon Oct  5 08:00:58 2026 user.notice bmcHwAccel: Tăng tốc phần cứng unavailable: the microcode of the network hardware does not support it
+@log
+[   58.484938] cdx: FMAN firmware 106.4.18 lacks ASK support (need package >= 209). Load the ASK microcode in U-Boot.

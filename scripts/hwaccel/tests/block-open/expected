@@ -1,0 +1,40 @@
+== board root@192.168.1.1 ==
+Linux OpenWrt 6.12.94 #0 SMP Thu Oct  1 08:00:00 2026 aarch64 GNU/Linux
+[    1.812345] fsl-fman 1a00000.fman: FMan-Controller code (ver 210.10.1)
+[   34.101010] cdx: FMAN firmware 210.10.1 - ASK supported
+eth0 soc:fsl,dpaa:ethernet@2 02:00:00:46:00:00
+eth1 soc:fsl,dpaa:ethernet@3 02:00:00:46:00:01
+eth2 soc:fsl,dpaa:ethernet@4 02:00:00:46:00:02
+eth3 soc:fsl,dpaa:ethernet@5 02:00:00:46:00:03
+eth4 soc:fsl,dpaa:ethernet@8 02:00:00:46:00:04
+eth5 soc:fsl,dpaa:ethernet@9 02:00:00:46:00:05
+br-lan           UP             02:00:00:46:00:01 <BROADCAST,MULTICAST,UP,LOWER_UP>
+eth0             UP             02:00:00:46:00:00 <BROADCAST,MULTICAST,UP,LOWER_UP>
+eth1             UP             02:00:00:46:00:01 <BROADCAST,MULTICAST,UP,LOWER_UP>
+== results ==
+net            wan eth0 has no address from DHCP; using 192.168.2.1/24 until the script ends
+block          FAIL  a rule set against a running flow in the hardware, eth1 -> eth0 (wan): macfilter NOT blocked, client_control NOT blocked, blocked services NOT blocked, bmcfido NOT blocked
+               - macfilter: NOT blocked
+               - client_control: NOT blocked
+               - blocked services: NOT blocked
+               - bmcfido: NOT blocked
+               | macfilter: 14 rx packets of eth1 on the CPU and 104000 out of eth0 in 10 s; under the rule 104020 out of eth0, 0 counted by the rule: NOT blocked
+               | client_control: 16 rx packets of eth1 on the CPU and 104000 out of eth0 in 10 s; under the rule 104010 out of eth0, 0 counted by the rule: NOT blocked
+               | blocked services: 14 rx packets of eth1 on the CPU and 104000 out of eth0 in 10 s; under the rule 104020 out of eth0, 0 counted by the rule: NOT blocked
+               | bmcfido: 14 rx packets of eth1 on the CPU and 104000 out of eth0 in 10 s; under the rule 104020 out of eth0, 0 counted by the rule: NOT blocked
+RESULT: FAIL
+exit=1
+-- calls --
+ssh info
+ssh net plain
+ssh bridge start
+ssh bridge block macfilter
+ssh bridge block clientctl
+ssh bridge block service
+ssh bridge block fido
+ssh bridge end
+ssh unnet
+iperf3 block-macfilter
+iperf3 block-clientctl
+iperf3 block-service
+iperf3 block-fido

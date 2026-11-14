@@ -1,0 +1,14 @@
+#!/bin/sh
+# macfilter, client_control, ddos_protect and NAT 1:1 keep their rules over a
+# firewall restart: see /etc/firewall.bmc-features. fw3 runs its includes in
+# the order of the configuration; this one goes last, behind those of the
+# packages, also when this runs again after a sysupgrade (hence the delete,
+# and a file name that sorts behind theirs).
+uci -q batch <<'EOF2'
+delete firewall.bmc_features
+set firewall.bmc_features=include
+set firewall.bmc_features.type='script'
+set firewall.bmc_features.path='/etc/firewall.bmc-features'
+EOF2
+uci -q commit firewall
+exit 0

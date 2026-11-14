@@ -1,0 +1,2 @@
+{"status":0,"message":"Tăng tốc phần cứng is unavailable: its service is not running","state":"unavailable","reason":"daemon","enabled":true,"reboot_required":false,"accelerated":0,"ipsec_sa":0,"on_cpu":[]}
+exit=0

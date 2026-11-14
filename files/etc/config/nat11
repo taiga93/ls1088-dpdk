@@ -1,0 +1,3 @@
+config global 'main'
+    option active '1'
+    option maxRules '32'

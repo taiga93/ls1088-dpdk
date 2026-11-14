@@ -1,0 +1,5 @@
+{"status":0,"message":"Chính sách WAN isp_b saved","uci_batch":"set mwan3.isp_b=policy
+set mwan3.isp_b.last_resort='default'
+add_list mwan3.isp_b.use_member='wan2_m1'
+add_list mwan3.isp_b.use_member='wan_m2'","commands":[]}
+exit=0

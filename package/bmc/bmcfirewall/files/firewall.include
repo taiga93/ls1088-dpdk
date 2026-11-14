@@ -1,0 +1,6 @@
+#!/bin/sh
+
+# A firewall restart takes away the DNS redirect of bmcfirewall and the chains
+# of its blocked services.
+/etc/init.d/bmcfirewall reload_rules >/dev/null 2>&1
+exit 0

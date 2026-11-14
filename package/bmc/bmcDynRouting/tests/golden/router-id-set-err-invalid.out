@@ -1,0 +1,2 @@
+{"status":-1,"message":"Router ID must be a valid dotted-quad","field":"router_id"}
+exit=1

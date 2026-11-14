@@ -1,0 +1,2 @@
+{"status":0,"message":"Tăng tốc phần cứng enabled","uci_batch":"set bmchwaccel.global=global\nset bmchwaccel.global.enabled='1'","enabled":true,"action":"start","commands":["modprobe cdx","modprobe auto_bridge","modprobe fci","/etc/init.d/cmm start"]}
+exit=0

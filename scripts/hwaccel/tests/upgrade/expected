@@ -1,0 +1,18 @@
+== board root@192.168.1.1 ==
+Linux OpenWrt 6.12.94 #0 SMP Thu Oct  1 08:00:00 2026 aarch64 GNU/Linux
+[    1.812345] fsl-fman 1a00000.fman: FMan-Controller code (ver 210.10.1)
+[   34.101010] cdx: FMAN firmware 210.10.1 - ASK supported
+eth0 soc:fsl,dpaa:ethernet@2 02:00:00:46:00:02
+eth1 soc:fsl,dpaa:ethernet@3 02:00:00:46:00:03
+== results ==
+sysupgrade     PASS  25.12.5 r33051-f5dae5ece4, kernel 6.12.94 -> 25.12.5 r33051-f5dae5ece4, kernel 6.12.94, back after 5 s; configuration kept; the card has the kernel and root filesystem of firmware.bin
+RESULT: PASS
+exit=0
+-- calls --
+ssh info
+ssh unnet
+ssh upload
+ssh upgrade sysupgrade check
+ssh upgrade sysupgrade start
+ssh upgrade sysupgrade poll
+ssh upgrade sysupgrade verify

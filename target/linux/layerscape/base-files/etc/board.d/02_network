@@ -1,0 +1,33 @@
+
+. /lib/functions/system.sh
+. /lib/functions/uci-defaults.sh
+
+board_config_update
+
+case "$(board_name)" in
+	fsl,ls1028a-rdb|\
+	fsl,ls1028a-rdb-sdboot)
+		ucidef_set_interfaces_lan_wan "swp0 swp1 swp2 swp3" "eth0"
+		;;
+	traverse,ten64)
+		ucidef_set_interface_lan "eth0 eth1 eth2 eth3"
+		ucidef_set_interface_wan "eth6"
+		;;
+	fsl,ls1046a-rdb|\
+	fsl,ls1046a-rdb-sdboot)
+		# Port roles of the 24.10 firmware. The SDK DPAA driver names the
+		# ports like the upstream one: eth0..eth3 are the 1G ports (MAC3..MAC6),
+		# eth4 is 10GBase-T (MAC9), eth5 is SFP+ (MAC10).
+		ucidef_set_interfaces_lan_wan "eth1 eth2 eth3 eth4 eth5" "eth0"
+		;;
+	mono,gateway-dk)
+		ucidef_set_interface_lan "eth0 eth1 eth2"
+		ucidef_set_interface_wan "eth3"
+		ucidef_set_interface "lan2" device "eth4" protocol "static" \
+			ipaddr "192.168.2.1" netmask "255.255.255.0"
+		;;
+esac
+
+board_config_flush
+
+exit 0

@@ -1,0 +1,10 @@
+mac=00:e0:4c:43:42:fb
+held_before=5
+busy_before=4
+gone=30
+stalled=0
+held_stalled=0
+back=4980
+held_back=4
+mac_after=00:e0:4c:43:42:fb
+@log

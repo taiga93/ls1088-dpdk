@@ -1,0 +1,4 @@
+# Which machines client_control blocks at this hour (../../../lib/bmcHwAccel/evict.sh). The feature answers
+# itself; an image without it, or with a version that cannot answer, blocks nobody here.
+script=/etc/bmcweb/backend/scripts/firewall/client_control.sh
+[ -f "$script" ] && exec bash "$script" blocked

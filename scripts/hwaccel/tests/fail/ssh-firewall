@@ -1,0 +1,7 @@
+fw3=no
+fw4=yes
+iptables=iptables v1.8.10 (nf_tables)
+zones=0
+masq=0
+flow_uci=1
+flow_mod=2

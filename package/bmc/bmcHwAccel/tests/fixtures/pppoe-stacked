@@ -1,0 +1,3 @@
+Id       Address              Device   PPPDevice
+00000001 02:00:00:00:00:10    eth0.30  pppoe-wan
+00000002 02:00:00:00:00:11       eth4  pppoe-wan2

@@ -1,0 +1,8 @@
+#!/bin/sh
+
+# An interface that comes up can be a VLAN or a PPPoE session on a WAN that is kept on the CPU: the rules have
+# to cover its device as well.
+[ "$ACTION" = ifup ] || [ "$ACTION" = ifupdate ] || exit 0
+[ -s /var/run/bmcHwAccel/on_cpu ] || exit 0
+/usr/sbin/bmchwaccel refresh >/dev/null 2>&1
+exit 0

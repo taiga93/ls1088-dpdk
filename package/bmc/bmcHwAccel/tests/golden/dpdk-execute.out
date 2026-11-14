@@ -1,0 +1,108 @@
+-- boot 1, engine layout
+$ bmchwaccel status
+{"status":0,"message":"Tăng tốc phần cứng is on","state":"on","enabled":true,"reboot_required":false,"accelerated":0,"on_cpu":[]}
+exit=0
+calls:
+engine started
+daemon start
+logger -t bmcHwAccel Tăng tốc phần cứng turned on
+kept: 
+$ bmchwaccel disable
+{"status":0,"message":"Tăng tốc phần cứng disabled; restart the router to remove it completely","enabled":false,"reboot_required":true,"action":"stop","commands":["/fake/syncd stop"]}
+exit=0
+calls:
+daemon stop
+logger -t bmcHwAccel Tăng tốc phần cứng turned off
+$ bmchwaccel status
+{"status":0,"message":"Tăng tốc phần cứng is off; restart the router to remove it completely","state":"off","enabled":false,"reboot_required":true,"accelerated":0,"on_cpu":[]}
+exit=0
+$ bmchwaccel disable
+{"status":0,"message":"Tăng tốc phần cứng disabled; restart the router to remove it completely","enabled":false,"reboot_required":true,"action":"none","commands":[]}
+exit=0
+calls:
+$ bmchwaccel enable
+{"status":0,"message":"Tăng tốc phần cứng enabled","enabled":true,"reboot_required":false,"action":"start","commands":["/fake/syncd start"]}
+exit=0
+calls:
+daemon start
+logger -t bmcHwAccel Tăng tốc phần cứng turned on
+$ bmchwaccel status
+{"status":0,"message":"Tăng tốc phần cứng is on","state":"on","enabled":true,"reboot_required":false,"accelerated":0,"on_cpu":[]}
+exit=0
+calls:
+logger -t bmcHwAccel Tăng tốc phần cứng unavailable: it is not running; it is being started again
+engine started
+engine started
+logger -t bmcHwAccel Tăng tốc phần cứng turned on
+$ bmchwaccel status
+{"status":0,"message":"Tăng tốc phần cứng is on","state":"on","enabled":true,"reboot_required":false,"accelerated":0,"on_cpu":[]}
+exit=0
+$ bmchwaccel status
+{"status":0,"message":"Tăng tốc phần cứng is unavailable: its service is not running","state":"unavailable","reason":"daemon","enabled":true,"reboot_required":false,"accelerated":0,"on_cpu":[]}
+exit=0
+$ bmchwaccel apply
+{"status":0,"message":"Tăng tốc phần cứng started","reboot_required":false,"action":"start","commands":["/fake/syncd start"]}
+exit=0
+calls:
+daemon start
+logger -t bmcHwAccel Tăng tốc phần cứng turned on
+$ bmchwaccel status
+{"status":0,"message":"Tăng tốc phần cứng is on","state":"on","enabled":true,"reboot_required":false,"accelerated":0,"on_cpu":[]}
+exit=0
+calls:
+logger -t bmcHwAccel Tăng tốc phần cứng unavailable: it stopped 3 times within 5 minutes; the next boot is without it
+reboot
+kept: unavailable=it stopped 3 times within 5 minutes 
+supervisor: gone
+-- boot 2, kernel layout
+$ bmchwaccel apply
+{"status":-1,"message":"Tăng tốc phần cứng is unavailable: it stopped 3 times within 5 minutes; the router restarted without it; enable it to try again","reason":"engine","action":"skip","commands":[]}
+exit=1
+calls:
+logger -t bmcHwAccel Tăng tốc phần cứng unavailable: it stopped 3 times within 5 minutes; the router restarted without it; enable it to try again
+$ bmchwaccel status
+{"status":0,"message":"Tăng tốc phần cứng is unavailable: it stopped 3 times within 5 minutes; the router restarted without it; enable it to try again","state":"unavailable","reason":"engine","enabled":true,"reboot_required":false,"accelerated":0,"on_cpu":[]}
+exit=0
+$ bmchwaccel enable
+{"status":0,"message":"Tăng tốc phần cứng enabled; it takes effect after a restart","enabled":true,"reboot_required":true,"action":"none","commands":[]}
+exit=0
+calls:
+logger -t bmcHwAccel Tăng tốc phần cứng enabled: it takes effect after a restart
+kept: 
+$ bmchwaccel status
+{"status":0,"message":"Tăng tốc phần cứng is off; it takes effect after a restart","state":"off","enabled":true,"reboot_required":true,"accelerated":0,"on_cpu":[]}
+exit=0
+-- boot 3, engine layout
+$ bmchwaccel status
+{"status":0,"message":"Tăng tốc phần cứng is on","state":"on","enabled":true,"reboot_required":false,"accelerated":0,"on_cpu":[]}
+exit=0
+calls:
+engine started
+daemon start
+logger -t bmcHwAccel Tăng tốc phần cứng turned on
+calls:
+-- boot 4, engine layout
+-- boot 5, engine layout
+-- boot 6, kernel layout
+$ bmchwaccel status
+{"status":0,"message":"Tăng tốc phần cứng is unavailable: two boots in a row did not finish starting it; enable it to try again","state":"unavailable","reason":"boot_skipped","enabled":true,"reboot_required":false,"accelerated":0,"on_cpu":[]}
+exit=0
+$ bmchwaccel enable
+{"status":0,"message":"Tăng tốc phần cứng enabled; it takes effect after a restart","enabled":true,"reboot_required":true,"action":"none","commands":[]}
+exit=0
+calls:
+logger -t bmcHwAccel Tăng tốc phần cứng enabled: it takes effect after a restart
+kept: 
+-- boot 7, engine layout
+calls:
+engine started
+logger -t bmcHwAccel Tăng tốc phần cứng unavailable: it did not answer within 3 seconds of its start; the next boot is without it
+reboot
+kept: booting=boot-7 unavailable=it did not answer within 3 seconds of its start 
+supervisor: gone
+-- boot 8, engine layout
+calls:
+engine started
+daemon start
+logger -t bmcHwAccel Tăng tốc phần cứng turned on
+calls:

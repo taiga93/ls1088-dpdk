@@ -1,0 +1,4 @@
+#!/bin/sh
+# Stand-in for conntrack: records the call, and answers a deletion as conntrack-tools does (on stderr).
+echo "conntrack $*" >> "$FAKE_CALLS"
+echo 'conntrack v1.4.8 (conntrack-tools): 7 flow entries have been deleted.' >&2

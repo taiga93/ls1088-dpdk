@@ -1,0 +1,2 @@
+{"status":-1,"message":"peer 203.0.113.1 has the local AS 65001: only eBGP peers are supported","field":"remote_as","peer":"203.0.113.1"}
+exit=1

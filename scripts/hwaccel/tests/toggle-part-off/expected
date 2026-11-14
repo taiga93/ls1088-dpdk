@@ -1,0 +1,34 @@
+== board root@192.168.1.1 ==
+Linux OpenWrt 6.12.94 #0 SMP Thu Oct  1 08:00:00 2026 aarch64 GNU/Linux
+[    1.812345] fsl-fman 1a00000.fman: FMan-Controller code (ver 210.10.1)
+[   34.101010] cdx: FMAN firmware 210.10.1 - ASK supported
+eth0 soc:fsl,dpaa:ethernet@2 02:00:00:46:00:00
+eth1 soc:fsl,dpaa:ethernet@3 02:00:00:46:00:01
+eth2 soc:fsl,dpaa:ethernet@4 02:00:00:46:00:02
+eth3 soc:fsl,dpaa:ethernet@5 02:00:00:46:00:03
+eth4 soc:fsl,dpaa:ethernet@8 02:00:00:46:00:04
+eth5 soc:fsl,dpaa:ethernet@9 02:00:00:46:00:05
+br-lan           UP             02:00:00:46:00:01 <BROADCAST,MULTICAST,UP,LOWER_UP>
+eth0             UP             02:00:00:46:00:00 <BROADCAST,MULTICAST,UP,LOWER_UP>
+eth1             UP             02:00:00:46:00:01 <BROADCAST,MULTICAST,UP,LOWER_UP>
+== results ==
+net            wan eth0 has no address from DHCP; using 192.168.2.1/24 until the script ends
+toggle         FAIL  rx packets on the CPU in 10 s, and iperf3 meanwhile: 86 on (945 Mbps), 200000 disabled (945 Mbps), 98 enabled again; disabled: bmchwaccel status: off, 0 accelerated, 5 conntrack entries still pinned; enabled again: bmchwaccel status: on, 5 accelerated, 946 Mbps to the end of the run; limit on traffic through the CPU: 195312 packets/s again, 7 dropped by it since the first window; a new connection at second 22: no result; iperf3 over both switches: 945 Mbps, slowest second 912 Mbps, 431 retransmits; syslog: 1 line off, 1 line on
+               - disabled: 200000 rx packets reached the CPU, but iperf3 carried 945 Mbps, at least 815780 packets: the hardware still forwards part of the traffic
+               | Mbps each second (| on | disabled | enabled again |): 912 946 946 946 946 946 946 946 946 | 946 946 946 946 946 946 946 946 946 946 | 946 946 | 946 946 946 946 946 946 946 946 946 946 | 946 946 946 946 946 946 946 946 | 946 946 946 946 946 946 946 946 946 946 | 946 946 946 946 946 946 946 946 946 946 946 946 946 946 946 946 946 946 946 946 946 946 946 946 946 946 946 946 946 
+               | ping each second (! answered, . lost): .............................................................................. (no answer at all: PC2 does not answer ping; Windows does not unless its firewall allows ICMPv4 echo)
+               | new connection, Mbps each second: 
+               | second by second (s of iperf3, its Mbps, ping, packets per port):
+               | counters that changed in the window on:
+               | counters that changed in the window off:
+RESULT: FAIL
+exit=1
+-- calls --
+ssh info
+ssh net plain
+ssh flush
+ssh toggle
+ssh diag toggle
+ssh unnet
+iperf3 toggle
+iperf3 toggle-probe

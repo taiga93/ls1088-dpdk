@@ -1,0 +1,21 @@
+{"status":0,"message":"routing plan ready","action":"start","frr_restart":["zebra","ripd"],"frr_conf":"frr version 10
+frr defaults traditional
+hostname bmcDynRouting
+service integrated-vtysh-config
+!
+! bmcDynRouting: ripd
+router rip
+ version 2
+ network eth5
+ network br-lan
+ passive-interface br-lan
+ redistribute ospf
+ default-information originate
+!","daemons":"zebra=yes
+ospfd=no
+ripd=yes
+bgpd=no
+ospf6d=no
+watchfrr=yes","firewall_rules":"iptables -I INPUT -i eth5 -p udp --dport 520 -m comment --comment bmcDynRouting -j ACCEPT
+iptables -I INPUT -i br-lan -p udp --dport 520 -m comment --comment bmcDynRouting -j ACCEPT"}
+exit=0

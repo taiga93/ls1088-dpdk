@@ -1,0 +1,13 @@
+{"status":0,"message":"OSPF configuration saved","uci_batch":"delete bmcDynRouting.oi_lan
+delete bmcDynRouting.oi_link_eth6
+delete bmcDynRouting.oi_link_eth7
+set bmcDynRouting.oi_lan=ospf_interface
+set bmcDynRouting.oi_lan.interface='lan'
+set bmcDynRouting.oi_lan.area='0'
+set bmcDynRouting.oi_lan.passive='0'
+set bmcDynRouting.ospf.enabled='0'
+set bmcDynRouting.ospf.redistribute_static='0'
+set bmcDynRouting.ospf.redistribute_connected='0'
+set bmcDynRouting.ospf.redistribute_rip='0'
+set bmcDynRouting.ospf.redistribute_bgp='0'","warnings":[{"interface":"lan","code":"dhcp_on_active_interface","message":"Interface OSPF lan is not passive but runs a DHCP server."}]}
+exit=0

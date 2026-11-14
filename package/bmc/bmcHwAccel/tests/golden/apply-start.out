@@ -1,0 +1,2 @@
+{"status":0,"message":"Tăng tốc phần cứng plan ready","action":"start","commands":["modprobe cdx","modprobe auto_bridge","modprobe fci","/etc/init.d/cmm start"]}
+exit=0

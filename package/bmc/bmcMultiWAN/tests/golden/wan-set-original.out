@@ -1,0 +1,2 @@
+{"status":0,"message":"WAN wan saved","uci_batch":"set mwan3.wan.down='4'","commands":[]}
+exit=0

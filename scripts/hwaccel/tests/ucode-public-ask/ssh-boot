@@ -1,0 +1,5 @@
+kernel=6.12.94
+cdx=cdx: FMAN firmware 210.10.1 - ASK supported
+cdx_ctrl=yes
+status={"status":0,"message":"Tăng tốc phần cứng is on","state":"on","enabled":true,"accelerated":12,"on_cpu":[]}
+starts=1

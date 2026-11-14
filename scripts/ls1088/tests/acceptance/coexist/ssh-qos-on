@@ -1,0 +1,4 @@
+dev=eth0
+up=qdisc cake 8001: root refcnt 9 bandwidth 100Mbit diffserv3 triple-isolate nonat nowash no-ack-filter split-gso rtt 100ms raw overhead 0
+down=qdisc cake 8002: root refcnt 2 bandwidth 100Mbit diffserv3 triple-isolate nonat nowash no-ack-filter split-gso rtt 100ms raw overhead 0
+status={"status":0,"message":"Tăng tốc phần cứng is on","state":"on","enabled":true,"reboot_required":false,"accelerated":0,"on_cpu":[{"scope":"wan","device":"eth0","reason":"bmcqos"}]}

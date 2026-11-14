@@ -1,0 +1,32 @@
+#!/bin/sh /etc/rc.common
+USE_PROCD=1
+START=49
+STOP=10
+
+start_service() {
+
+    ln -s /etc/freeradius3/mods-available/sql /etc/freeradius3/mods-enabled/sql
+    sed -i 's|^#\$INCLUDE dictionary.rfc4818|$INCLUDE dictionary.rfc4818|' /usr/share/freeradius3/dictionary
+    sed -i 's|^#\$INCLUDE dictionary.rfc6911|$INCLUDE dictionary.rfc6911|' /usr/share/freeradius3/dictionary
+    
+    #prepare sql database
+    DB_PATH="/etc/freeradius3/raddb/radius.db"
+    SCHEMA_PATH="/etc/freeradius3/raddb/sql/sqlite/schema.sql"
+
+    if [ ! -f "$DB_PATH" ]; then
+        logger -t freeradius3 "Creating SQLite database at $DB_PATH"
+        sqlite3 "$DB_PATH" < "$SCHEMA_PATH"
+        if [ $? -eq 0 ]; then
+            logger -t freeradius3 "Database initialized successfully"
+        else
+            logger -t freeradius3 "Failed to initialize database"
+            exit 1
+        fi
+#        sqlite3 "$DB_PATH" "INSERT INTO radcheck (username, attribute, op, value) VALUES ('testuser', 'Cleartext-Password', ':=', 'testpassword');"
+#        logger -t freeradius3 "Added sample user 'testuser'"
+    else
+        logger -t freeradius3 "Database already exists at $DB_PATH"
+    fi
+    chown root:root "$DB_PATH"
+    chmod 644 "$DB_PATH"
+}

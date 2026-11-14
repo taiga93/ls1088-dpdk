@@ -1,0 +1,13 @@
+@kernel
+[    6.301234] Aquantia AQR113C 0x0000000001afd000:00: loading firmware version 'v5.4.6 NXP Inverness 011720 10:39:37' from 'FS'
+[   33.457216] fsl-fman 1a00000.fman: FMan-Controller code (ver 210.10.1) (0x6a0412)
+[   33.902345] fsl_dpa: Probed interface eth0
+[   33.912345] fsl_dpa: Probed interface eth1
+[   33.922345] fsl_dpa: Probed interface eth2
+[   33.932345] fsl_dpa: Probed interface eth3
+[   33.942345] fsl_dpa: Probed interface eth4
+[   33.952345] fsl_dpa: Probed interface eth5
+[   58.512345] br-lan: port 1(eth1) entered forwarding state
+@phy
+port=eth4
+phy=Aquantia AQR113C

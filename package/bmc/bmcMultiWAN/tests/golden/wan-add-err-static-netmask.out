@@ -1,0 +1,2 @@
+{"status":-1,"message":"netmask must be a contiguous IPv4 netmask from 128.0.0.0 to 255.255.255.252","field":"netmask"}
+exit=1

@@ -1,0 +1,2 @@
+{"status":0,"message":"Tăng tốc phần cứng is unavailable: not started after two failed boots in a row; enable it to try again","state":"unavailable","reason":"boot_skipped","enabled":true,"reboot_required":false,"accelerated":0,"ipsec_sa":0,"on_cpu":[]}
+exit=0

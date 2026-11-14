@@ -1,0 +1,6 @@
+{"status":0,"message":"WAN wan3 deleted","uci_batch":"del_list mwan3.default_policy.use_member='wan3_m3'
+delete mwan3.wan3_m3
+delete mwan3.wan3
+delete network.wan3
+del_list firewall.cfg03dc81.network='wan3'","commands":["/etc/init.d/network reload","/etc/init.d/firewall reload"]}
+exit=0

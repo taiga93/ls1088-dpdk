@@ -1,0 +1,2 @@
+{"status":-1,"message":"usage: bmcmultiwan [--dry-run] get, set --enabled 0|1, apply, status, wan list|add|set|del, policy list|set|del, rule list|set|del"}
+exit=1

@@ -1,0 +1,2 @@
+{"status":0,"message":"Tăng tốc phần cứng keeps nothing on the CPU for bmcqos","on_cpu":[],"action":"remove","commands":["iptables -w -t mangle -D FORWARD -j BMCHWACCEL_KEEP","iptables -w -t mangle -F BMCHWACCEL_KEEP","iptables -w -t mangle -X BMCHWACCEL_KEEP","ip6tables -w -t mangle -D FORWARD -j BMCHWACCEL_KEEP","ip6tables -w -t mangle -F BMCHWACCEL_KEEP","ip6tables -w -t mangle -X BMCHWACCEL_KEEP","/etc/init.d/cmm stop","conntrack -U --mark 0/0x10000","conntrack -U -f ipv6 --mark 0/0x10000","/etc/init.d/cmm start"]}
+exit=0

@@ -1,0 +1,2 @@
+{"status":0,"message":"the ports Tăng tốc phần cứng holds: link, speed and counters of their cables","ports":[{"interface":"eth0","link":"up","speed":1000,"rx_bytes":123456789012,"tx_bytes":4567890123,"rx_packets":90123456,"tx_packets":3012345},{"interface":"eth1","link":"down","speed":"unknown","rx_bytes":0,"tx_bytes":0,"rx_packets":0,"tx_packets":0}]}
+exit=0

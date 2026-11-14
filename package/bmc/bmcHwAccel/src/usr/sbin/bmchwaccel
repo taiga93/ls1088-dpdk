@@ -1,0 +1,138 @@
+#!/bin/sh
+# bmchwaccel — CLI of the Tăng tốc phần cứng feature.
+#
+# The whole logic of the feature lives in this CLI and /usr/lib/bmcHwAccel; web UI and TR-069 only call it
+# (ADR-0003). /etc/config/bmchwaccel holds "enabled". "bridge" 1 there, read where the daemon is started and
+# set by no command, hands traffic between two ports of a bridge to the hardware by pair of MAC addresses
+# instead of by connection: only for a trial, since `sweep` cannot take such traffic out again.
+# Every command prints exactly one JSON object {status, message, ...}; status -1 comes with exit code 1.
+# Every command reads a UCI snapshot, builds a plan then executes it; --dry-run prints the plan instead.
+#
+#   get
+#   enable      saves "enabled" 1, then does what apply does
+#   disable     saves "enabled" 0, then does what apply does
+#   apply       loads the modules and starts the daemon, or stops the daemon, according to "enabled". Effective
+#               at once, without a reboot: open connections are accelerated again, or continue on the CPU.
+#               A start that fails leaves the router forwarding on the CPU and answers with "reason". After
+#               two boots in a row that the module load broke, the modules are left alone until `enable`.
+#   status      state "on", "off" or "unavailable" (enabled, but the hardware does not forward) with "reason"
+#               (boot_skipped, microcode, module or daemon), "reboot_required" (always false here),
+#               "accelerated" (the number of Kết nối đã tăng tốc), "ipsec_sa" (the number of keys of Tunnel IPsec
+#               the hardware holds) and "on_cpu" (what other features keep on the CPU, each with scope,
+#               device and reason)
+#   ports       the ports the hardware holds instead of the kernel, each with "interface", "link" (up or
+#               down), "speed" (Mb/s, or "unknown") and the bytes and packets that crossed its cable
+#               ("rx_bytes", "tx_bytes", "rx_packets", "tx_packets"): the kernel's counters and link of such
+#               a port see only what goes through the kernel. An empty list where the kernel counts all.
+#   sa          the keys of Tunnel IPsec the hardware holds, each with "spi", "dir" (in or out), "reqid" (its
+#               tunnel), "peer", the "bytes" and "packets" the hardware encrypted or decrypted on its own, and
+#               for an outbound one "seq", the highest sequence number it may have used: for diagnosis. An
+#               empty list where every tunnel goes through the kernel.
+# That is NXP ASK on the LS1046 (engine.sh). On the DPAA2 boards (LS1088, engine-dpdk.sh) the ports of the
+# engine are given to it at boot when enabled, and only then: disable lets go of every Kết nối đã tăng tốc at
+# once and the next boot is without the engine; enable on a router booted without it takes effect after a
+# restart. "reboot_required" (status, enable, disable, apply) says when the router runs another layout than
+# the next boot builds, and "message" what it means. "reason" there is boot_skipped or engine (the engine
+# kept dying or did not start: the router restarted without it), until `enable`; engine also for a boot
+# without its memory, for that boot only; restarting while the engine is being started again. get also
+# gives "workers" and "port", read at boot and set by no command; a value of them that is not valid comes
+# with "field". "ports" lists the ports of the engine in the engine layout, none while it does not answer.
+# Each change of state leaves one syslog line tagged bmcHwAccel.
+#
+# For other features of the firmware, not for the operator (keep.sh):
+#   keep <reason> wan <device>      every connection through that WAN stays on the CPU
+#   release <reason>                takes that back
+#   refresh                         puts the rules of what is kept back after a firewall restart
+#   sweep                           takes the connections a feature blocks on every packet, by MAC address
+#                                   or by membership of an ipset, out of the hardware (evict.sh); run by
+#                                   those features and by cron; also has the kernel learn the
+#                                   neighbours of machines that talk through a bridge (neighbours.sh)
+set -eu
+
+lib_dir=$(CDPATH= cd -- "$(dirname -- "$0")/../lib/bmcHwAccel" && pwd)
+for lib in json uci engine unavailable keep evict neighbours service status; do
+	. "$lib_dir/$lib.sh"
+done
+
+dry_run=0
+exit_code=0
+newline='
+'
+
+reply() {
+	[ "$1" = 0 ] || exit_code=1
+	printf '{"status":%s,"message":%s%s}\n' "$1" "$(json_string "$2")" "${3:-}"
+}
+
+# On by default: only an explicit 0 turns the feature off.
+load_config() {
+	enabled=$(uci_get bmchwaccel.global.enabled)
+	[ "$enabled" = 0 ] || enabled=1
+}
+
+usage() {
+	reply -1 'usage: bmchwaccel [--dry-run] get | enable | disable | apply | status | ports | sa'
+}
+
+# The options of the board besides "enabled" (engine.sh). One that is not valid comes with "field" and says
+# what the router uses instead; the configuration is still given, so that a page reading "enabled" works.
+get_command() {
+	engine_config
+	if [ -n "$config_error" ]; then
+		reply 0 "Tăng tốc phần cứng configuration; $config_error" \
+			",\"field\":\"$config_field\",\"enabled\":$(json_bool "$enabled")$config_json"
+	else
+		reply 0 'Tăng tốc phần cứng configuration' ",\"enabled\":$(json_bool "$enabled")$config_json"
+	fi
+}
+
+ports_command() {
+	engine_ports
+	reply 0 "$ports_text" ",\"ports\":$ports_json"
+}
+
+sa_command() {
+	engine_sas
+	reply 0 "$sas_text" ",\"sa\":$sas_json"
+}
+
+if [ "${1:-}" = --dry-run ]; then
+	dry_run=1
+	shift
+fi
+command=${1:-}
+[ "$#" -eq 0 ] || shift
+# Before the configuration is read: what another command is changing is waited for.
+case "$dry_run$command" in
+	0enable|0disable|0apply|0keep|0release|0refresh) keep_lock ;;
+esac
+uci_load_snapshot
+load_config
+if [ "$#" -gt 0 ]; then
+	case "$command" in
+		keep|release) ;;
+		get|enable|disable|apply|status|ports|sa|refresh|sweep)
+			reply -1 "$command takes no argument: $1"
+			exit "$exit_code"
+			;;
+		*)
+			usage
+			exit "$exit_code"
+			;;
+	esac
+fi
+case "$command" in
+	keep) keep_command "$@" ;;
+	release) release_command "$@" ;;
+	refresh) refresh_command ;;
+	sweep) sweep_command ;;
+	get) get_command ;;
+	enable) switch_command 1 ;;
+	disable) switch_command 0 ;;
+	apply) apply_command ;;
+	status) status_command ;;
+	ports) ports_command ;;
+	sa) sa_command ;;
+	*) usage ;;
+esac
+exit "$exit_code"

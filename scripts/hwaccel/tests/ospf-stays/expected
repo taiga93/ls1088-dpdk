@@ -1,0 +1,40 @@
+== board root@192.168.1.1 ==
+Linux OpenWrt 6.12.94 #0 SMP Thu Oct  1 08:00:00 2026 aarch64 GNU/Linux
+[    1.812345] fsl-fman 1a00000.fman: FMan-Controller code (ver 210.10.1)
+[   34.101010] cdx: FMAN firmware 210.10.1 - ASK supported
+eth0 soc:fsl,dpaa:ethernet@2 02:00:00:46:00:00
+eth1 soc:fsl,dpaa:ethernet@3 02:00:00:46:00:01
+eth2 soc:fsl,dpaa:ethernet@4 02:00:00:46:00:02
+eth3 soc:fsl,dpaa:ethernet@5 02:00:00:46:00:03
+eth4 soc:fsl,dpaa:ethernet@8 02:00:00:46:00:04
+eth5 soc:fsl,dpaa:ethernet@9 02:00:00:46:00:05
+br-lan           UP             02:00:00:46:00:01 <BROADCAST,MULTICAST,UP,LOWER_UP>
+eth0             UP             02:00:00:46:00:00 <BROADCAST,MULTICAST,UP,LOWER_UP>
+eth1             UP             02:00:00:46:00:01 <BROADCAST,MULTICAST,UP,LOWER_UP>
+== results ==
+net            wan eth0 has no address from DHCP; using 192.168.2.1/24 until the script ends
+ospf-learned   PASS  OSPF's route: 10.17.0.1 nhid 21 via 10.17.1.2 dev eth2 metric 20; 946 Mbps, slowest second 912 Mbps, 12 retransmits; in 10 s 801187 packets left eth2; rx packets on the CPU in 10 s: eth0 +0, eth2 +35, eth1 +20, eth4 +0, eth5 +0; 5 accelerated, 0 masqueraded; bmchwaccel status: on, 5 accelerated
+ospf-withdrawn FAIL  route withdrawn after 38 s; in 10 s 101187 packets left eth2 before and 101187 after; the board now sends to 10.17.0.1 through no port, 1 such UDP connection(s) in the hardware; PC1 was still sending
+               - 101187 packets left eth2 in 10 s after the route was withdrawn, need fewer than 1000: the hardware still sends the connection through the Link định tuyến of the route that is gone
+ospf-back      PASS  route back after 11 s; 946 Mbps, slowest second 912 Mbps, 12 retransmits; in 10 s 801200 packets left eth2; rx packets on the CPU in 10 s: eth0 +0, eth2 +35, eth1 +20, eth4 +0, eth5 +0; 5 accelerated, 0 masqueraded; bmchwaccel status: on, 5 accelerated
+RESULT: FAIL
+exit=1
+-- calls --
+ssh info
+ssh net plain
+ssh ospf setup
+ssh flush
+ssh sample ospf-learned
+ssh flush
+ssh sample ospf-flow
+ssh ospf withdraw
+ssh sample ospf-withdrawn
+ssh diag ospf-withdrawn
+ssh ospf restore
+ssh flush
+ssh sample ospf-back
+ssh ospf end
+ssh unnet
+iperf3 ospf-learned
+iperf3 ospf-withdrawn
+iperf3 ospf-back

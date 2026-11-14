@@ -1,0 +1,36 @@
+CONFIG_TARGET_armsr=y
+CONFIG_TARGET_armsr_armv8=y
+CONFIG_TARGET_ARCH_PACKAGES="aarch64_generic"
+# The C library is the default of the base, musl, as in the LS1046 image of this branch
+# (config_LS1046ARDB): the toolchain and the aarch64_generic packages are shared with it.
+CONFIG_TARGET_ROOTFS_EXT4FS=y
+# CONFIG_TARGET_IMAGES_GZIP is not set
+CONFIG_PACKAGE_netifd=y
+CONFIG_PACKAGE_firewall=y
+# CONFIG_PACKAGE_firewall4 is not set
+CONFIG_PACKAGE_iptables-zz-legacy=y
+CONFIG_PACKAGE_ip6tables-zz-legacy=y
+CONFIG_PACKAGE_dnsmasq=y
+CONFIG_PACKAGE_dropbear=y
+CONFIG_PACKAGE_ubus=y
+CONFIG_PACKAGE_ubusd=y
+CONFIG_PACKAGE_uci=y
+CONFIG_BUSYBOX_CONFIG_STTY=y
+# FRR as in config_LS1046ARDB.
+CONFIG_PACKAGE_frr=y
+CONFIG_FRR_INTERNAL=y
+CONFIG_FRR_NO_SNMP=y
+CONFIG_PACKAGE_frr-bgpd=y
+CONFIG_PACKAGE_frr-ospfd=y
+CONFIG_PACKAGE_frr-ripd=y
+CONFIG_PACKAGE_frr-watchfrr=y
+CONFIG_PACKAGE_frr-zebra=y
+CONFIG_PACKAGE_bmcDynRouting=y
+CONFIG_PACKAGE_bmc-dynrouting-virtual-bootstrap=y
+# Multi-WAN as in config_LS1046ARDB (off after a flash); scripts/multiwan-cluster uses the same image.
+# mwan3 2.12 has its ubus status in ucode and depends on rpcd.
+CONFIG_PACKAGE_rpcd=y
+CONFIG_PACKAGE_mwan3=y
+CONFIG_PACKAGE_bmcMultiWAN=y
+# Test tool: TCP 179 probes from another source address, hand-made RIP packets.
+CONFIG_PACKAGE_socat=y

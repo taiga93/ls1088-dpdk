@@ -1,0 +1,13 @@
+diff --git a/configure b/configure
+index 0aabf8c..6e85117 100755
+--- a/configure
++++ b/configure
+@@ -12633,7 +12633,7 @@ if test "${with_c_icap+set}" = set; then :
+        cicaphastmpl=`c-icap-config --version | grep -v "^0.1"`
+        cicaphasalldata=`c-icap-config --version | sed 's/\.//g'`
+     fi
+-
++  cicapmods="$withval"
+ fi
+ 
+ 

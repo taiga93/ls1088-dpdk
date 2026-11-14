@@ -1,0 +1,2 @@
+{"status":-1,"message":"advanced command lines must not contain control characters","field":"advanced_lines"}
+exit=1

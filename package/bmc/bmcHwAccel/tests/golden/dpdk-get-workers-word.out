@@ -1,0 +1,2 @@
+{"status":0,"message":"Tăng tốc phần cứng configuration; workers must be from 1 to 4: four; the next boot runs 4","field":"workers","enabled":true,"workers":4,"port":["dpmac.1","dpmac.2"]}
+exit=0

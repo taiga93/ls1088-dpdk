@@ -1,0 +1,32 @@
+From 93bed101b6b68eaa4480ca4328670c6dc061df43 Mon Sep 17 00:00:00 2001
+From: Martin Winter <mwinter@opensourcerouting.org>
+Date: Thu, 8 Jan 2026 20:39:17 +0100
+Subject: [PATCH] ripd: Fix default-route accept and announce
+
+Fix commit 2616e95 ("ripd: Allow using reserved ranges") which
+accidently blocked the acceptance and announcement of a default
+route via RIP
+
+Signed-off-by: Martin Winter <mwinter@opensourcerouting.org>
+(cherry picked from commit 38daaaf241dc39ac63091cd6683c56704b60d071)
+---
+ ripd/ripd.c | 6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
+
+diff --git a/ripd/ripd.c b/ripd/ripd.c
+index d8137d7bb37d..f4dc218979f3 100644
+--- a/ripd/ripd.c
++++ b/ripd/ripd.c
+@@ -806,7 +806,11 @@ static void rip_packet_dump(struct rip_packet *packet, int size,
+    check net 0 because we accept default route. */
+ static int rip_destination_check(struct in_addr addr)
+ {
+-	return ipv4_unicast_valid(&addr);
++	if (addr.s_addr == INADDR_ANY)
++		/* default route allowed */
++		return 1;
++	else
++		return ipv4_unicast_valid(&addr);
+ }
+ 
+ /* RIP version 2 authentication. */

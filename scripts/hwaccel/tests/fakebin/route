@@ -1,0 +1,3 @@
+#!/bin/sh
+# Fake route for acceptance-test.sh: PC1 sends everything through one gateway.
+echo "    gateway: 192.168.1.1"

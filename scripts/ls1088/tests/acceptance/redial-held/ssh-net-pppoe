@@ -1,0 +1,5 @@
+note=wan dials PPPoE on eth0 as hwaccel until the script ends
+temporary=yes
+dev=eth0
+addr=10.99.0.2
+peer=10.99.0.1

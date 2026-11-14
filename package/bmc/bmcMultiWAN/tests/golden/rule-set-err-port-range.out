@@ -1,0 +1,2 @@
+{"status":-1,"message":"dest_port range 5070-5060 must start with the lower port","field":"dest_port"}
+exit=1

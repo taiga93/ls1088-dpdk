@@ -1,0 +1,9 @@
+pc1=192.168.1.10
+squid=0
+intercept=0
+bump=0
+icap=0
+icap_port=0
+clamd=0
+tracker=0
+status={"status":0,"message":"Tăng tốc phần cứng is on","state":"on","enabled":true,"accelerated":0,"on_cpu":[]}

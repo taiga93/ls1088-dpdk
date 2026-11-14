@@ -1,0 +1,9 @@
+{"status":0,"message":"Chuyển WAN logged","wan":"wan","state":"lost","log":"Chuyển WAN: wan is Mất Internet; Chính sách WAN default_policy now uses wan2, b_first now uses wan2","time":1790000500,"commands":["conntrack -D --mark 0x100/0x3f00"]}
+exit=0
+--- calls
+logger -t bmcMultiWAN Chuyển WAN: wan is Mất Internet; Chính sách WAN default_policy now uses wan2, b_first now uses wan2
+conntrack -D --mark 0x100/0x3f00
+logger -t bmcMultiWAN Chuyển WAN: 7 connections through wan removed, so that none stays accelerated towards it
+--- runtime files
+./last_switch: 1790000500 wan lost
+./state/wan: lost

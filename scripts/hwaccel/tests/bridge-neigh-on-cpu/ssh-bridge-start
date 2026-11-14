@@ -1,0 +1,9 @@
+pc1=192.168.1.10
+pc1_mac=3c:22:fb:00:00:01
+pc2_mac=3c:22:fb:00:00:02
+pc1_port=eth1
+pc2_port=eth2
+nf_call=1
+daemon=cpu
+cmdline=/usr/bin/cmm -F -f /var/run/bmcHwAccel/fastforward -n 131072 -B 
+status={"status":0,"message":"Tăng tốc phần cứng is on","state":"on","enabled":true,"accelerated":0,"on_cpu":[]}

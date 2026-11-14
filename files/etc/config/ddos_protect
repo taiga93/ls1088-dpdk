@@ -1,0 +1,5 @@
+
+config ddos 'common'
+	option interface 'br-lan'
+	option status 'disable'
+

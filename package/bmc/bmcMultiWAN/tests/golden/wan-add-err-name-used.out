@@ -1,0 +1,2 @@
+{"status":-1,"message":"name lan is already used in /etc/config/network","field":"name"}
+exit=1

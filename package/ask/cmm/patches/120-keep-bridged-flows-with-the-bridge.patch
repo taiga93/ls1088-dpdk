@@ -1,0 +1,66 @@
+From: BMC firmware
+Subject: cmm: -B keeps bridged flows with the bridge
+
+The bridge module offers every flow between two ports of a bridge to the
+daemon, which hands it to the forward engine. With the module's default
+(abm_l3_filtering 0) such a flow is a pair of MAC addresses and an
+ethertype: after the first packet, everything those two machines send
+each other goes through the hardware, past the bridge and its netfilter
+hooks, for as long as they keep sending. A rule that starts to match
+later, by MAC address or by time of day, never sees a packet of it.
+
+The module cannot be left out: cdx has no manual bridge mode and the
+daemon exits without the module's socket.
+
+With -B the daemon answers every flow the module offers as it answers
+one between interfaces the forward engine does not have: denied. The
+module keeps the flow, and its packets go on through the bridge. Routed
+connections that enter or leave through a bridge are not touched: they
+come from conntrack, not from the module.
+
+---
+--- a/cmm/src/cmm.c
++++ b/cmm/src/cmm.c
+@@ -440,7 +440,7 @@
+ 	}
+ 
+ 	// Analyse the command line
+-	while ((option = getopt(argc, argv, "c:f:n:hvFR")) != -1)
++	while ((option = getopt(argc, argv, "c:f:n:hvFRB")) != -1)
+ 	{
+ 		switch (option)
+ 		{
+@@ -478,6 +478,9 @@
+ 				break;
+ 			case 'R':	// Empty the forward engine and exit
+ 				return cmmEngineEmpty();
++			case 'B':	// Bridged flows stay with the bridge
++				globalConf.bridge_on_cpu = 1;
++				break;
+ 			default:
+ 				break;
+ 		}
+--- a/cmm/src/cmm.h
++++ b/cmm/src/cmm.h
+@@ -181,6 +181,7 @@
+ 		pthread_mutex_t logMutex;
+ 
+ 		int enable;						/*Forward engine can be programmed or not*/
++		int bridge_on_cpu;					/* -B: bridged flows are never handed to the forward engine */
+ 
+ 		int ff_enable;						/* Fast-forward enable/disable, all packets go through ACP but all control path is enabled */
+ 		int asymff_enable;					/* Asymmetric Fastpath enable/disable*/
+--- a/cmm/src/module_rx.c
++++ b/cmm/src/module_rx.c
+@@ -167,7 +167,10 @@
+ 		entry->flags |= FPP_NEEDS_UPDATE;
+ 	}
+ 	
+-	if(__itf_is_programmed(iifi_idx) && __itf_is_programmed(oifi_idx)){
++	/* -B: the flow is answered as one between interfaces the forward engine
++	 * does not have. The bridge module then keeps it, and every packet of
++	 * it goes on through the bridge and its netfilter hooks. */
++	if(!globalConf.bridge_on_cpu && __itf_is_programmed(iifi_idx) && __itf_is_programmed(oifi_idx)){
+ 		cmm_print(DEBUG_INFO, "L2Flow Entry allowed for input itf index %d to output itf index %d\n",
+ 					iifi_idx, oifi_idx);
+ 		allowed = 1;

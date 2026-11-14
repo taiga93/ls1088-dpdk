@@ -1,0 +1,1 @@
+boot firewall ports brlan-wan brlan-wan-back brlan-wan-noab vlan-wan vlan-wan-back pppoe pppoe-back pppoe-drop pppoe-redial vlan-vlan vlan-vlan-back

@@ -1,0 +1,11 @@
+{"status":0,"message":"Luật chọn WAN voip saved","uci_batch":"delete mwan3.voip
+set mwan3.voip=rule
+set mwan3.voip.family='ipv4'
+set mwan3.voip.proto='udp'
+set mwan3.voip.dest_port='5060'
+set mwan3.voip.use_policy='b_first'
+reorder mwan3.acct=18
+reorder mwan3.rtp=18
+reorder mwan3.voip=18
+reorder mwan3.default_rule=18","commands":["/etc/init.d/mwan3 restart"]}
+exit=0

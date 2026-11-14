@@ -1,0 +1,4 @@
+waited=11
+switch=Chuyển WAN: wan2 has Internet again; Chính sách WAN default_policy now uses wan, hwaccel_b now uses wan2
+wan=up online
+wan2=up online

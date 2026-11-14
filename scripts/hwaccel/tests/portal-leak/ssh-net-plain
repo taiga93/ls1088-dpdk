@@ -1,0 +1,5 @@
+note=security mode nac instead of off until the script ends
+temporary=yes
+mode=nac
+dev=eth0
+addr=192.168.2.1/24

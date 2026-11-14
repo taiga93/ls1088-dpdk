@@ -1,0 +1,2 @@
+{"status":0,"message":"configuration migrated","uci_batch":"delete bmcDynRouting.ospf.router_id"}
+exit=0

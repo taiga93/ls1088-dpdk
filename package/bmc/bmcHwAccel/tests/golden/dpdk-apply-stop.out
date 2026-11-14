@@ -1,0 +1,2 @@
+{"status":0,"message":"Tăng tốc phần cứng plan ready; restart the router to remove it completely","reboot_required":true,"action":"stop","commands":["bmchwaccel-ctl flush"]}
+exit=0

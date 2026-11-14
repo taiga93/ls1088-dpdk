@@ -1,0 +1,4 @@
+bmchwaccel.global=global
+bmchwaccel.global.enabled='1'
+bmchwaccel.global.workers='2'
+bmchwaccel.global.port='dpmac.1'

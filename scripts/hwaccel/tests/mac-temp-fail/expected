@@ -1,0 +1,23 @@
+== board root@192.168.1.1 ==
+Linux OpenWrt 6.12.94 #0 SMP Thu Oct  1 08:00:00 2026 aarch64 GNU/Linux
+[    1.812345] fsl-fman 1a00000.fman: FMan-Controller code (ver 210.10.1)
+[   34.101010] cdx: FMAN firmware 210.10.1 - ASK supported
+eth0 soc:fsl,dpaa:ethernet@2 0a:5c:11:22:33:42
+eth1 soc:fsl,dpaa:ethernet@3 d2:10:20:30:40:50
+eth2 soc:fsl,dpaa:ethernet@4 04:5c:11:22:33:44
+eth3 soc:fsl,dpaa:ethernet@5 0a:5c:11:22:33:42
+eth4 soc:fsl,dpaa:ethernet@8 02:00:00:46:00:04
+== results ==
+mac-temp       FAIL  eth0 0a:5c:11:22:33:42, eth1 d2:10:20:30:40:50, eth2 04:5c:11:22:33:44, eth3 0a:5c:11:22:33:42, eth4 02:00:00:46:00:04, eth5 -
+               - no such port: eth5
+               - no temporary MAC warning in the kernel log: eth4
+               - the warning is not in syslog (logread): eth2
+               - random, changes at every boot (the kernel could not read the SoC unique ID): eth1
+               - eth2: 04:5c:11:22:33:44 is not a locally administered unicast address
+               - 0a:5c:11:22:33:42 is on more than one port
+               - the temporary MACs changed across the reboot; before: eth0=0a:5c:11:22:33:42 eth1=7e:01:02:03:04:05 eth2=04:5c:11:22:33:44 eth3=0a:5c:11:22:33:42
+RESULT: FAIL
+exit=1
+-- calls --
+ssh info
+ssh macs mac-temp

@@ -1,0 +1,6 @@
+{"status":0,"message":"WAN wan2 saved","uci_batch":"delete mwan3.wan2.track_ip
+add_list mwan3.wan2.track_ip='9.9.9.9'
+add_list mwan3.wan2.track_ip='149.112.112.112'
+set mwan3.wan2.down='5'
+set mwan3.wan2.up='2'","commands":[]}
+exit=0

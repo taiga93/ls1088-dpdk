@@ -1,0 +1,2 @@
+200
+{"status":0,"message":{"availableWanInterface":["wan"],"rules":[],"active":1,"maxRules":32}}

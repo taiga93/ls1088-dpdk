@@ -1,0 +1,2 @@
+{"status":-1,"message":"proto must be dhcp, static or pppoe","field":"proto"}
+exit=1

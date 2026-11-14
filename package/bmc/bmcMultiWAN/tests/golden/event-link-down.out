@@ -1,0 +1,2 @@
+{"status":0,"message":"Chuyển WAN logged","wan":"wan3","state":"link_down","log":"Chuyển WAN: wan3 mất link; Chính sách WAN default_policy now uses wan, c_only now uses the main routing table","time":1790000500,"commands":[]}
+exit=0

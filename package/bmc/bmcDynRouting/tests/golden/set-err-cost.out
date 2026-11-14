@@ -1,0 +1,2 @@
+{"status":-1,"message":"cost of interface lan must be an integer from 1 to 65535","field":"interfaces","interface":"lan"}
+exit=1

@@ -1,0 +1,2 @@
+{"status":0,"message":"OSPF status","data":{"routes":{"10.0.1.0/24":[{"nexthops":[{"ip":"10.0.0.2"}],"cost":10}]}}}
+exit=0

@@ -1,0 +1,2 @@
+{"status":-1,"message":"usage: status bgp peers|routes"}
+exit=1

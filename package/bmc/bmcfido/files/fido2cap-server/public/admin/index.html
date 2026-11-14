@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <script src="/index.es5.umd.min.js"></script>
+  <link rel="stylesheet" href="/styles.css?v=20260609-fido-admin-register-toggle" />
+  <title>Admin Interface</title>
+  <link rel="shortcut icon" href="/img/iconnho.png" type="image/x-icon">
+</head>
+
+<body class="page-shell-view admin-view">
+  <div id="toast-container"></div>
+
+  <div id="modal-overlay">
+    <div class="modal-box">
+      <div class="page-shell-eyebrow">Confirm</div>
+      <h3 id="modal-title">Confirm Action</h3>
+      <p id="modal-message"></p>
+      <div class="modal-actions">
+        <button type="button" class="modal-btn cancel" id="modal-cancel">Cancel</button>
+        <button type="button" class="modal-btn confirm" id="modal-confirm">Confirm</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="container admin-layout">
+    <section class="page-shell-hero">
+      <div class="admin-hero-copy">
+        <div class="page-shell-eyebrow">Admin</div>
+        <h1 class="page-shell-title">Admin Interface</h1>
+
+        <div class="page-shell-meta">
+          <span class="page-shell-pill">Users</span>
+          <span class="page-shell-pill">Security Keys</span>
+        </div>
+      </div>
+
+      <div class="hero-brand">
+        <img class="hero-logo" src="/img/logoBMC.png" alt="BMC Logo">
+      </div>
+    </section>
+
+    <section class="page-shell-card">
+      <div class="card-body">
+        <div class="page-shell-eyebrow">Admin</div>
+        <h2 class="card-title">Manage Users</h2>
+
+        <div hidden id="forbidden" class="message-panel danger">
+          <p>Access denied</p>
+          <span>You are not allowed to open this page.</span>
+          <button type="button" class="login-btn neutral" onclick="window.location='/'">
+            Go back
+          </button>
+        </div>
+
+        <section id="registration">
+          <div class="admin-workspace registration-collapsed" id="adminWorkspace">
+            <aside class="page-shell-panel admin-register-panel" id="registerPanel" hidden>
+              <h3 class="section-title">Register User</h3>
+
+              <div class="field">
+                <input id="username" type="text" placeholder="Username to register" autocomplete="username" spellcheck="false">
+              </div>
+
+              <div class="options">
+                <input id="nonDiscoverable" type="checkbox">
+                <label for="nonDiscoverable">Require username for login</label>
+              </div>
+
+              <button type="button" id="btnRegBegin" class="login-btn">
+                Register User
+              </button>
+            </aside>
+
+            <div class="table-panel admin-users-panel">
+              <div class="table-panel-header">
+                <div>
+                  <h3 class="section-title">Registered Users</h3>
+                </div>
+                <div class="table-panel-actions">
+                  <button type="button" id="btnToggleRegistration" class="login-btn secondary">
+                    Add User
+                  </button>
+                  <button type="button" class="login-btn secondary" onclick="window.location='/user'">
+                    My User Panel
+                  </button>
+                  <button type="button" class="login-btn neutral" onclick="if (window.confirm('Are you sure you want to log out?')) window.location='/logout';">
+                    Logout
+                  </button>
+                </div>
+              </div>
+
+              <div class="table-scroll">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Name</th>
+                      <th>Keys</th>
+                      <th>Sessions</th>
+                      <th>Admin</th>
+                      <th>Action</th>
+                    </tr>
+                  </thead>
+                  <tbody id="registered-users-table">
+                    <tr>
+                      <td colspan="5" class="page-shell-table-empty">Loading registered users...</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <details hidden>
+            <summary>Registration debug</summary>
+            <textarea id="regDebug" readonly hidden></textarea>
+          </details>
+        </section>
+
+        <p class="error systemError"></p>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    const { browserSupportsWebAuthn, startRegistration } = SimpleWebAuthnBrowser;
+    const elemWorkspace = document.querySelector('#adminWorkspace');
+    const elemRegisterPanel = document.querySelector('#registerPanel');
+    const elemToggleRegistration = document.querySelector('#btnToggleRegistration');
+    const elemUsernameInput = document.querySelector('#username');
+
+    function setRegistrationPanelOpen(isOpen) {
+      elemRegisterPanel.hidden = !isOpen;
+      elemWorkspace.classList.toggle('registration-collapsed', !isOpen);
+      elemToggleRegistration.textContent = isOpen ? 'Cancel' : 'Add User';
+
+      if (isOpen) {
+        setTimeout(() => elemUsernameInput.focus(), 50);
+      } else {
+        elemUsernameInput.value = '';
+        elemUsernameInput.disabled = false;
+        document.querySelector('#regDebug').innerHTML = '';
+      }
+    }
+
+    function showToast(message, type = 'info') {
+      const container = document.getElementById('toast-container');
+      const toast = document.createElement('div');
+      toast.className = `toast ${type}`;
+      toast.innerText = message;
+      container.appendChild(toast);
+
+      setTimeout(() => {
+        toast.style.animation = 'fadeOut 0.3s forwards';
+        setTimeout(() => toast.remove(), 300);
+      }, 3000);
+    }
+
+    async function showConfirm(title, message) {
+      return new Promise((resolve) => {
+        const overlay = document.getElementById('modal-overlay');
+        document.getElementById('modal-title').innerText = title;
+        document.getElementById('modal-message').innerText = message;
+        overlay.classList.add('active');
+
+        const cleanup = (result) => {
+          overlay.classList.remove('active');
+          document.getElementById('modal-confirm').removeEventListener('click', onConfirm);
+          document.getElementById('modal-cancel').removeEventListener('click', onCancel);
+          resolve(result);
+        };
+
+        const onConfirm = () => cleanup(true);
+        const onCancel = () => cleanup(false);
+
+        document.getElementById('modal-confirm').addEventListener('click', onConfirm);
+        document.getElementById('modal-cancel').addEventListener('click', onCancel);
+      });
+    }
+
+    function printDebug(elemDebug, title, output) {
+      if (elemDebug.innerHTML !== '') {
+        elemDebug.innerHTML += '\n';
+      }
+      elemDebug.innerHTML += `// ${title}\n`;
+      elemDebug.innerHTML += `${output}\n`;
+    }
+
+    if (!browserSupportsWebAuthn()) {
+      document.querySelector('#registration').style.display = 'none';
+      elemToggleRegistration.hidden = true;
+      document.querySelector('.systemError').innerText = "Oops! It seems that this browser is not compatible.";
+    } else {
+      elemToggleRegistration.addEventListener('click', () => {
+        setRegistrationPanelOpen(elemRegisterPanel.hidden);
+      });
+
+      document.querySelector('#btnRegBegin').addEventListener('click', async () => {
+        const elemDebug = document.querySelector('#regDebug');
+        const elemUsername = document.querySelector('#username');
+        const elemNonDiscoverable = document.querySelector('#nonDiscoverable');
+
+        elemDebug.innerHTML = '';
+
+        const resp = await fetch('/api/registration?' + new URLSearchParams({
+          'username': elemUsername.value.toLowerCase(),
+          'nonDiscoverable': elemNonDiscoverable.checked
+        }));
+        elemUsername.disabled = true;
+
+        let attResp;
+        try {
+          const opts = await resp.json();
+          printDebug(elemDebug, 'Registration Options', JSON.stringify(opts, null, 2));
+          attResp = await startRegistration({
+            optionsJSON: opts
+          });
+          printDebug(elemDebug, 'Registration Response', JSON.stringify(attResp, null, 2));
+        } catch (error) {
+          let errorMsg = error.message || error;
+          if (error.name === 'InvalidStateError') {
+            errorMsg = 'Error: The key might already be registered for the user';
+          }
+          showToast(errorMsg, 'error');
+          elemUsername.disabled = false;
+          throw error;
+        }
+
+        const verificationResp = await fetch('/api/registration', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(attResp),
+        });
+
+        const verificationJSON = await verificationResp.json();
+        printDebug(elemDebug, 'Server Response', JSON.stringify(verificationJSON, null, 2));
+
+        if (verificationJSON && verificationJSON.verified) {
+          showToast('Key registered successfully!', 'success');
+          elemUsername.disabled = false;
+          elemUsername.value = '';
+          setTimeout(() => window.location.reload(), 1500);
+        } else {
+          showToast('Verification failed!', 'error');
+          elemUsername.disabled = false;
+        }
+      });
+    }
+
+    async function makeAdmin() {
+      const username = this.dataset.username;
+      const isAdmin = this.checked;
+
+      try {
+        const response = await fetch('/api/make-admin', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            username: username,
+            isAdmin: isAdmin
+          }),
+        });
+
+        if (response.ok) {
+          showToast(`Admin rights ${isAdmin ? 'granted to' : 'removed from'} ${username}`, 'success');
+        } else {
+          const errorText = await response.text();
+          showToast(`Error: ${errorText}`, 'error');
+          this.checked = !isAdmin;
+        }
+      } catch (error) {
+        showToast(`Failed: ${error.message}`, 'error');
+        this.checked = !isAdmin;
+      }
+    }
+
+    async function deleteUser(username) {
+      const confirmed = await showConfirm('Delete User', `Are you sure you want to delete user "${username}"? This action cannot be undone.`);
+      if (!confirmed) return;
+
+      try {
+        const response = await fetch('/api/delete-user', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username }),
+        });
+
+        if (response.ok) {
+          showToast('User deleted successfully', 'success');
+          setTimeout(() => window.location.reload(), 1000);
+        } else {
+          const errorText = await response.text();
+          showToast(`Error: ${errorText}`, 'error');
+        }
+      } catch (error) {
+        showToast(`Failed: ${error.message}`, 'error');
+      }
+    }
+
+    function appendTextCell(row, value) {
+      const cell = document.createElement('td');
+      cell.textContent = value;
+      row.appendChild(cell);
+    }
+
+    fetch('/api/registered-users').then(async function (response) {
+      if (response.ok) {
+        let listJSON = await response.json();
+        const elemTable = document.querySelector('#registered-users-table');
+        elemTable.innerHTML = '';
+
+        if (!Array.isArray(listJSON.users) || listJSON.users.length === 0) {
+          elemTable.innerHTML = '<tr><td colspan="5" class="page-shell-table-empty">No registered users yet.</td></tr>';
+          return;
+        }
+
+        listJSON.users.forEach(user => {
+          const row = document.createElement('tr');
+
+          appendTextCell(row, user.username);
+          appendTextCell(row, user.nofdevices);
+          appendTextCell(row, user.activesessions);
+
+          const adminCell = document.createElement('td');
+          const adminToggle = document.createElement('input');
+          adminToggle.type = 'checkbox';
+          adminToggle.className = 'admin-toggle makeAdmin';
+          adminToggle.checked = Boolean(user.isAdmin);
+          adminToggle.dataset.username = user.username;
+          adminToggle.addEventListener('change', makeAdmin);
+          adminCell.appendChild(adminToggle);
+          row.appendChild(adminCell);
+
+          const actionCell = document.createElement('td');
+          const deleteButton = document.createElement('button');
+          deleteButton.type = 'button';
+          deleteButton.className = 'table-action-btn table-action-danger';
+          deleteButton.textContent = 'Delete';
+          deleteButton.addEventListener('click', () => deleteUser(user.username));
+          actionCell.appendChild(deleteButton);
+          row.appendChild(actionCell);
+
+          elemTable.appendChild(row);
+        });
+      } else {
+        document.querySelector('#forbidden').hidden = false;
+        document.querySelector('#registration').hidden = true;
+      }
+    });
+  </script>
+</body>
+
+</html>

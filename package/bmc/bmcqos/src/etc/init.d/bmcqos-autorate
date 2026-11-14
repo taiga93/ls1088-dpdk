@@ -1,0 +1,14 @@
+#!/bin/sh /etc/rc.common
+
+START=99
+STOP=01
+USE_PROCD=1
+
+. /lib/functions.sh
+
+start_service() {
+	# Disabled by product policy. Keep the init script for package compatibility.
+	return 0
+}
+
+service_triggers() { procd_add_reload_trigger bmcqos; }

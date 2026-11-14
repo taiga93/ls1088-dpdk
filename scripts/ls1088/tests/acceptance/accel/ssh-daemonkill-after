@@ -1,0 +1,3 @@
+pid=200
+held=4
+status={"status":0,"message":"Tăng tốc phần cứng is on","state":"on","enabled":true,"reboot_required":false,"accelerated":4,"on_cpu":[]}

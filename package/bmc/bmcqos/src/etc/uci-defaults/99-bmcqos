@@ -1,0 +1,23 @@
+#!/bin/sh
+
+uci -q batch <<'EOF'
+delete firewall.bmcqos
+set firewall.bmcqos=include
+set firewall.bmcqos.type='script'
+set firewall.bmcqos.path='/usr/share/bmcqos/firewall.include'
+set firewall.bmcqos.reload='1'
+EOF
+uci -q commit firewall
+uci -q batch <<'EOF'
+set bmcqos.settings.ROOT_QDISC='cake'
+set bmcqos.advanced.enabled='0'
+set bmcqos.advanced.WASHDSCPUP='0'
+set bmcqos.advanced.WASHDSCPDOWN='0'
+set bmcqos.cake.AUTORATE_INGRESS='0'
+set bmcqos.autorate.enabled='0'
+EOF
+uci -q commit bmcqos
+/etc/init.d/bmcqos-autorate stop >/dev/null 2>&1
+/etc/init.d/bmcqos-autorate disable >/dev/null 2>&1
+/etc/init.d/bmcqos enable
+exit 0

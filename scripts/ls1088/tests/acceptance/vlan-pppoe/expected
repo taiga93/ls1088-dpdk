@@ -1,0 +1,44 @@
+== board root@192.168.1.1 ==
+Linux bmc 6.12.94 #0 SMP PREEMPT Mon Oct 19 12:00:00 2026 aarch64 GNU/Linux
+[    4.700182] fsl_mc_bus 80c000000.fsl-mc: MC firmware version: 10.39.0
+Mon Oct 19 12:01:05 2026 user.notice phy_init: dpmac.1: eth0 (dpni.0)
+Mon Oct 19 12:01:26 2026 user.notice phy_init: dpmac.9: eth8 (dpni.8)
+eth0 dpni.0 00:04:9f:06:12:03 speed 10000 changes 1
+eth1 dpni.1 00:04:9f:06:12:04 speed 10000 changes 1
+eth8 dpni.8 00:04:9f:06:12:0b speed -1 changes 0
+br-lan           UP             00:04:9f:06:12:04 <BROADCAST,MULTICAST,UP,LOWER_UP>
+eth0             UP             00:04:9f:06:12:03 <BROADCAST,MULTICAST,UP,LOWER_UP>
+eth1             UP             00:04:9f:06:12:04 <BROADCAST,MULTICAST,UP,LOWER_UP>
+== results ==
+net            VLAN 30 is eth1.30 with 192.168.30.1/24 in the lan zone until the script ends
+accel-vlan     PASS  719 Mbps (102 % of 704 Mbps in the kernel layout); in 10 s: kernel eth0 +5, kernel eth1 +7, engine eth1 +960000; bmchwaccel status: on, 4 accelerated
+net            wan dials PPPoE on eth0 as hwaccel until the script ends
+accel-pppoe-back PASS  719 Mbps (121 % of 592 Mbps in the kernel layout); in 10 s: kernel eth0 +4, kernel eth1 +8, engine eth0 +750000; bmchwaccel status: on, 4 accelerated
+net            wan dials PPPoE on eth0 as hwaccel until the script ends
+accel-vlan-pppoe PASS  719 Mbps (102 % of 704 Mbps in the kernel layout); in 10 s: kernel eth0 +5, kernel eth1 +7, engine eth1 +960000; bmchwaccel status: on, 4 accelerated
+net            wan dials PPPoE on eth0 as hwaccel until the script ends
+accel-redial   PASS  session 00000001 (10.99.0.2/32) ended for 10 s: the engine held 0 connections, 12 packets left the cable of eth0; back as session 00000002 (10.99.0.3/32); then iperf3 -P 4 over it: 719 Mbps, in 10 s: kernel eth0 +5, kernel eth1 +7, engine eth1 +960000; bmchwaccel status: on, 4 accelerated
+RESULT: PASS
+exit=0
+-- calls --
+ssh info
+ssh net plain 30
+ssh flush
+ssh accelsample accel-vlan
+ssh net pppoe
+ssh flush
+ssh accelsample accel-pppoe-back
+ssh net pppoe 30
+ssh flush
+ssh accelsample accel-vlan-pppoe
+ssh net pppoe
+ssh flush
+ssh redial
+ssh flush
+ssh accelsample accel-redial-new
+ssh unnet
+iperf3 accel-vlan
+iperf3 accel-pppoe-back
+iperf3 accel-vlan-pppoe
+iperf3 accel-redial
+iperf3 accel-redial-new

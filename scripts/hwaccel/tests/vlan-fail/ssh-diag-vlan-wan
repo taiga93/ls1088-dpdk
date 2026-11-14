@@ -1,0 +1,10 @@
+cmm -c 'query vlan':
+No VLAN entries
+cmm -c 'query pppoe':
+No PPPoE entries
+/proc/net/pppoe:
+Id   Address           Device     PPPDevice  Unit
+conntrack to 192.168.2.10:
+ipv4     2 tcp      6 src=192.168.1.10 dst=192.168.2.10 sport=50011 dport=5201 [PERMANENT] packets=3 bytes=164 src=192.168.2.10 dst=192.168.2.77 sport=5201 dport=50011 packets=1 bytes=60 [ASSURED] mark=0 zone=0 use=3
+log:
+Thu Oct  1 08:01:12 2026 daemon.info cmm-supervise[3172]: cmm: interface br-lan.10 registered

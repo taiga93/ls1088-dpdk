@@ -1,0 +1,7 @@
+carried=104000
+cpu=104100
+rules=1
+said={ "status": 0 }
+passed=9
+cpu_under=104050
+counted=104035

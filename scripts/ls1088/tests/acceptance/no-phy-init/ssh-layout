@@ -1,0 +1,16 @@
+kernel=6.12.94
+mc=10.39.0
+hugepages=0
+port eth0 dpni.0 dpmac.5 64 00:04:9f:06:12:07 00:04:9f:06:12:07
+free dpmac.1
+free dpmac.2
+free dpmac.3
+free dpmac.4
+free dpmac.6
+free dpmac.7
+free dpmac.8
+free dpmac.9
+free dpmac.10
+trouble=0
+@trouble
+@log

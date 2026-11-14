@@ -1,0 +1,5 @@
+carrier=0
+up=false
+ports={"status":0,"message":"the ports Tăng tốc phần cứng holds: link, speed and counters of their cables","ports":[{"interface":"eth0","link":"down","speed":"unknown","rx_bytes":51000000,"tx_bytes":2100000000,"rx_packets":800000,"tx_packets":1400000},{"interface":"eth1","link":"up","speed":10000,"rx_bytes":2200000000,"tx_bytes":52000000,"rx_packets":1450000,"tx_packets":810000}]}
+layout=engine
+web={"status":"0","message":[{"interface":"eth0","status":"active","speed":"10000Mb/s"},{"interface":"eth1","status":"active","speed":"10000Mb/s"}]}

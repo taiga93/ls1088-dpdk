@@ -1,0 +1,2 @@
+{"status":0,"message":"WAN list","wans":[{"name":"wan","port":"eth0","proto":"static","ipaddr":"203.0.113.2","netmask":"255.255.255.0","gateway":"203.0.113.1","dns":[],"removable":false,"track_ip":["1.1.1.1","8.8.8.8"],"down":3,"up":5}]}
+exit=0

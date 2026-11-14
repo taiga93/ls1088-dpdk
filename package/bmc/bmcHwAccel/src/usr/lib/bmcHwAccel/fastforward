@@ -1,0 +1,7 @@
+# Read by the daemon after /etc/config/fastforward (package/ask/cmm/files/cmm-supervise). Not a UCI file: the
+# daemon has its own reader, which takes numbers in decimal only.
+
+# Giữ traffic trên CPU (keep.sh): a connection whose conntrack mark has bit 0x10000 is never handed to the
+# hardware.
+config fastforward bmc_keep_on_cpu
+	option mark 65536 mask 65536

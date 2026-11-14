@@ -1,0 +1,2 @@
+daemon=none
+status={"status":0,"message":"x","state":"unavailable","reason":"module","enabled":true,"accelerated":0,"on_cpu":[]}

@@ -1,0 +1,33 @@
+From: BMC firmware
+Subject: cmm: an interface with a name of 15 characters ends the daemon
+
+For every link message, mc_update_table copies the name of the interface
+into a buffer of IFNAMSIZ bytes and puts the end of the string after it.
+The kernel sends the name with its end: 16 bytes for a name of 15
+characters, so the end is written one byte past the buffer, onto the
+stack guard, and the daemon ends with a segmentation fault at address 0
+(__stack_chk_fail of musl) when the function returns.
+
+strongSwan makes such an interface every time charon starts: it tries
+"xfrmi-test-<number>", cut to 15 characters, to see whether the kernel
+has XFRM interfaces. On the board the daemon died once in every boot
+of an image with strongSwan, and would die with every restart of IPsec.
+
+The name is cut to the buffer, and a message without a name is left.
+
+---
+--- a/cmm/src/module_mcast.c
++++ b/cmm/src/module_mcast.c
+@@ -429,7 +429,12 @@
+ 	if(!ifi->ifi_change)
+ 		return;
+ 
++	if(!tb[IFLA_IFNAME])
++		return;
++
+ 	len = RTA_PAYLOAD(tb[IFLA_IFNAME]);
++	if(len >= IFNAMSIZ)
++		len = IFNAMSIZ - 1;
+ 	
+ 	memcpy( ifname, RTA_DATA(tb[IFLA_IFNAME]), len );
+ 	ifname[len] = '\0';

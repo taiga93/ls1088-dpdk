@@ -1,0 +1,4 @@
+#!/bin/sh
+
+[ "$(uci -q get bmcqos.global.enabled)" = 1 ] || exit 0
+/etc/init.d/bmcqos reload_rules

@@ -1,0 +1,2 @@
+{"status":-1,"message":"AS of peer 203.0.113.1 must be an integer from 1 to 4294967295","field":"remote_as","peer":"203.0.113.1"}
+exit=1

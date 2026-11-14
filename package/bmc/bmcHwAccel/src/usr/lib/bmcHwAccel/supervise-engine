@@ -1,0 +1,105 @@
+#!/bin/sh
+# supervise-engine <engine command...> — procd runs this as the instance of bmchwaccel-engine, in the engine
+# layout of the DPAA2 boards (/etc/init.d/bmchwaccel-engine of bmcHwAccelDpdk, engine-dpdk.sh).
+#
+# In the engine layout the ports of the engine reach the wire only through it. So:
+#   - an engine that dies is started again on the same container after $respawn_delay seconds: Tăng tốc
+#     phần cứng is unavailable meanwhile and on again once it answers, one syslog line each while enabled;
+#   - an engine that dies for the ${max_deaths}rd time within $window seconds, or does not answer within
+#     $answer_wait seconds of a start, fails the engine layout: the reason is kept for the boots after, syslog
+#     says it, and the router restarts in the kernel layout (layout fail --reboot), where it stays until
+#     `bmchwaccel enable`;
+#   - once it answers while enabled, `bmchwaccel apply` starts the daemon that hands it connections (the
+#     daemon of a running service claims an engine started again by itself): Tăng tốc phần cứng is on once
+#     the daemon answers;
+#   - once it has answered and run $settled seconds, the mark of this boot goes (layout ok): the boot
+#     finished starting the engine layout.
+# BMCHWACCEL_RESPAWN_DELAY, BMCHWACCEL_ANSWER_WAIT and BMCHWACCEL_SETTLED replace those seconds, for tests.
+set -u
+
+lib_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+for lib in engine unavailable service; do
+	. "$lib_dir/$lib.sh"
+done
+# BMCHWACCEL_CLI replaces the CLI, for tests.
+cli=${BMCHWACCEL_CLI:-$lib_dir/../../sbin/bmchwaccel}
+
+max_deaths=3
+window=300
+respawn_delay=${BMCHWACCEL_RESPAWN_DELAY:-1}
+answer_wait=${BMCHWACCEL_ANSWER_WAIT:-60}
+settled=${BMCHWACCEL_SETTLED:-60}
+
+# Whether Tăng tốc phần cứng is enabled now: off, the engine only passes packets, and nothing is logged.
+is_enabled() {
+	[ "$(uci -q get bmchwaccel.global.enabled)" != 0 ]
+}
+
+give_up() {
+	"$layout_cmd" fail --reboot "$1"
+}
+
+# In the background for each start of the engine $pid: waits for its answer, then for it to have run well.
+watch() {
+	started=$(date +%s)
+	until [ -n "$(accelerated_count)" ]; do
+		# Died: the loop below counts it.
+		kill -0 "$pid" 2>/dev/null || exit 0
+		if [ $(($(date +%s) - started)) -ge "$answer_wait" ]; then
+			give_up "it did not answer within $answer_wait seconds of its start"
+			kill -TERM "$$"
+			exit 0
+		fi
+		sleep 1
+	done
+	if is_enabled; then
+		"$cli" apply >/dev/null 2>&1 </dev/null || true
+		if wait_until "$start_wait" daemon_answers; then
+			state_note on
+		else
+			state_note unavailable daemon
+		fi
+	fi
+	sleep "$settled"
+	! kill -0 "$pid" 2>/dev/null || "$layout_cmd" ok
+}
+
+# procd stops the service with SIGTERM: the engine gets it as well. The signal can come at any line, so
+# "stopping" is looked at again wherever the engine is not waited for.
+pid=
+watcher=
+stopping=0
+trap 'stopping=1; [ -z "$watcher" ] || kill "$watcher" 2>/dev/null; [ -z "$pid" ] || kill -TERM "$pid" 2>/dev/null' TERM INT
+
+# When the engine died, the deaths within the window.
+deaths=
+while [ "$stopping" = 0 ]; do
+	"$@" &
+	pid=$!
+	# The trap ran before it knew the engine.
+	[ "$stopping" = 0 ] || kill -TERM "$pid" 2>/dev/null
+	watch &
+	watcher=$!
+	# wait also returns when the trap has run; the engine may take a moment longer.
+	while kill -0 "$pid" 2>/dev/null; do
+		wait "$pid"
+	done
+	kill "$watcher" 2>/dev/null
+	watcher=
+	[ "$stopping" = 0 ] || exit 0
+	pid=
+	now=$(date +%s)
+	recent=$now
+	for death in $deaths; do
+		[ $((now - death)) -ge "$window" ] || recent="$recent $death"
+	done
+	deaths=$recent
+	if [ "$(echo $deaths | wc -w)" -ge "$max_deaths" ]; then
+		give_up "it stopped $max_deaths times within $((window / 60)) minutes"
+		exit 1
+	fi
+	! is_enabled || state_note unavailable restarting
+	[ "$stopping" = 0 ] || exit 0
+	sleep "$respawn_delay" &
+	wait $!
+done

@@ -1,0 +1,7 @@
+carried=104000
+cpu=16
+rules=0
+said=iptables: No chain/target/match by that name.
+passed=104010
+cpu_under=16
+counted=

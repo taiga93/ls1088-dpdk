@@ -1,0 +1,34 @@
+#!/bin/sh
+# LS1088A-RDB: br-lan gets eth6 and eth7 too. The network configuration the
+# image carries (files/etc/config/network) is the one of the LS1046A-RDB, whose
+# br-lan ends at eth5; on this board eth1 to eth7 are the LAN ports (dpmac.2 to
+# dpmac.8, see /etc/init.d/phy_init) and eth8 is not used. Only that
+# configuration is changed: a br-lan whose ports were chosen on the board is
+# left as it is.
+. /lib/functions.sh
+
+case "$(board_name)" in
+fsl,ls1088a-rdb|fsl,ls1088a-rdb-sdboot) ;;
+*) exit 0 ;;
+esac
+
+FILES_PORTS="eth1 eth2 eth3 eth4 eth5"
+MORE_PORTS="eth6 eth7"
+
+add_ports() {
+	local type name ports p
+
+	config_get type "$1" type
+	config_get name "$1" name
+	config_get ports "$1" ports
+	[ "$type" = bridge ] && [ "$name" = br-lan ] && [ "$ports" = "$FILES_PORTS" ] || return
+	for p in $MORE_PORTS; do
+		uci add_list "network.$1.ports=$p"
+	done
+}
+
+config_load network
+config_foreach add_ports device
+uci commit network
+
+exit 0

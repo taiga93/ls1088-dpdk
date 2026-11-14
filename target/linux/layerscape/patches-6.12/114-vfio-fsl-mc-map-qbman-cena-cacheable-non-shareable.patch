@@ -1,0 +1,49 @@
+From: RaymondBien <raymond@RaymondBiens-Mac-mini.local>
+Date: Sat, 17 Oct 2026 18:00:00 +0700
+Subject: [PATCH] vfio/fsl-mc: map the cacheable, non-shareable regions as
+ Normal memory
+
+Mainline maps a region that is cacheable but not shareable as Device
+memory. That is the cache-enabled area of every QBMan 4.x software
+portal (DPIO) on the LS1088A and LS2088A. DPDK's qbman code writes it
+with unaligned stores, so its first pull command is an alignment fault:
+dpdk-testpmd dies with SIGBUS (ESR 0x92000061 at a "str x4, [x0]" to
+CENA + 0x784 in qbman_swp_pull_direct) as soon as forwarding starts.
+
+Map such a region cacheable and non-shareable, as the NXP kernel does
+(lf-6.12.49-2.2.0, the release DPDK 22.11.7 belongs to), with the
+pgprot_cached_ns() that 110-sdk-mainline-build-compat.patch adds.
+Shareable cacheable regions keep the default attributes and the others
+stay Device memory, as before.
+
+--- a/drivers/vfio/fsl-mc/vfio_fsl_mc.c
++++ b/drivers/vfio/fsl-mc/vfio_fsl_mc.c
+@@ -361,7 +361,6 @@
+ {
+ 	u64 size = vma->vm_end - vma->vm_start;
+ 	u64 pgoff, base;
+-	u8 region_cacheable;
+ 
+ 	pgoff = vma->vm_pgoff &
+ 		((1U << (VFIO_FSL_MC_OFFSET_SHIFT - PAGE_SHIFT)) - 1);
+@@ -370,9 +369,17 @@
+ 	if (region.size < PAGE_SIZE || base + size > region.size)
+ 		return -EINVAL;
+ 
+-	region_cacheable = (region.type & FSL_MC_REGION_CACHEABLE) &&
+-			   (region.type & FSL_MC_REGION_SHAREABLE);
+-	if (!region_cacheable)
++	/*
++	 * The cache-enabled area of a QBMan 4.x software portal (LS1088A,
++	 * LS2088A) is cacheable but not shareable. Its user, the qbman code
++	 * of DPDK, writes it with unaligned stores and keeps it coherent by
++	 * hand, so it must be Normal memory: as Device memory the first such
++	 * store is an alignment fault (SIGBUS).
++	 */
++	if (region.type & FSL_MC_REGION_CACHEABLE) {
++		if (!(region.type & FSL_MC_REGION_SHAREABLE))
++			vma->vm_page_prot = pgprot_cached_ns(vma->vm_page_prot);
++	} else
+ 		vma->vm_page_prot = pgprot_noncached(vma->vm_page_prot);
+ 
+ 	vma->vm_pgoff = (region.addr >> PAGE_SHIFT) + pgoff;

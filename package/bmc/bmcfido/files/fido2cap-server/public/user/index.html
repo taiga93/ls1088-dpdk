@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="stylesheet" href="/styles.css?v=20260605-fido-session-polish" />
+  <title>User Panel</title>
+  <link rel="shortcut icon" href="/img/iconnho.png" type="image/x-icon">
+</head>
+
+<body class="page-shell-view">
+  <div id="toast-container"></div>
+
+  <div class="container user-layout">
+    <section class="left">
+      <div class="page-shell-eyebrow">User</div>
+      <h1>Welcome to BMC</h1>
+
+      <div class="page-shell-meta">
+        <span class="page-shell-pill">Security Key</span>
+        <span class="page-shell-pill">Connected</span>
+      </div>
+
+      <div class="hero-brand">
+        <img class="hero-logo" src="/img/logoBMC.png" alt="BMC Logo">
+      </div>
+
+    </section>
+
+    <section class="right">
+      <div class="login-box page-shell-card">
+        <div class="card-body">
+          <div class="page-shell-eyebrow">User</div>
+          <h2>User Panel</h2>
+
+          <section id="userStatusPanel" class="message-panel user-status-panel">
+            <p id="username">You need to authenticate.</p>
+            <span id="userStatusText">Open Authentication to start a FIDO session.</span>
+          </section>
+
+          <section id="sessionWarningPanel" hidden class="page-shell-panel session-warning-panel">
+            <div class="session-warning-header">
+              <div>
+                <div class="page-shell-eyebrow">Session Monitor</div>
+                <h3 id="sessionWarningTitle" class="section-title">Session Monitor</h3>
+              </div>
+              <span id="sessionWarningState" class="session-warning-badge" data-tone="warning">Ending Soon</span>
+            </div>
+
+            <p id="sessionWarningMessage" class="page-shell-helper">
+              Less than 5 minutes remain before this client session expires.
+            </p>
+
+            <div class="session-warning-grid">
+              <div class="summary-card">
+                <p class="summary-label">Time Remaining</p>
+                <p id="sessionWarningCountdown" class="summary-value session-warning-value">--:--:--</p>
+              </div>
+              <div class="summary-card">
+                <p class="summary-label">Expires At</p>
+                <p id="sessionWarningExpiresAt" class="summary-value session-warning-meta">--</p>
+              </div>
+              <div class="summary-card">
+                <p class="summary-label">Authorized User</p>
+                <p id="sessionWarningUser" class="summary-value session-warning-meta">--</p>
+              </div>
+            </div>
+
+            <div class="button-row">
+              <button type="button" hidden id="btnEnableSessionNotification" class="login-btn secondary">
+                Enable Browser Notification
+              </button>
+            </div>
+          </section>
+
+          <div class="button-row">
+            <button type="button" id="btnLogin" class="login-btn" onclick="window.location='/'">
+              Go to Authentication
+            </button>
+
+            <button type="button" hidden id="btnLogout" class="login-btn secondary" onclick="if (window.confirm('Are you sure you want to log out?')) window.location='/logout';">
+              Log out
+            </button>
+
+            <button type="button" hidden id="btnAdmin" class="login-btn neutral" onclick="window.location='/admin'">
+              Admin Panel
+            </button>
+          </div>
+
+          <p class="error systemError"></p>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    fetch('/api/user-details', { cache: 'no-store' }).then(async function (login) {
+      const text = await login.text();
+      let user = null;
+
+      try {
+        user = JSON.parse(text);
+      } catch (error) {
+        user = null;
+      }
+
+      if (user && user.username) {
+        document.body.classList.add('has-active-session');
+        const usernameElement = document.querySelector('#username');
+        const statusText = document.querySelector('#userStatusText');
+
+        usernameElement.textContent = 'Authenticated as ';
+        const usernameStrong = document.createElement('strong');
+        usernameStrong.textContent = user.username;
+        usernameElement.appendChild(usernameStrong);
+        usernameElement.appendChild(document.createTextNode('.'));
+        statusText.textContent = 'Your active network access session is shown below.';
+        document.querySelector('#btnLogin').hidden = true;
+        document.querySelector('#btnLogout').hidden = false;
+        if (user.isAdmin)
+          document.querySelector('#btnAdmin').hidden = false;
+      }
+    });
+  </script>
+  <script src="/session-warning.js?v=20260609-no-auto-logout"></script>
+</body>
+
+</html>

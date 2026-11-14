@@ -1,0 +1,10 @@
+entry=0
+carried=433000
+cpu=433100
+entry_then=0
+noted=1
+said={"status":0,"message":"Tăng tốc phần cứng: connections of blocked machines taken out","deleted":0,"commands":["ip neigh replace 192.168.1.20 dev br-lan use"]}
+entry_swept=1
+passed=730100
+cpu_under=12
+cron=1

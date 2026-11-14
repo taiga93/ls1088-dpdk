@@ -1,0 +1,32 @@
+#!/bin/sh /etc/rc.common
+# bmchwaccel-syncd, which hands the established connections of conntrack to
+# bmchwaccel-engine, in the engine layout only. Like cmm on the LS1046 this
+# script is disabled at first boot: bmcHwAccel starts and stops the service
+# according to "enabled" (/usr/lib/bmcHwAccel/engine.sh), once the engine of
+# the boot answers. A daemon that stops or dies leaves the engine nothing to
+# forward: the engine lets go of every connection when the daemon's session
+# closes, and they continue through the kernel.
+#
+# With bmcHwAccel, its supervisor runs the daemon: it starts it again, a few
+# times, and logs Tăng tốc phần cứng unavailable meanwhile
+# (/usr/lib/bmcHwAccel/supervise). Without it procd respawns it.
+
+START=92
+STOP=10
+USE_PROCD=1
+
+SUPERVISE=/usr/lib/bmcHwAccel/supervise
+
+start_service() {
+	[ "$(/usr/lib/bmcHwAccelDpdk/layout current)" = engine ] || return 0
+	procd_open_instance
+	if [ -x $SUPERVISE ]; then
+		procd_set_param command $SUPERVISE /usr/sbin/bmchwaccel-syncd
+	else
+		procd_set_param command /usr/sbin/bmchwaccel-syncd
+		procd_set_param respawn 3600 5 5
+	fi
+	procd_set_param stdout 1
+	procd_set_param stderr 1
+	procd_close_instance
+}

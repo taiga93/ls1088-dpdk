@@ -1,0 +1,23 @@
+#!/bin/sh /etc/rc.common
+# /etc/init.d/ddos_protect
+
+START=90
+STOP=10
+
+SERVICE_USE_PID=1
+
+start() {
+    status=$(uci get ddos_protect.common.status 2>/dev/null)
+    if [ "$status" = "enable" ]; then
+        /etc/bmcweb/backend/scripts/firewall/ddos_protect.sh set enable
+    fi
+}
+
+# The rules go; the choice in the configuration stays, for the next boot.
+stop() {
+    for hook in INPUT FORWARD; do
+        while iptables -D "$hook" -j FW_DOS_POLICY 2>/dev/null; do :; done
+    done
+    iptables -F FW_DOS_POLICY 2>/dev/null
+    iptables -X FW_DOS_POLICY 2>/dev/null
+}

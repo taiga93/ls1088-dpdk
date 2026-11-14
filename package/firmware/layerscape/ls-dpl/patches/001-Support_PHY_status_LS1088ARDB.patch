@@ -1,0 +1,35 @@
+diff --git a/config/ls1088a/LS1088A-RDB/dpc.0x1D-0x0D.dts b/config/ls1088a/LS1088A-RDB/dpc.0x1D-0x0D.dts
+index 68d91bc..ea3eab2 100644
+--- a/config/ls1088a/LS1088A-RDB/dpc.0x1D-0x0D.dts
++++ b/config/ls1088a/LS1088A-RDB/dpc.0x1D-0x0D.dts
+@@ -79,6 +79,30 @@
+ 			 * Add "MAC_LINK_TYPE_PHY" properties for ports
+ 			 * that have managed PHYs
+ 			 */
++			mac@3 {
++				link_type = "MAC_LINK_TYPE_PHY";
++			};
++			mac@4 {
++				link_type = "MAC_LINK_TYPE_PHY";
++			};
++			mac@5 {
++				link_type = "MAC_LINK_TYPE_PHY";
++			};
++			mac@6 {
++				link_type = "MAC_LINK_TYPE_PHY";
++			};
++			mac@7 {
++				link_type = "MAC_LINK_TYPE_PHY";
++			};
++			mac@8 {
++				link_type = "MAC_LINK_TYPE_PHY";
++			};
++			mac@9 {
++				link_type = "MAC_LINK_TYPE_PHY";
++			};
++			mac@10 {
++				link_type = "MAC_LINK_TYPE_PHY";
++			};
+ 		};
+ 	};
+ };

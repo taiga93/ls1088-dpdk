@@ -1,0 +1,111 @@
+From 58950e39ef2e572089e6f9e80455aeb14dd8cfd6 Mon Sep 17 00:00:00 2001
+From: Donatas Abraitis <donatas@opensourcerouting.org>
+Date: Tue, 13 Jan 2026 13:29:27 +0200
+Subject: [PATCH] Revert "ripd: Change default flush interval to be 240
+ seconds"
+
+This reverts commit 99ecbc63576b117adae7a7a8555eec651387fdbc.
+
+(cherry picked from commit d60e9a423a2b7f037c56ac7e1e571d6a76f5a59a)
+---
+ .../northbound/retrofitting-configuration-commands.rst   | 4 ++--
+ doc/developer/northbound/yang-module-translator.rst      | 6 +++---
+ ripd/rip_cli.c                                           | 4 ++--
+ ripd/ripd.c                                              | 9 ++++++---
+ yang/frr-ripd.yang                                       | 2 +-
+ 5 files changed, 14 insertions(+), 11 deletions(-)
+
+diff --git a/doc/developer/northbound/retrofitting-configuration-commands.rst b/doc/developer/northbound/retrofitting-configuration-commands.rst
+index af00a055b327..6fe39fe24b3e 100644
+--- a/doc/developer/northbound/retrofitting-configuration-commands.rst
++++ b/doc/developer/northbound/retrofitting-configuration-commands.rst
+@@ -1174,7 +1174,7 @@ same time.
+           "Basic routing protocol update timers\n"
+           "Routing table update timer value in second. Default is 30.\n"
+           "Routing information timeout timer. Default is 180.\n"
+-          "Garbage collection timer. Default is 240.\n")
++          "Garbage collection timer. Default is 120.\n")
+    {
+            struct cli_config_change changes[] = {
+                    {
+@@ -1557,7 +1557,7 @@ YANG representation:
+                range "1..32767";
+              }
+              units "seconds";
+-             default "240";
++             default "120";
+              description
+                "Interval before a route is flushed from the routing
+                 table.";
+diff --git a/doc/developer/northbound/yang-module-translator.rst b/doc/developer/northbound/yang-module-translator.rst
+index d4462ff13860..17ae160f079b 100644
+--- a/doc/developer/northbound/yang-module-translator.rst
++++ b/doc/developer/northbound/yang-module-translator.rst
+@@ -175,9 +175,9 @@ deviations. Example:
+           +--rw default-metric?            uint8 <1>
+           +--rw distance?                  uint8 <0>
+           +--rw timers
+-          |  +--rw update-interval?     uint16 <30>
+-          |  +--rw holddown-interval?   uint16 <180>
+-          |  +--rw flush-interval?      uint16 <240>
++          |  +--rw update-interval?     uint32 <30>
++          |  +--rw holddown-interval?   uint32 <180>
++          |  +--rw flush-interval?      uint32 <120>
+           +--rw interfaces
+           |  +--rw interface* [interface]
+           |     +--rw interface        ietf-interfaces:interface-ref
+diff --git a/ripd/rip_cli.c b/ripd/rip_cli.c
+index 7540f988ba27..e21b3d3e5c8e 100644
+--- a/ripd/rip_cli.c
++++ b/ripd/rip_cli.c
+@@ -544,7 +544,7 @@ DEFPY_YANG (rip_timers,
+        "Basic routing protocol update timers\n"
+        "Routing table update timer value in second. Default is 30.\n"
+        "Routing information timeout timer. Default is 180.\n"
+-       "Garbage collection timer. Default is 240.\n")
++       "Garbage collection timer. Default is 120.\n")
+ {
+ 	nb_cli_enqueue_change(vty, "./update-interval", NB_OP_MODIFY,
+ 			      update_str);
+@@ -564,7 +564,7 @@ DEFPY_YANG (no_rip_timers,
+        "Basic routing protocol update timers\n"
+        "Routing table update timer value in second. Default is 30.\n"
+        "Routing information timeout timer. Default is 180.\n"
+-       "Garbage collection timer. Default is 240.\n")
++       "Garbage collection timer. Default is 120.\n")
+ {
+ 	nb_cli_enqueue_change(vty, "./update-interval", NB_OP_MODIFY, NULL);
+ 	nb_cli_enqueue_change(vty, "./holddown-interval", NB_OP_MODIFY, NULL);
+diff --git a/ripd/ripd.c b/ripd/ripd.c
+index f4dc218979f3..68729e0854aa 100644
+--- a/ripd/ripd.c
++++ b/ripd/ripd.c
+@@ -2706,9 +2706,12 @@ struct rip *rip_create(const char *vrf_name, struct vrf *vrf, int socket)
+ 		yang_get_default_uint8("%s/distance/default", RIP_INSTANCE);
+ 	rip->passive_default =
+ 		yang_get_default_bool("%s/passive-default", RIP_INSTANCE);
+-	rip->garbage_time = yang_get_default_uint16("%s/timers/flush-interval", RIP_INSTANCE);
+-	rip->timeout_time = yang_get_default_uint16("%s/timers/holddown-interval", RIP_INSTANCE);
+-	rip->update_time = yang_get_default_uint16("%s/timers/update-interval", RIP_INSTANCE);
++	rip->garbage_time = yang_get_default_uint32("%s/timers/flush-interval",
++						    RIP_INSTANCE);
++	rip->timeout_time = yang_get_default_uint32(
++		"%s/timers/holddown-interval", RIP_INSTANCE);
++	rip->update_time = yang_get_default_uint32("%s/timers/update-interval",
++						   RIP_INSTANCE);
+ 	rip->version_send =
+ 		yang_get_default_enum("%s/version/send", RIP_INSTANCE);
+ 	rip->version_recv =
+diff --git a/yang/frr-ripd.yang b/yang/frr-ripd.yang
+index 1f003e2d617f..9c864eb8e17b 100644
+--- a/yang/frr-ripd.yang
++++ b/yang/frr-ripd.yang
+@@ -310,7 +310,7 @@ module frr-ripd {
+             range "1..32767";
+           }
+           units "seconds";
+-          default "240";
++          default "120";
+           description
+             "Interval before a route is flushed from the routing
+              table.";

@@ -1,0 +1,28 @@
+== board root@192.168.1.1 ==
+Linux OpenWrt 6.12.94 #0 SMP Thu Oct  1 08:00:00 2026 aarch64 GNU/Linux
+[    1.812345] fsl-fman 1a00000.fman: FMan-Controller code (ver 210.10.1)
+[   34.101010] cdx: FMAN firmware 210.10.1 - ASK supported
+eth0 soc:fsl,dpaa:ethernet@2 02:00:00:46:00:00
+eth1 soc:fsl,dpaa:ethernet@3 02:00:00:46:00:01
+eth2 soc:fsl,dpaa:ethernet@4 02:00:00:46:00:02
+eth3 soc:fsl,dpaa:ethernet@5 02:00:00:46:00:03
+eth4 soc:fsl,dpaa:ethernet@8 02:00:00:46:00:04
+eth5 soc:fsl,dpaa:ethernet@9 02:00:00:46:00:05
+br-lan           UP             02:00:00:46:00:01 <BROADCAST,MULTICAST,UP,LOWER_UP>
+eth0             UP             02:00:00:46:00:00 <BROADCAST,MULTICAST,UP,LOWER_UP>
+eth1             UP             02:00:00:46:00:01 <BROADCAST,MULTICAST,UP,LOWER_UP>
+== results ==
+pppoe-drop     FAIL  session 0001 ended for 10 s: 103100 packets left eth0, 12 reached the CPU from the LAN ports; not back
+               - the UDP flow was not accelerated before the session ended, so nothing was tested
+               - 103100 packets left eth0 while the session was down, need fewer than 1000
+               - only 12 packets reached the CPU from the LAN ports while the session was down: the hardware still has the flow, or PC1 stopped sending
+               - the PPPoE session did not come back
+RESULT: FAIL
+exit=1
+-- calls --
+ssh info
+ssh net pppoe
+ssh flush
+ssh drop
+ssh unnet
+iperf3 pppoe-drop

@@ -1,0 +1,7 @@
+pc1=192.168.1.10
+wan=up online
+wan2=up online
+wan_dev=eth0
+wan_addr=192.168.2.1
+wan2_addr=192.168.3.1
+ports=eth0 eth2 eth1 eth4 eth5 

@@ -1,0 +1,2 @@
+{"status":0,"message":"Tăng tốc phần cứng is unavailable: this boot is without it: 80 of 94 hugepages of memory; it takes effect after a restart","state":"unavailable","reason":"engine","enabled":true,"reboot_required":true,"accelerated":0,"ipsec_sa":0,"on_cpu":[]}
+exit=0

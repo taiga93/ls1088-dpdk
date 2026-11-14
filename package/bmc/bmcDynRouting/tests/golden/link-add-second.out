@@ -1,0 +1,12 @@
+{"status":0,"message":"Link định tuyến created","uci_batch":"del_list network.cfg030f15.ports='eth6'
+set network.link_eth6=interface
+set network.link_eth6.device='eth6'
+set network.link_eth6.proto='static'
+set network.link_eth6.ipaddr='10.0.12.1'
+set network.link_eth6.netmask='255.255.255.252'
+set network.link_eth6.bmc_role='dynrouting_link'
+set dhcp.link_eth6=dhcp
+set dhcp.link_eth6.interface='link_eth6'
+set dhcp.link_eth6.ignore='1'
+add_list firewall.dynrouting.network='link_eth6'"}
+exit=0

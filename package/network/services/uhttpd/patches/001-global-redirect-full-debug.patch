@@ -1,0 +1,252 @@
+--- a/uhttpd.h
++++ b/uhttpd.h
+@@ -76,6 +76,8 @@
+ 	const char *realm;
+ 	const char *file;
+ 	const char *error_handler;
++	const char *redirect_host;
++	const char *redirect_page;
+ 	const char *cgi_prefix;
+ 	const char *cgi_docroot_path;
+ 	const char *cgi_path;
+@@ -87,6 +89,9 @@
+ 	int network_timeout;
+ 	int rfc1918_filter;
+ 	int tls_redirect;
++	int redirect_mode;
++	int redirect_code;
++	int redirect_https_port;
+ 	int tcp_keepalive;
+ 	int max_script_requests;
+ 	int max_connections;
+--- a/main.c
++++ b/main.c
+@@ -142,6 +142,11 @@
+ 		"	-P ciphers      Colon separated list of allowed TLS ciphers\n"
+ 		"	-q              Redirect all HTTP requests to HTTPS\n"
+ #endif
++		"	-g              Enable global redirect mode\n"
++		"	-G host         Redirect target host (e.g. bmc.lan)\n"
++		"	-j path         Redirect target page path (e.g. /portal.html)\n"
++		"	-J code         Redirect HTTP status code (default: 302)\n"
++		"	-Z port         Redirect HTTPS target port (default: 4443)\n"
+ 		"	-h directory    Specify the document root, default is '.'\n"
+ 		"	-E string       Use given virtual URL as 404 error handler\n"
+ 		"	-b string       Use given charset for directory listings, default to UTF-8\n"
+@@ -186,6 +191,8 @@
+ 	conf.script_timeout = 60;
+ 	conf.network_timeout = 30;
+ 	conf.http_keepalive = 20;
++	conf.redirect_code = 302;
++	conf.redirect_https_port = 4443;
+ 	conf.max_script_requests = 3;
+ 	conf.max_connections = 100;
+ 	conf.realm = "Protected Area";
+@@ -293,7 +300,7 @@
+ 	init_defaults_pre();
+ 	signal(SIGPIPE, SIG_IGN);
+ 
+-	while ((ch = getopt(argc, argv, "A:ab:C:c:Dd:E:e:fh:H:I:i:K:k:L:l:m:N:n:O:o:P:p:qRr:Ss:T:t:U:u:Xx:y:")) != -1) {
++	while ((ch = getopt(argc, argv, "A:ab:C:c:Dd:E:e:fG:gH:h:I:i:J:j:K:k:L:l:m:N:n:O:o:P:p:qRr:Ss:T:t:U:u:Xx:y:Z:")) != -1) {
+ 		switch(ch) {
+ #ifdef HAVE_TLS
+ 		case 'C':
+@@ -441,6 +448,26 @@
+ 			nofork = 1;
+ 			break;
+ 
++		case 'g':
++			conf.redirect_mode = 1;
++			break;
++
++		case 'G':
++			conf.redirect_host = optarg;
++			break;
++
++		case 'j':
++			conf.redirect_page = optarg;
++			break;
++
++		case 'J':
++			conf.redirect_code = atoi(optarg);
++			break;
++
++		case 'Z':
++			conf.redirect_https_port = atoi(optarg);
++			break;
++
+ 		case 'd':
+ 			optarg = strdup(optarg);
+ 			port = alloca(strlen(optarg) + 1);
+@@ -579,6 +606,40 @@
+ 
+ 	uh_config_parse();
+ 
++	if (conf.redirect_mode) {
++		if (conf.redirect_host && (!conf.redirect_host[0] ||
++		    strchr(conf.redirect_host, '/') || strchr(conf.redirect_host, ':'))) {
++			fprintf(stderr, "uhttpd: invalid global redirect host '%s', ignoring\n",
++			        conf.redirect_host);
++			conf.redirect_host = NULL;
++		}
++
++		if (!conf.redirect_page || conf.redirect_page[0] != '/') {
++			fprintf(stderr, "uhttpd: invalid global redirect page '%s', disabling redirect mode\n",
++			        conf.redirect_page ? conf.redirect_page : "(null)");
++			conf.redirect_mode = 0;
++		}
++
++		if (conf.redirect_code < 300 || conf.redirect_code > 399) {
++			fprintf(stderr, "uhttpd: invalid global redirect code %d, using 302\n",
++			        conf.redirect_code);
++			conf.redirect_code = 302;
++		}
++
++		if (conf.redirect_https_port <= 0 || conf.redirect_https_port > 65535 ||
++		    conf.redirect_https_port == 443) {
++			fprintf(stderr, "uhttpd: invalid global redirect HTTPS port %d, using 4443\n",
++			        conf.redirect_https_port);
++			conf.redirect_https_port = 4443;
++		}
++
++		fprintf(stderr,
++		        "uhttpd: global redirect enabled host=%s page=%s code=%d https_port=%d\n",
++		        conf.redirect_host ? conf.redirect_host : "(request-host)",
++		        conf.redirect_page ? conf.redirect_page : "(null)",
++		        conf.redirect_code, conf.redirect_https_port);
++	}
++
+ 	if (!conf.docroot) {
+ 		if (!realpath(".", uh_buf)) {
+ 			fprintf(stderr, "Error: Unable to determine work dir\n");
+--- a/client.c
++++ b/client.c
+@@ -248,8 +248,118 @@
+ 			"Rejected request from RFC1918 IP "
+ 			"to public server address");
+ 	return false;
++}
++
++static bool global_redirect_target_match(const char *url, const char *target)
++{
++	size_t len;
++
++	if (!url || !target)
++		return false;
++
++	/* When target is "/", keep redirecting "/" too (no bypass). */
++	if (!strcmp(target, "/"))
++		return false;
++
++	len = strlen(target);
++	if (strncmp(url, target, len))
++		return false;
++
++	return url[len] == 0 || url[len] == '?';
++}
++
++static const char *redirect_status_text(int code)
++{
++	switch (code) {
++	case 301:
++		return "Moved Permanently";
++	case 302:
++		return "Found";
++	case 303:
++		return "See Other";
++	case 307:
++		return "Temporary Redirect";
++	case 308:
++		return "Permanent Redirect";
++	default:
++		return "Redirect";
++	}
+ }
+ 
++static bool global_redirect_check(struct client *cl)
++{
++	int rem, code;
++	struct blob_attr *cur;
++	char *ptr, *host = NULL, *host_copy = NULL;
++	const char *url = NULL, *target;
++	const char *dst_host = conf.redirect_host;
++	int port;
++
++	if (!conf.redirect_mode || !conf.redirect_page)
++		return true;
++
++	blob_for_each_attr(cur, cl->hdr.head, rem) {
++		if (!strcmp(blobmsg_name(cur), "URL"))
++			url = blobmsg_get_string(cur);
++		else if (!dst_host && !strcmp(blobmsg_name(cur), "host"))
++			host = blobmsg_get_string(cur);
++
++		if (url && (dst_host || host))
++			break;
++	}
++
++	if (!url || (!dst_host && !host))
++	{
++		fprintf(stderr,
++		        "uhttpd: global redirect skip missing url/host (url=%s host=%s dst_host=%s)\n",
++		        url ? url : "(null)", host ? host : "(null)", dst_host ? dst_host : "(null)");
++		return true;
++	}
++
++	if (global_redirect_target_match(url, conf.redirect_page)) {
++		fprintf(stderr, "uhttpd: global redirect bypass target-match url=%s target=%s\n",
++		        url, conf.redirect_page);
++		return true;
++	}
++
++	if (dst_host) {
++		host_copy = alloca(strlen(dst_host) + 1);
++		strcpy(host_copy, dst_host);
++	}
++	else {
++		host_copy = alloca(strlen(host) + 1);
++		strcpy(host_copy, host);
++
++		if ((ptr = strchr(host_copy, ']')) != NULL)
++			*(ptr + 1) = 0;
++		else if ((ptr = strchr(host_copy, ':')) != NULL)
++			*ptr = 0;
++	}
++
++	code = conf.redirect_code;
++	if (code < 300 || code > 399)
++		code = 302;
++
++	port = conf.redirect_https_port;
++	if (port <= 0 || port > 65535 || port == 443)
++		port = 4443;
++
++	target = conf.redirect_page;
++
++	cl->request.disable_chunked = true;
++	cl->request.connection_close = true;
++
++	fprintf(stderr,
++	        "uhttpd: global redirect apply url=%s src_host=%s dst_host=%s location=https://%s:%d%s code=%d\n",
++	        url, host ? host : "(null)", dst_host ? dst_host : "(null)",
++	        host_copy, port, target, code);
++	uh_http_header(cl, code, redirect_status_text(code));
++	ustream_printf(cl->us, "Location: https://%s:%d%s\r\n\r\n", host_copy, port, target);
++	uh_request_done(cl);
++
++	return false;
++}
++
+ static bool tls_redirect_check(struct client *cl)
+ {
+ 	int rem, port;
+@@ -303,6 +413,9 @@
+ 	if (!rfc1918_filter_check(cl))
+ 		return;
+ 
++	if (!global_redirect_check(cl))
++		return;
++
+ 	if (!tls_redirect_check(cl))
+ 		return;
+ 

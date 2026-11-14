@@ -1,0 +1,24 @@
+dpaa2_sec does not say how a compound frame (a job with m_dst: out of
+place) came back from the SEC when it comes back as an event of the
+crypto adapter: only the poll dequeue sets op->status, and an op of an
+event stays RTE_CRYPTO_OP_STATUS_NOT_PROCESSED whether the SEC failed it
+or not. bmchwaccel-engine (ticket 16 of .scratch/hw-accel-ls1088)
+decrypts the ESP from the wire out of place, so as to send it up as it
+came, and saw every job of it as failed. Set the status where the frame
+is turned back into its op, for every way it comes back.
+
+--- a/drivers/crypto/dpaa2_sec/dpaa2_sec_dpseci.c
++++ b/drivers/crypto/dpaa2_sec/dpaa2_sec_dpseci.c
+@@ -1723,6 +1723,12 @@
+ 	DPAA2_SEC_DP_DEBUG("%s", debug_str);
+ #endif
+ 
++	/* what the SEC said, also for the events, which no dequeue reads */
++	if (unlikely(fd->simple.frc))
++		op->status = RTE_CRYPTO_OP_STATUS_ERROR;
++	else
++		op->status = RTE_CRYPTO_OP_STATUS_SUCCESS;
++
+ 	/* free the fle memory */
+ 	if (likely(rte_pktmbuf_is_contiguous(src))) {
+ 		rte_mempool_put(qp->fle_pool, (void *)(fle-1));

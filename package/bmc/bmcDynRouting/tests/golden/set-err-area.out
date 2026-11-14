@@ -1,0 +1,2 @@
+{"status":-1,"message":"area of interface lan must be a number or a dotted-quad","field":"interfaces","interface":"lan"}
+exit=1

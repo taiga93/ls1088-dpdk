@@ -1,0 +1,31 @@
+{"status":0,"message":"routing plan ready","action":"start","frr_restart":[],"frr_conf":"frr version 10
+frr defaults traditional
+hostname bmcDynRouting
+service integrated-vtysh-config
+!
+router-id 1.1.1.1
+!
+! bmcDynRouting: ospfd
+router ospf
+!
+interface br-lan
+ ip ospf area 0.0.0.0
+ ip ospf passive
+ ip ospf network broadcast
+!
+interface eth6
+ ip ospf area 0.0.0.0
+ ip ospf network point-to-point
+!
+interface eth7
+ ip ospf area 0.0.0.0
+ ip ospf network point-to-point
+!","daemons":"zebra=yes
+ospfd=yes
+ripd=no
+bgpd=no
+ospf6d=no
+watchfrr=yes","firewall_rules":"iptables -I INPUT -i br-lan -p 89 -m comment --comment bmcDynRouting -j ACCEPT
+iptables -I INPUT -i eth6 -p 89 -m comment --comment bmcDynRouting -j ACCEPT
+iptables -I INPUT -i eth7 -p 89 -m comment --comment bmcDynRouting -j ACCEPT"}
+exit=0

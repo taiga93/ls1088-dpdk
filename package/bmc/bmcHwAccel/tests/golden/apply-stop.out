@@ -1,0 +1,2 @@
+{"status":0,"message":"Tăng tốc phần cứng plan ready","action":"stop","commands":["/etc/init.d/cmm stop"]}
+exit=0

@@ -1,0 +1,2 @@
+{"status":-1,"message":"update timer must be an integer from 5 to 32767","field":"update_timer"}
+exit=1

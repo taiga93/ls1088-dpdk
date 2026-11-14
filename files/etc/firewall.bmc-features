@@ -1,0 +1,20 @@
+#!/bin/sh
+# fw3 runs this at the end of a start or restart, which removes every chain,
+# its own or not: a feature service that has rules to keep puts them back,
+# in front of the rules fw3 has just written. One that has none is left
+# alone, so that a firewall restart costs a board without these features
+# next to nothing.
+enabled() { ls /etc/rc.d/S??"$1" >/dev/null 2>&1; }
+
+{
+	enabled ddos_protect && [ "$(uci -q get ddos_protect.common.status)" = enable ] &&
+		/etc/init.d/ddos_protect start
+	enabled client_control && uci -q show client_control | grep -q '=rule$' &&
+		/etc/init.d/client_control start
+	enabled macfilter && [ "$(uci -q get macfilter.settings.status)" = enable ] &&
+		/etc/init.d/macfilter start
+	# A procd service: "start" would not run it again.
+	enabled nat_one2one && uci -q show nat11 | grep -q "\.active='1'$" &&
+		/etc/init.d/nat_one2one reload
+} >/dev/null 2>&1
+:

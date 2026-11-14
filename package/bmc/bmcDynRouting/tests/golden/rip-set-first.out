@@ -1,0 +1,15 @@
+{"status":0,"message":"RIP configuration saved","uci_batch":"set bmcDynRouting.rip=rip
+set bmcDynRouting.ri_lan=rip_interface
+set bmcDynRouting.ri_lan.interface='lan'
+set bmcDynRouting.ri_lan.passive='1'
+set bmcDynRouting.ri_guest=rip_interface
+set bmcDynRouting.ri_guest.interface='guest'
+set bmcDynRouting.ri_guest.passive='0'
+set bmcDynRouting.rip.update_timer='5'
+set bmcDynRouting.rip.enabled='1'
+set bmcDynRouting.rip.redistribute_static='0'
+set bmcDynRouting.rip.redistribute_connected='0'
+set bmcDynRouting.rip.redistribute_ospf='0'
+set bmcDynRouting.rip.redistribute_bgp='0'
+set bmcDynRouting.rip.default_originate='0'","warnings":[{"interface":"guest","code":"dhcp_on_active_interface","message":"Interface RIP guest is not passive but runs a DHCP server."}]}
+exit=0

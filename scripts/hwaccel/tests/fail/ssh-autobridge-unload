@@ -1,0 +1,4 @@
+module=absent
+cmm=
+@log
+Mon Jun 29 13:20:00 2026 daemon.err cmm-supervise[4100]: cmm: cannot start

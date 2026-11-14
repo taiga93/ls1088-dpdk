@@ -1,0 +1,31 @@
+== board root@192.168.1.1 ==
+Linux bmc 6.12.94 #0 SMP PREEMPT Mon Oct 19 12:00:00 2026 aarch64 GNU/Linux
+[    4.700182] fsl_mc_bus 80c000000.fsl-mc: MC firmware version: 10.39.0
+Mon Oct 19 12:01:05 2026 user.notice phy_init: dpmac.1: eth0 (dpni.0)
+Mon Oct 19 12:01:26 2026 user.notice phy_init: dpmac.9: eth8 (dpni.8)
+eth0 dpni.0 00:04:9f:06:12:03 speed 10000 changes 1
+eth1 dpni.1 00:04:9f:06:12:04 speed 10000 changes 1
+eth8 dpni.8 00:04:9f:06:12:0b speed -1 changes 0
+br-lan           UP             00:04:9f:06:12:04 <BROADCAST,MULTICAST,UP,LOWER_UP>
+eth0             UP             00:04:9f:06:12:03 <BROADCAST,MULTICAST,UP,LOWER_UP>
+eth1             UP             00:04:9f:06:12:04 <BROADCAST,MULTICAST,UP,LOWER_UP>
+== results ==
+net            wan eth0 has no address from DHCP; using 192.168.2.1/24 until the script ends
+wire-stats     PASS  719 Mbps, 720 Mbps in the 10 s window, eth1 link up speed 10000, eth0 link up speed 10000, eth1 rx_bytes +945000000, eth0 tx_bytes +950000000; the copper side of eth0 is what PC2 shows
+wire-stats-back FAIL  719 Mbps, 720 Mbps in the 10 s window, eth1 link up speed unknown, eth0 link up speed 10000, eth0 rx_bytes +30000000, eth1 tx_bytes +948000000; the copper side of eth0 is what PC2 shows
+               - bmchwaccel ports: eth1 speed unknown
+               - eth0 rx_bytes grew by 30000000 bytes in 10 s, need at least 765000000 (85% of the 900000000 bytes iperf3 carried)
+               | {"status":0,"message":"the ports Tăng tốc phần cứng holds: link, speed and counters of their cables","ports":[{"interface":"eth0","link":"up","speed":10000,"rx_bytes":3071000000,"tx_bytes":3050000000,"rx_packets":1100000,"tx_packets":2030000},{"interface":"eth1","link":"up","speed":"unknown","rx_bytes":3145000000,"tx_bytes":72000000,"rx_packets":2080000,"tx_packets":1110000}]}
+               | {"status":0,"message":"the ports Tăng tốc phần cứng holds: link, speed and counters of their cables","ports":[{"interface":"eth0","link":"up","speed":10000,"rx_bytes":3101000000,"tx_bytes":3070000000,"rx_packets":1130000,"tx_packets":2060000},{"interface":"eth1","link":"up","speed":"unknown","rx_bytes":3165000000,"tx_bytes":1020000000,"rx_packets":2110000,"tx_packets":1740000}]}
+RESULT: FAIL
+exit=1
+-- calls --
+ssh info
+ssh net plain
+ssh flush
+ssh wirestats wire-stats
+ssh flush
+ssh wirestats wire-stats-back
+ssh unnet
+iperf3 wire-stats
+iperf3 wire-stats-back

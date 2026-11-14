@@ -1,0 +1,8 @@
+{"status":0,"message":"Luật chọn WAN acct saved","uci_batch":"set mwan3.acct=rule
+set mwan3.acct.family='ipv4'
+set mwan3.acct.src_ip='192.168.10.0/24'
+set mwan3.acct.proto='all'
+set mwan3.acct.use_policy='b_first'
+reorder mwan3.acct=13
+reorder mwan3.default_rule=13","commands":[]}
+exit=0

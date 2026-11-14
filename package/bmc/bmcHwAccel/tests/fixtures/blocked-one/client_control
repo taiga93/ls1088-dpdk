@@ -1,0 +1,5 @@
+echo 'block D0:11:E5:6D:2D:BA'
+echo 'block 02:00:00:00:00:99'
+echo '{ "status": -1, "message": "Usage: x {show|set|del|apply}" }'
+echo 'block 192.168.5.20; reboot'
+echo 'block zz:11:e5:6d:2d:ba'

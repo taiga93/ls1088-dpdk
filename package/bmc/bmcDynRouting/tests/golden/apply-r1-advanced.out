@@ -1,0 +1,49 @@
+{"status":0,"message":"routing plan ready","action":"start","frr_restart":["zebra","ospfd"],"frr_conf":"frr version 10
+frr defaults traditional
+hostname bmcDynRouting
+service integrated-vtysh-config
+!
+router-id 1.1.1.1
+!
+! bmcDynRouting: ospfd
+router ospf
+ redistribute kernel
+ redistribute connected
+!
+interface br-lan
+ ip ospf area 0.0.0.0
+ ip ospf passive
+ ip ospf network broadcast
+!
+interface eth6
+ ip ospf area 0.0.0.0
+ ip ospf network broadcast
+!
+interface eth7
+ ip ospf area 0.0.0.0
+ ip ospf cost 20
+ ip ospf hello-interval 2
+ ip ospf dead-interval 8
+ ip ospf network point-to-point
+!
+interface br-guest
+ ip ospf area 0.0.0.1
+ ip ospf passive
+ ip ospf network broadcast
+!
+! bmcDynRouting: ospfd
+router ospf
+ default-information originate
+interface eth7
+ ip ospf authentication message-digest
+ ip ospf message-digest-key 1 md5 s3cr't
+!","daemons":"zebra=yes
+ospfd=yes
+ripd=no
+bgpd=no
+ospf6d=no
+watchfrr=yes","firewall_rules":"iptables -I INPUT -i br-lan -p 89 -m comment --comment bmcDynRouting -j ACCEPT
+iptables -I INPUT -i eth6 -p 89 -m comment --comment bmcDynRouting -j ACCEPT
+iptables -I INPUT -i eth7 -p 89 -m comment --comment bmcDynRouting -j ACCEPT
+iptables -I INPUT -i br-guest -p 89 -m comment --comment bmcDynRouting -j ACCEPT"}
+exit=0

@@ -1,0 +1,169 @@
+#!/bin/sh /etc/rc.common
+# Copyright (C) 2014 OpenWrt.org
+
+START=10
+USE_PROCD=1
+
+validate_system_section() {
+	uci_load_validate system system "$1" "$2" \
+		'hostname:string:OpenWrt' \
+		'conloglevel:uinteger' \
+		'buffersize:uinteger' \
+		'timezone:string:GMT0' \
+		'zonename:string:UTC' \
+		'security_mode:string:nac' \
+		'factory_reset:bool:0'
+}
+
+system_config() {
+	[ "$2" = 0 ] || {
+		echo "validation failed"
+		return 1
+	}
+
+	echo "$hostname" > /proc/sys/kernel/hostname
+	[ -z "$conloglevel" -a -z "$buffersize" ] || dmesg ${conloglevel:+-n $conloglevel} ${buffersize:+-s $buffersize}
+	echo "$timezone" > /tmp/TZ
+	[ -n "$zonename" ] && [ -f "/usr/share/zoneinfo/${zonename// /_}" ] \
+		&& ln -sf "/usr/share/zoneinfo/${zonename// /_}" /tmp/localtime \
+		&& rm -f /tmp/TZ
+
+	# apply timezone to kernel
+	hwclock -u --systz
+}
+
+reload_service() {
+	config_load system
+	config_foreach validate_system_section system system_config
+}
+
+service_triggers() {
+	procd_add_reload_trigger "system"
+	procd_add_validation validate_system_section
+}
+
+ensure_operation_mode() {
+	local mode
+
+	if ! uci -q get system.operation_mode >/dev/null 2>&1; then
+		uci set system.operation_mode='operation_mode'
+	fi
+
+	mode="$(uci -q get system.operation_mode.mode 2>/dev/null)"
+	case "$mode" in
+		route|bridge) ;;
+		*) uci set system.operation_mode.mode='route' ;;
+	esac
+}
+
+ensure_factory_reset_flag() {
+	local factory_reset
+
+	factory_reset="$(uci -q get system.@system[0].factory_reset 2>/dev/null)"
+	case "$factory_reset" in
+		0|1) ;;
+		*) uci set system.@system[0].factory_reset='0' ;;
+	esac
+}
+
+# The security mode of the 24.10 firmware: nac (captive portal, the default),
+# fido or off. It decides who gives LAN clients their address and which of
+# chilli, bmcfido and the redirect of uhttpd runs.
+ensure_security_mode() {
+	local security_mode
+	local fido_enabled
+	local operation_mode
+
+	operation_mode="$(uci -q get system.operation_mode.mode 2>/dev/null)"
+	if [ "$operation_mode" = "bridge" ]; then
+		uci set system.@system[0].security_mode='fido'
+		return 0
+	fi
+
+	security_mode="$(uci -q get system.@system[0].security_mode 2>/dev/null)"
+	case "$security_mode" in
+		fido|nac|off) return 0 ;;
+	esac
+
+	# Compatibility with images created before the common security-mode option
+	# existed. FIDO enable was the status source used by the old WebUI.
+	fido_enabled="$(uci -q get bmcfido.config.enable 2>/dev/null)"
+	if [ "$fido_enabled" = "1" ]; then
+		uci set system.@system[0].security_mode='fido'
+	else
+		uci set system.@system[0].security_mode='nac'
+	fi
+}
+
+sync_security_mode_config() {
+	local security_mode
+	local operation_mode
+	local nac_gateway
+	local lan_ip
+
+	security_mode="$(uci -q get system.@system[0].security_mode 2>/dev/null)"
+	operation_mode="$(uci -q get system.operation_mode.mode 2>/dev/null)"
+
+	case "$security_mode" in
+		fido)
+			uci -q get bmcfido.config >/dev/null 2>&1 && uci set bmcfido.config.enable='1'
+			uci -q get 'chilli.@chilli[0]' >/dev/null 2>&1 && uci set 'chilli.@chilli[0].disabled=1'
+			uci -q get uhttpd.main >/dev/null 2>&1 && uci set uhttpd.main.redirect_mode='1'
+			uci -q get uhttpd.main >/dev/null 2>&1 && uci set uhttpd.main.redirect_https_port='4443'
+			if uci -q get dhcp.lan >/dev/null 2>&1; then
+				if [ "$operation_mode" = "bridge" ]; then
+					uci set dhcp.lan.ignore='1'
+					uci set dhcp.lan.dhcpv4='disabled'
+					uci set dhcp.lan.dhcpv6='disabled'
+					uci set dhcp.lan.ra='disabled'
+				else
+					uci set dhcp.lan.ignore='0'
+					uci set dhcp.lan.dhcpv4='server'
+				fi
+			fi
+			;;
+		nac)
+			uci -q get bmcfido.config >/dev/null 2>&1 && uci set bmcfido.config.enable='0'
+			if uci -q get 'chilli.@chilli[0]' >/dev/null 2>&1; then
+				nac_gateway="$(uci -q get 'chilli.@chilli[0].uamlisten' 2>/dev/null)"
+				[ -n "$nac_gateway" ] || nac_gateway='192.168.182.1'
+				lan_ip="$(uci -q get network.lan.ipaddr 2>/dev/null)"
+				[ -n "$lan_ip" ] || lan_ip='192.168.5.1'
+				uci set 'chilli.@chilli[0].disabled=0'
+				uci set "chilli.@chilli[0].dns1=$nac_gateway"
+				uci set "chilli.@chilli[0].dns2=$nac_gateway"
+				uci set 'chilli.@chilli[0].uamserver=http://bmc.lan/portal.html'
+				uci -q delete 'chilli.@chilli[0].uamhomepage'
+				uci set "chilli.@chilli[0].uamallowed=bmc.lan,$nac_gateway/32,$lan_ip/32,10.11.12.0/24,www.chillispot.org"
+			fi
+			uci -q get uhttpd.main >/dev/null 2>&1 && uci set uhttpd.main.redirect_mode='0'
+			uci -q get dhcp.lan >/dev/null 2>&1 && uci set dhcp.lan.ignore='1'
+			;;
+		off)
+			uci -q get bmcfido.config >/dev/null 2>&1 && uci set bmcfido.config.enable='0'
+			uci -q get 'chilli.@chilli[0]' >/dev/null 2>&1 && uci set 'chilli.@chilli[0].disabled=1'
+			uci -q get uhttpd.main >/dev/null 2>&1 && uci set uhttpd.main.redirect_mode='0'
+			if uci -q get dhcp.lan >/dev/null 2>&1; then
+				uci set dhcp.lan.ignore='0'
+				uci set dhcp.lan.dhcpv4='server'
+			fi
+			;;
+	esac
+
+	uci -q get bmcfido.config >/dev/null 2>&1 && uci commit bmcfido
+	uci -q get 'chilli.@chilli[0]' >/dev/null 2>&1 && uci commit chilli
+	uci -q get uhttpd.main >/dev/null 2>&1 && uci commit uhttpd
+	uci -q get dhcp.lan >/dev/null 2>&1 && uci commit dhcp
+}
+
+start_service() {
+	# Enable tty login on serial console
+	uci set system.@system[0].ttylogin='1'
+	uci set system.@system[0].hostname='bmc'
+	ensure_operation_mode
+	ensure_factory_reset_flag
+	ensure_security_mode
+	sync_security_mode_config
+	uci commit system
+	reload_service
+}

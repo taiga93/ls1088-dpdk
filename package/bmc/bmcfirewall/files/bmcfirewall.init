@@ -1,0 +1,198 @@
+#!/bin/sh /etc/rc.common
+
+PROG=/usr/bin/bmcfirewall
+BMCFIREWALL_DNS_CHAIN="BMCFIREWALL_DNS"
+BMCFIREWALL_SERVICE_CHAIN4="BMC_SVC4"
+BMCFIREWALL_SERVICE_CHAIN6="BMC_SVC6"
+BMCFIREWALL_CREATE_IPSETS="/etc/create-ipset-lists.sh"
+BMC_LOCAL_DOMAIN="bmc.lan"
+BMC_NAC_GATEWAY="192.168.182.1"
+
+USE_PROCD=1
+
+EXTRA_COMMANDS="reload_rules"
+EXTRA_HELP="        reload_rules  Put back the firewall rules that a firewall restart took away"
+
+# matches dnsmasq
+START=19
+# stops before networking stops
+STOP=89
+
+get_lan_ifname() {
+  local ifname
+
+  ifname="$(uci get network.lan.device 2>/dev/null)"
+  [ -n "$ifname" ] || ifname="$(uci get network.lan.ifname 2>/dev/null)"
+  [ -n "$ifname" ] || ifname="br-lan"
+
+  echo "$ifname"
+}
+
+get_lan_ipaddr() {
+  local ipaddr
+
+  ipaddr="$(uci get network.lan.ipaddr 2>/dev/null)"
+  [ -n "$ipaddr" ] || ipaddr="192.168.5.1"
+
+  echo "$ipaddr"
+}
+
+get_bmc_domain_ipaddr() {
+  local security_mode
+  local gateway_ip
+
+  security_mode="$(uci -q get system.@system[0].security_mode 2>/dev/null)"
+  if [ "$security_mode" = "nac" ]; then
+    gateway_ip="$(uci -q get 'chilli.@chilli[0].uamlisten' 2>/dev/null)"
+    [ -n "$gateway_ip" ] || gateway_ip="$(ip -4 addr show tun0 2>/dev/null | awk '/inet / { sub(/\/.*/, "", $2); print $2; exit }')"
+    [ -n "$gateway_ip" ] || gateway_ip="$BMC_NAC_GATEWAY"
+    echo "$gateway_ip"
+    return
+  fi
+
+  get_lan_ipaddr
+}
+
+sync_bmc_domain_rewrite() {
+  local config_file="$1"
+  local answer
+  local current_answer
+
+  [ -f "$config_file" ] || return 0
+  answer="$(get_bmc_domain_ipaddr)"
+  [ -n "$answer" ] || return 0
+
+  current_answer="$(sed -n "/^[[:space:]]*- domain: $BMC_LOCAL_DOMAIN[[:space:]]*$/ { n; s/^[[:space:]]*answer:[[:space:]]*//p; }" "$config_file" | head -n 1)"
+  [ "$current_answer" = "$answer" ] && return 0
+
+  sed -i "/^[[:space:]]*- domain: $BMC_LOCAL_DOMAIN[[:space:]]*$/ { n; s|^[[:space:]]*answer:.*|      answer: $answer|; }" "$config_file"
+  logger -t bmcfirewall "Updated $BMC_LOCAL_DOMAIN DNS rewrite to $answer"
+}
+
+disable_dns_redirect_rules() {
+  while iptables -t nat -D PREROUTING -j "$BMCFIREWALL_DNS_CHAIN" 2>/dev/null; do :; done
+  iptables -t nat -F "$BMCFIREWALL_DNS_CHAIN" 2>/dev/null
+  iptables -t nat -X "$BMCFIREWALL_DNS_CHAIN" 2>/dev/null
+}
+
+enable_dns_redirect_rules() {
+  local lan_if
+  local gateway_ip
+
+  lan_if="$(get_lan_ifname)"
+  gateway_ip="$(get_lan_ipaddr)"
+
+  [ -n "$lan_if" ] || return 0
+  [ -n "$gateway_ip" ] || return 0
+
+  iptables -t nat -N "$BMCFIREWALL_DNS_CHAIN" 2>/dev/null || true
+  iptables -t nat -F "$BMCFIREWALL_DNS_CHAIN"
+
+  while iptables -t nat -D PREROUTING -j "$BMCFIREWALL_DNS_CHAIN" 2>/dev/null; do :; done
+  iptables -t nat -I PREROUTING 1 -j "$BMCFIREWALL_DNS_CHAIN"
+
+  iptables -t nat -A "$BMCFIREWALL_DNS_CHAIN" -i "$lan_if" -p udp --dport 53 \
+    -j DNAT --to-destination "$gateway_ip:53"
+  iptables -t nat -A "$BMCFIREWALL_DNS_CHAIN" -i "$lan_if" -p tcp --dport 53 \
+    -j DNAT --to-destination "$gateway_ip:53"
+}
+
+# BMC_CODE START
+initialize_blocked_service_ipsets() {
+  if [ ! -x "$BMCFIREWALL_CREATE_IPSETS" ]; then
+    logger -t bmcfirewall "Missing executable $BMCFIREWALL_CREATE_IPSETS"
+    return 1
+  fi
+
+  if ! "$BMCFIREWALL_CREATE_IPSETS"; then
+    logger -t bmcfirewall "Failed to create blocked-service ipsets"
+    return 1
+  fi
+}
+
+ensure_blocked_service_chains() {
+  iptables -w -N "$BMCFIREWALL_SERVICE_CHAIN4" 2>/dev/null || true
+  iptables -w -C FORWARD -j "$BMCFIREWALL_SERVICE_CHAIN4" 2>/dev/null || \
+    iptables -w -I FORWARD 1 -j "$BMCFIREWALL_SERVICE_CHAIN4"
+
+  ip6tables -w -N "$BMCFIREWALL_SERVICE_CHAIN6" 2>/dev/null || true
+  ip6tables -w -C FORWARD -j "$BMCFIREWALL_SERVICE_CHAIN6" 2>/dev/null || \
+    ip6tables -w -I FORWARD 1 -j "$BMCFIREWALL_SERVICE_CHAIN6"
+}
+# BMC_CODE END
+
+boot() {
+  bmcfirewall_boot=1
+  start "$@"
+}
+
+start_service() {
+  if [ -n "$bmcfirewall_boot" ]; then
+    # Do not start yet, wait for triggers
+    return 0
+  fi
+
+  config_load bmcfirewall
+  config_get CONFIG_FILE config config "/etc/bmcfirewall.yaml"
+  config_get PID_FILE config pidfile "/run/bmcfirewall.pid"
+  config_get WORK_DIR config workdir "/var/lib/bmcfirewall"
+
+  sync_bmc_domain_rewrite "$CONFIG_FILE"
+
+  [ -d "$WORK_DIR" ] || mkdir -m 0755 -p "$WORK_DIR"
+
+  # BMC_CODE START
+  initialize_blocked_service_ipsets || return 1
+  ensure_blocked_service_chains || return 1
+  # BMC_CODE END
+
+  enable_dns_redirect_rules
+
+  procd_open_instance
+  procd_set_param command "$PROG" -c "$CONFIG_FILE" -w "$WORK_DIR" --pidfile "$PID_FILE" --no-check-update
+  procd_set_param stdout 1
+  procd_set_param stderr 1
+  procd_close_instance
+}
+
+stop_service() {
+  disable_dns_redirect_rules
+}
+
+# BMC_CODE START
+# A firewall restart takes away the DNS redirect and the chains of the blocked
+# services; the firewall calls this after each start and reload
+# (/usr/share/bmcfirewall/firewall.include). Nothing is touched while all of
+# it is there, as after a reload. The daemon writes the rules of the blocked
+# services into the new chains when it gets SIGHUP. Nothing to do for a
+# daemon that does not run: its start sets everything up.
+blocked_service_chains_present() {
+  iptables -w -C FORWARD -j "$BMCFIREWALL_SERVICE_CHAIN4" 2>/dev/null || return 1
+  ! command -v ip6tables >/dev/null 2>&1 ||
+    ip6tables -w -C FORWARD -j "$BMCFIREWALL_SERVICE_CHAIN6" 2>/dev/null
+}
+
+reload_rules() {
+  local pid
+
+  config_load bmcfirewall
+  config_get PID_FILE config pidfile "/run/bmcfirewall.pid"
+  pid="$(cat "$PID_FILE" 2>/dev/null)"
+  [ -n "$pid" ] && kill -0 "$pid" 2>/dev/null || return 0
+
+  iptables -w -t nat -C PREROUTING -j "$BMCFIREWALL_DNS_CHAIN" 2>/dev/null ||
+    enable_dns_redirect_rules
+
+  if ! blocked_service_chains_present; then
+    ensure_blocked_service_chains || return 1
+    kill -HUP "$pid"
+    logger -t bmcfirewall "Put the chains of the blocked services back after a firewall restart"
+  fi
+}
+# BMC_CODE END
+
+service_triggers() {
+  if [ -n "$bmcfirewall_boot" ]; then
+    procd_add_raw_trigger "interface.*.up" 5000 /etc/init.d/bmcfirewall restart
+  fi
+}

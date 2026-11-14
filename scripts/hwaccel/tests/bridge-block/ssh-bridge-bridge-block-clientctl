@@ -1,0 +1,7 @@
+carried=104000
+cpu=16
+rules=1
+said={ "status": 0, "message": "Rule added: hwaccel-test (3C:22:FB:00:00:01) 00:00-23:59 Mon,Tue,Wed,Thu,Fri,Sat,Sun"}
+passed=9
+cpu_under=104050
+counted=104035

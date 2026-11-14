@@ -1,0 +1,37 @@
+== board root@192.168.1.1 ==
+Linux OpenWrt 6.12.94 #0 SMP Thu Oct  1 08:00:00 2026 aarch64 GNU/Linux
+[    1.812345] fsl-fman 1a00000.fman: FMan-Controller code (ver 210.10.1)
+[   34.101010] cdx: FMAN firmware 210.10.1 - ASK supported
+eth0 soc:fsl,dpaa:ethernet@2 02:00:00:46:00:00
+eth1 soc:fsl,dpaa:ethernet@3 02:00:00:46:00:01
+eth2 soc:fsl,dpaa:ethernet@4 02:00:00:46:00:02
+eth3 soc:fsl,dpaa:ethernet@5 02:00:00:46:00:03
+eth4 soc:fsl,dpaa:ethernet@8 02:00:00:46:00:04
+eth5 soc:fsl,dpaa:ethernet@9 02:00:00:46:00:05
+br-lan           UP             02:00:00:46:00:01 <BROADCAST,MULTICAST,UP,LOWER_UP>
+eth0             UP             02:00:00:46:00:00 <BROADCAST,MULTICAST,UP,LOWER_UP>
+eth1             UP             02:00:00:46:00:01 <BROADCAST,MULTICAST,UP,LOWER_UP>
+== results ==
+webui          PASS  logged in as admin; 7 page(s) opened, 7 request(s) of those pages answered without an error; FIDO server 0 process(es)
+RESULT: PASS
+exit=0
+-- calls --
+ssh info
+ssh webui
+curl GET /login
+curl POST /login
+curl POST /login
+curl GET /
+curl GET /ui/firewall/firewall
+curl GET /ui/mac_filter/mac_filter
+curl GET /ui/client_control/client_control
+curl GET /ui/ddos/ddos_protect
+curl GET /ui/network/nat_11
+curl GET /ui/network/nat
+curl GET /api/macfilter/info
+curl GET /api/client-control
+curl GET /api/ddos/status
+curl GET /api/nat11/get
+curl GET /api/nat
+curl POST /get-firewall-from-table
+curl POST /get-firewall-from-table

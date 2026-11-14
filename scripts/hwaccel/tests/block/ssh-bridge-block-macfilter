@@ -1,0 +1,7 @@
+carried=104000
+cpu=14
+rules=1
+said={ "status": 0, "message": "Add/Update rule: 3C:22:FB:00:00:01"}
+passed=2
+cpu_under=50046
+counted=60352

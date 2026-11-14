@@ -1,0 +1,59 @@
+#!/bin/sh /etc/rc.common
+# bmchwaccel-engine on the container phy_init made at boot, in the engine
+# layout only. Nothing is made here: the engine is started again on the same
+# container when it dies. In the engine layout the ports of the engine reach
+# the wire only through it, so a container that is not complete fails the
+# layout: the router restarts in the kernel layout (./layout fail --reboot).
+#
+# With bmcHwAccel, its supervisor runs the engine: it starts it again, and
+# fails the layout when it keeps dying or never answers
+# (/usr/lib/bmcHwAccel/supervise-engine). Without it procd respawns it.
+
+START=91
+STOP=10
+USE_PROCD=1
+
+LIB=/usr/lib/bmcHwAccelDpdk
+SUPERVISE=/usr/lib/bmcHwAccel/supervise-engine
+
+start_service() {
+	local out dprc ports= names= kind name x y
+
+	[ "$($LIB/layout current)" = engine ] || return 0
+	out=$($LIB/container check 2>&1) || {
+		$LIB/layout fail --reboot "its ports are not complete: $(echo "$out" | grep '^container:' | head -1)"
+		return 1
+	}
+	while read -r kind name x y; do
+		case "$kind" in
+		dprc) dprc=$name ;;
+		port) ports="$ports --port $name,$x,$y" names="$names $name" ;;
+		esac
+	done <<-EOT
+	$out
+	EOT
+
+	procd_open_instance
+	# DPRC: the container of the fslmc bus. The interrupt of a portal comes
+	# after 3 frames in its ring or the longest holdoff, as the driver sets
+	# by default (ticket 01: a lower threshold costs 2-4 times the CPU).
+	procd_set_param env DPRC="$dprc" DPAA2_PORTAL_INTR_THRESHOLD=3 DPAA2_PORTAL_INTR_TIMEOUT=0xFF
+	# lcore 0, the main thread, on CPU 0; worker w on CPU w. dpaa2_sec
+	# logs a line for each packet the SEC fails (a wrong ICV, a replay):
+	# critical lines only, the engine counts them (ticket 13 of
+	# .scratch/hw-accel-ls1088: 3 GB of syslog in RAM otherwise).
+	# The limits of what the ports send, from UCI each time it starts
+	# (layout tx-limits, ticket 21).
+	set -- /usr/sbin/bmchwaccel-engine -l "0-$($LIB/layout workers)" -n 1 \
+		--vdev=event_dpaa2 --log-level='*:notice' --log-level=pmd.crypto.dpaa2:crit \
+		-- --event $ports $($LIB/layout tx-limits $names)
+	if [ -x $SUPERVISE ]; then
+		procd_set_param command $SUPERVISE "$@"
+	else
+		procd_set_param command "$@"
+		procd_set_param respawn 3600 5 5
+	fi
+	procd_set_param stdout 1
+	procd_set_param stderr 1
+	procd_close_instance
+}

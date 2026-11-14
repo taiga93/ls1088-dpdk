@@ -1,0 +1,171 @@
+#!/bin/sh /etc/rc.common
+
+START=95
+STOP=10
+USE_PROCD=1
+EXTRA_COMMANDS="reload_rules"
+EXTRA_HELP="\treload_rules    Reapply only fw3 classification rules\n"
+
+. /lib/functions.sh
+
+MAIN=/etc/bmcqos/bmcqos.sh
+FW=/usr/lib/bmcqos/firewall.sh
+WAN_STATE=/var/run/bmcqos/wan
+hwaccel_hold=
+
+getopt_default() { config_get "$1" "$2" "$3" "$4"; export "$1"; }
+
+# Tăng tốc phần cứng forwards an established connection past qdisc and IFB.
+# While bmcqos is on, bmcHwAccel keeps every connection through the shaped WAN
+# on the CPU (ADR-0011); `bmchwaccel status` lists it in "on_cpu". Nothing to
+# do on a board without bmcHwAccel.
+hwaccel() {
+	[ -x /usr/sbin/bmchwaccel ] || return 0
+	/usr/sbin/bmchwaccel "$@" >/dev/null 2>&1 ||
+		logger -t bmcqos -p daemon.err "bmchwaccel $* failed: see bmchwaccel status"
+}
+
+load_and_fix_config() {
+	config_load bmcqos || return 1
+	getopt_default global_enabled global enabled 0
+	getopt_default WAN settings WAN wan
+	getopt_default DOWNRATE settings DOWNRATE 0
+	getopt_default UPRATE settings UPRATE 0
+	getopt_default ROOT_QDISC settings ROOT_QDISC cake
+	# This firmware exposes CAKE only. Ignore stale/manual UCI values.
+	ROOT_QDISC=cake
+	getopt_default advanced_enabled advanced enabled 0
+	getopt_default WASHDSCPUP advanced WASHDSCPUP 1
+	getopt_default WASHDSCPDOWN advanced WASHDSCPDOWN 1
+	getopt_default BWMAXRATIO advanced BWMAXRATIO 20
+	getopt_default UDPBULKPORT advanced UDPBULKPORT ''
+	getopt_default TCPBULKPORT advanced TCPBULKPORT ''
+	getopt_default VIDCONFPORTS advanced VIDCONFPORTS ''
+	getopt_default REALTIME4 advanced REALTIME4 ''
+	getopt_default REALTIME6 advanced REALTIME6 ''
+	getopt_default LOWPRIOLAN4 advanced LOWPRIOLAN4 ''
+	getopt_default LOWPRIOLAN6 advanced LOWPRIOLAN6 ''
+	getopt_default MSS advanced MSS 536
+	getopt_default COMMON_LINK_PRESETS advanced COMMON_LINK_PRESETS ethernet
+	getopt_default OVERHEAD advanced OVERHEAD ''
+	getopt_default MPU advanced MPU ''
+	getopt_default LINK_COMPENSATION advanced LINK_COMPENSATION ''
+	getopt_default ETHER_VLAN_KEYWORD advanced ETHER_VLAN_KEYWORD ''
+	if [ "$advanced_enabled" != 1 ]; then
+		WASHDSCPUP=0
+		WASHDSCPDOWN=0
+		BWMAXRATIO=20
+		UDPBULKPORT=''
+		TCPBULKPORT=''
+		VIDCONFPORTS=''
+		REALTIME4=''
+		REALTIME6=''
+		LOWPRIOLAN4=''
+		LOWPRIOLAN6=''
+		MSS=''
+		COMMON_LINK_PRESETS=raw
+		OVERHEAD=0
+		MPU=''
+		LINK_COMPENSATION=''
+		ETHER_VLAN_KEYWORD=''
+	fi
+	getopt_default gameqdisc hfsc gameqdisc pfifo
+	getopt_default GAMEUP hfsc GAMEUP ''
+	getopt_default GAMEDOWN hfsc GAMEDOWN ''
+	getopt_default nongameqdisc hfsc nongameqdisc fq_codel
+	getopt_default nongameqdiscoptions hfsc nongameqdiscoptions 'besteffort ack-filter'
+	getopt_default MAXDEL hfsc MAXDEL 24
+	getopt_default PFIFOMIN hfsc PFIFOMIN 5
+	getopt_default PACKETSIZE hfsc PACKETSIZE 450
+	getopt_default netemdelayms hfsc netemdelayms 30
+	getopt_default netemjitterms hfsc netemjitterms 7
+	getopt_default netemdist hfsc netemdist normal
+	getopt_default pktlossp hfsc pktlossp none
+	getopt_default NETEM_DIRECTION hfsc netem_direction both
+	getopt_default PRIORITY_QUEUE_INGRESS cake PRIORITY_QUEUE_INGRESS diffserv4
+	getopt_default PRIORITY_QUEUE_EGRESS cake PRIORITY_QUEUE_EGRESS diffserv4
+	getopt_default USE_MQ cake USE_MQ 0
+	getopt_default HOST_ISOLATION cake HOST_ISOLATION 1
+	getopt_default NAT_INGRESS cake NAT_INGRESS 1
+	getopt_default NAT_EGRESS cake NAT_EGRESS 1
+	getopt_default ACK_FILTER_EGRESS cake ACK_FILTER_EGRESS auto
+	getopt_default RTT cake RTT ''
+	getopt_default AUTORATE_INGRESS cake AUTORATE_INGRESS 0
+	AUTORATE_INGRESS=0
+	getopt_default EXTRA_PARAMETERS_INGRESS cake EXTRA_PARAMETERS_INGRESS ''
+	getopt_default EXTRA_PARAMETERS_EGRESS cake EXTRA_PARAMETERS_EGRESS ''
+	case "$UPRATE:$DOWNRATE" in *[!0-9:]*|:) logger -t bmcqos 'UPRATE/DOWNRATE must be numeric'; return 1 ;; esac
+	[ -n "$GAMEUP" ] || GAMEUP=$((UPRATE * 15 / 100 + 400))
+	[ -n "$GAMEDOWN" ] || GAMEDOWN=$((DOWNRATE * 15 / 100 + 400))
+	export GAMEUP GAMEDOWN SHAPE_EGRESS=$((UPRATE > 0)) SHAPE_INGRESS=$((DOWNRATE > 0)) BMCQOS_CONFIG_LOADED=1
+}
+
+remove_qdisc() {
+	local old_wan dev
+	old_wan=$(cat "$WAN_STATE" 2>/dev/null)
+	[ -n "$old_wan" ] || { load_and_fix_config >/dev/null 2>&1; old_wan="$WAN"; }
+	for dev in "$old_wan" "$WAN"; do
+		[ -n "$dev" ] || continue
+		tc qdisc del dev "$dev" root >/dev/null 2>&1
+		tc qdisc del dev "$dev" ingress >/dev/null 2>&1
+		tc qdisc del dev "ifb-$dev" root >/dev/null 2>&1
+		ip link del "ifb-$dev" >/dev/null 2>&1
+	done
+}
+
+start_service() {
+	load_and_fix_config || return 1
+	[ "$global_enabled" = 1 ] || { hwaccel release bmcqos; return 0; }
+	remove_qdisc
+	mkdir -p /var/run/bmcqos /tmp/bmcqos
+	printf '%s\n' "$WAN" > "$WAN_STATE"
+	# Before the qdisc: no moment with a limit that accelerated connections pass.
+	hwaccel keep bmcqos wan "$WAN"
+	[ "$(uci -q get firewall.@defaults[0].flow_offloading)" = 1 ] && logger -t bmcqos 'Warning: software flow offloading should be disabled with bmcqos'
+	/bin/sh "$MAIN" || { remove_qdisc; "$FW" cleanup; hwaccel release bmcqos; return 1; }
+	# Autorate is intentionally disabled in this firmware profile.
+	/etc/init.d/bmcqos-autorate stop >/dev/null 2>&1
+}
+
+stop_service() {
+	/etc/init.d/bmcqos-autorate stop >/dev/null 2>&1
+	"$FW" cleanup
+	remove_qdisc
+	# A stop that a start follows keeps the WAN on the CPU: releasing it would
+	# accelerate its connections for a moment, and restart Tăng tốc phần cứng
+	# twice.
+	[ -n "$hwaccel_hold" ] || hwaccel release bmcqos
+}
+
+reload_service() {
+	hwaccel_hold=1
+	stop_service
+	hwaccel_hold=
+	start_service
+}
+
+restart() {
+	trap '' TERM
+	hwaccel_hold=1
+	stop "$@"
+	hwaccel_hold=
+	trap - TERM
+	start "$@"
+}
+
+reload_rules() {
+	load_and_fix_config || return 1
+	[ "$global_enabled" = 1 ] && "$FW" apply || "$FW" cleanup
+}
+
+status_service() {
+	load_and_fix_config || return 1
+	[ "$global_enabled" = 1 ] || { echo 'disabled'; return 3; }
+	"$FW" status >/dev/null 2>&1 && tc qdisc show dev "$WAN" | grep -Eq 'cake|hfsc|htb' && { echo 'running'; return 0; }
+	echo 'not running'
+	return 3
+}
+
+service_triggers() {
+	procd_add_reload_trigger bmcqos firewall network
+}

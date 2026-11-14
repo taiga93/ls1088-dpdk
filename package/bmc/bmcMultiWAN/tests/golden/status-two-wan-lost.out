@@ -1,0 +1,2 @@
+{"status":0,"message":"Multi-WAN status","wans":[{"name":"wan","link":"up","internet":"lost","ip":"203.0.113.10"},{"name":"wan2","link":"up","internet":"online","ip":"198.51.100.3"}],"default_policy_wan":"wan2","last_switch":{"time":1790000000,"wan":"wan","state":"lost"}}
+exit=0

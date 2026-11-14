@@ -1,0 +1,51 @@
+{"status":0,"message":"routing plan ready","action":"start","frr_restart":["ripd"],"frr_conf":"frr version 10
+frr defaults traditional
+hostname bmcDynRouting
+service integrated-vtysh-config
+!
+router-id 3.3.3.3
+!
+! bmcDynRouting: ospfd
+router ospf
+!
+interface br-lan
+ ip ospf area 0.0.0.0
+ ip ospf passive
+ ip ospf network broadcast
+!
+interface eth6
+ ip ospf area 0.0.0.0
+ ip ospf network point-to-point
+!
+interface eth7
+ ip ospf area 0.0.0.0
+ ip ospf network point-to-point
+!
+! bmcDynRouting: ripd
+router rip
+ version 2
+ network eth5
+ network br-lan
+ passive-interface br-lan
+ redistribute ospf
+ default-information originate
+ timers basic 10 60 120
+!
+! bmcDynRouting: ospfd
+router ospf
+ auto-cost reference-bandwidth 1000
+!
+! bmcDynRouting: ripd
+router rip
+ distance 110
+!","daemons":"zebra=yes
+ospfd=yes
+ripd=yes
+bgpd=no
+ospf6d=no
+watchfrr=yes","firewall_rules":"iptables -I INPUT -i br-lan -p 89 -m comment --comment bmcDynRouting -j ACCEPT
+iptables -I INPUT -i eth6 -p 89 -m comment --comment bmcDynRouting -j ACCEPT
+iptables -I INPUT -i eth7 -p 89 -m comment --comment bmcDynRouting -j ACCEPT
+iptables -I INPUT -i eth5 -p udp --dport 520 -m comment --comment bmcDynRouting -j ACCEPT
+iptables -I INPUT -i br-lan -p udp --dport 520 -m comment --comment bmcDynRouting -j ACCEPT"}
+exit=0

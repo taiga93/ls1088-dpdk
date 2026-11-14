@@ -1,0 +1,2 @@
+{"status":-1,"message":"usage: status ospf neighbors|routes|database|interfaces"}
+exit=1

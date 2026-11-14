@@ -1,0 +1,273 @@
+#!/bin/sh
+# Copyright (C) 2015 PIVA Software <www.pivasoftware.com>
+# 	Author: MOHAMED Kallel <mohamed.kallel@pivasoftware.com>
+
+#############################
+#   Entry point functuons   #
+#############################
+
+prefix_list="$prefix_list $DMROOT.WANDevice."
+entry_execute_method_list="$entry_execute_method_list entry_execute_method_root_WANDevice"
+entry_execute_method_list_forcedinform="$entry_execute_method_list_forcedinform entry_execute_method_root_WANDevice"
+
+
+entry_execute_method_root_WANDevice() {
+	case "$1" in ""|"$DMROOT."|"$DMROOT.WANDevice."*)
+		common_execute_method_obj "$DMROOT.WANDevice." "0"
+		common_execute_method_obj "$DMROOT.WANDevice.1." "0"
+		common_execute_method_obj "$DMROOT.WANDevice.1.WANConnectionDevice." "0" "" "" "wan_device_browse_instances_wancxdev $1"
+		return 0
+		;;
+	esac
+	return $E_INVALID_PARAMETER_NAME;
+}
+
+sub_entry_wandevice_wanconnectiondevice() {
+	local j="$2"
+	local iface="$3"
+	local protocol="$4"
+	local default="$5"
+	case_param "$1" belongto "$DMROOT.WANDevice.1.WANConnectionDevice.$j." && {
+		common_execute_method_obj "$DMROOT.WANDevice.1.WANConnectionDevice.$j." "0"
+		case $protocol in
+			IP)
+			common_execute_method_obj "$DMROOT.WANDevice.1.WANConnectionDevice.$j.WANIPConnection." "0"
+			common_execute_method_obj "$DMROOT.WANDevice.1.WANConnectionDevice.$j.WANIPConnection.1." "0"
+			common_execute_method_param "$DMROOT.WANDevice.1.WANConnectionDevice.$j.WANIPConnection.1.Enable" "1" "wan_device_get_ipcx_enable $iface" "wan_device_set_ipcx_enable $iface" "xsd:boolean"
+			common_execute_method_param "$DMROOT.WANDevice.1.WANConnectionDevice.$j.WANIPConnection.1.ConnectionStatus" "0" "wan_device_get_ipcx_status $iface"
+			common_execute_method_param "$DMROOT.WANDevice.1.WANConnectionDevice.$j.WANIPConnection.1.ConnectionType" "0" "echo IP_Routed"
+			common_execute_method_param "$DMROOT.WANDevice.1.WANConnectionDevice.$j.WANIPConnection.1.AddressingType" "1" "wan_device_get_ipcx_addressing_type $iface" "wan_device_set_ipcx_addressing_type $iface"
+			common_execute_method_param "$DMROOT.WANDevice.1.WANConnectionDevice.$j.WANIPConnection.1.ExternalIPAddress" "1" "wan_device_get_ipcx_ipaddr $iface" "wan_device_set_ipcx_ipaddr $iface" "" "$default"
+			common_execute_method_param "$DMROOT.WANDevice.1.WANConnectionDevice.$j.WANIPConnection.1.SubnetMask" "1" "wan_device_get_ipcx_netmask $iface" "wan_device_set_ipcx_netmask $iface"
+			common_execute_method_param "$DMROOT.WANDevice.1.WANConnectionDevice.$j.WANIPConnection.1.DefaultGateway" "1" "wan_device_get_ipcx_gateway $iface" "wan_device_set_ipcx_gateway $iface"
+			common_execute_method_param "$DMROOT.WANDevice.1.WANConnectionDevice.$j.WANIPConnection.1.DNSServers" "1" "wan_device_get_ipcx_dns $iface" "wan_device_set_ipcx_dns $iface"
+			common_execute_method_param "$DMROOT.WANDevice.1.WANConnectionDevice.$j.WANIPConnection.1.MACAddress" "0" "wan_device_get_ipcx_macaddr $iface"
+			;;
+		esac
+		return 0
+	}
+	return $E_INVALID_PARAMETER_NAME;
+}
+
+#######################################
+#     Data model browse instances     #
+#######################################
+
+wan_device_browse_instances_wancxdev() {
+	local map maps=`wan_device_get_interface_maps` 
+	for map in $maps; do
+		local iface=${map%%:*}
+		map=${map#*:}
+		local j=${map%%:*}
+		map=${map#*:}
+		local protocol=${map%%:*}
+		local default=${map#*:}
+		sub_entry_wandevice_wanconnectiondevice "$1" "$j" "$iface" "$protocol" "$default"
+	done
+	return 0;
+}
+
+#######################################
+#   Data model parameters functions   #
+#######################################
+
+wan_device_get_interface_maps() {
+	#should return a list like this: "<interface1>:<instance1>:<protocol>:<default interface? 1 : 0> <interface2>:<instance>:<protocol>:<default interface? 1 : 0>"
+	echo "wan:1:IP:1"
+}
+
+wan_device_get_ipcx_status() {
+	local iface="$1"
+	local up
+	up=`ubus call network.interface.$iface status 2>/dev/null`
+	[ "$?" = "0" ] || { echo "Disconnected"; return 0; }
+	json_init
+	json_load "$up" >/dev/null 2>/dev/null
+	json_get_var up up >/dev/null 2>/dev/null
+	[ "$up" = "1" -o "$up" = "true" ] && echo "Connected" || echo "Disconnected"
+}
+
+wan_device_get_ipcx_enable() {
+	local iface="$1"
+	local val
+	val=`$UCI_GET network.$iface.auto 2>/dev/null`
+	[ "$val" = "0" ] && echo "0" || echo "1"
+}
+
+wan_device_set_ipcx_enable() {
+	local iface="$1"
+	local val="$2"
+	common_set_bool "network.$iface.auto" "$val" "1" "0"
+	local e="$?"
+	[ "$e" != "0" ] && return $e
+	wan_device_apply_wan_changes "$iface"
+}
+
+wan_device_get_ipcx_ipaddr() {
+	local val iface="$1"
+	if [ "`$UCI_GET network.$iface.proto 2>/dev/null`" = "static" ]; then
+		val=`$UCI_GET network.$iface.ipaddr 2>/dev/null`
+	else
+		network_get_ipaddr val "$iface"
+	fi
+	echo "$val"
+}
+
+wan_device_set_ipcx_ipaddr() {
+	local iface="$1"
+	local val="$2"
+	[ -z "$val" ] && return $E_INVALID_PARAMETER_VALUE
+	$UCI_SET network.$iface.proto="static"
+	$UCI_SET network.$iface.ipaddr="$val"
+	wan_device_apply_wan_changes "$iface"
+}
+
+wan_device_get_ipcx_netmask() {
+	local iface="$1"
+	local mask res
+	if [ "`$UCI_GET network.$iface.proto 2>/dev/null`" = "static" ]; then
+		mask=`$UCI_GET network.$iface.netmask 2>/dev/null`
+	else
+		res=`ubus call network.interface.$iface status 2>/dev/null`
+		if [ "$?" = "0" ]; then
+			json_init
+			json_load "$res" >/dev/null 2>/dev/null
+			json_select "ipv4-address" >/dev/null 2>/dev/null
+			json_select 1 >/dev/null 2>/dev/null
+			json_get_var mask mask >/dev/null 2>/dev/null
+			[ -n "$mask" ] && mask=`cdr2mask $mask`
+		fi
+	fi
+	echo "$mask"
+}
+
+wan_device_set_ipcx_netmask() {
+	local iface="$1"
+	local val="$2"
+	[ -z "$val" ] && return $E_INVALID_PARAMETER_VALUE
+	$UCI_SET network.$iface.proto="static"
+	$UCI_SET network.$iface.netmask="$val"
+	wan_device_apply_wan_changes "$iface"
+}
+
+wan_device_get_ipcx_gateway() {
+	local iface="$1"
+	local gateway l3dev
+	if [ "`$UCI_GET network.$iface.proto 2>/dev/null`" = "static" ]; then
+		gateway=`$UCI_GET network.$iface.gateway 2>/dev/null`
+	else
+		l3dev=`wan_device_get_l3_device "$iface"`
+		[ -n "$l3dev" ] && gateway=`ip route 2>/dev/null | awk -v dev="$l3dev" '$1 == "default" && $5 == dev {print $3; exit}'`
+		[ -n "$gateway" ] || gateway=`ip route 2>/dev/null | awk '$1 == "default" {print $3; exit}'`
+	fi
+	echo "$gateway"
+}
+
+wan_device_set_ipcx_gateway() {
+	local iface="$1"
+	local val="$2"
+	[ -z "$val" ] && return $E_INVALID_PARAMETER_VALUE
+	$UCI_SET network.$iface.proto="static"
+	$UCI_SET network.$iface.gateway="$val"
+	wan_device_apply_wan_changes "$iface"
+}
+
+wan_device_get_ipcx_dns() {
+	local iface="$1"
+	local dns res type idx arrvar
+	dns=`$UCI_GET network.$iface.dns 2>/dev/null`
+	if [ -z "$dns" ]; then
+		res=`ubus call network.interface.$iface status 2>/dev/null`
+		if [ "$?" = "0" ]; then
+			json_init
+			json_load "$res" >/dev/null 2>/dev/null
+			json_select "dns-server" >/dev/null 2>/dev/null
+			idx=1
+			while json_get_type type $idx >/dev/null 2>/dev/null && [ "$type" = "string" ]; do
+				json_get_var arrvar "$idx" >/dev/null 2>/dev/null
+				dns="$dns $arrvar"
+				idx=$((idx + 1))
+			done
+		fi
+	fi
+	echo "$dns" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//'
+}
+
+wan_device_set_ipcx_dns() {
+	local iface="$1"
+	local val="$2"
+	$UCI_SET network.$iface.proto="static"
+	if [ -n "$val" ]; then
+		val=`echo "$val" | tr ',' ' ' | sed 's/[[:space:]][[:space:]]*/ /g;s/^[[:space:]]*//;s/[[:space:]]*$//'`
+		$UCI_SET network.$iface.dns="$val"
+	else
+		$UCI_DELETE network.$iface.dns 2>/dev/null
+	fi
+	wan_device_apply_wan_changes "$iface"
+}
+
+wan_device_get_ipcx_addressing_type() {
+	local iface="$1"
+	local proto
+	proto=`$UCI_GET network.$iface.proto 2>/dev/null`
+	[ "$proto" = "static" ] && echo "Static" || echo "DHCP"
+}
+
+wan_device_set_ipcx_addressing_type() {
+	local iface="$1"
+	local val mode
+	val=`echo "$2" | tr 'A-Z' 'a-z' | sed 's/[ _-]//g'`
+	case "$val" in
+		dhcp|dynamic|ipoedynamic)
+			mode="dhcp"
+			;;
+		static|ipoestatic)
+			mode="static"
+			;;
+		*)
+			return $E_INVALID_PARAMETER_VALUE
+			;;
+	esac
+
+	if [ "$mode" = "dhcp" ]; then
+		$UCI_SET network.$iface.proto="dhcp"
+		$UCI_DELETE network.$iface.ipaddr 2>/dev/null
+		$UCI_DELETE network.$iface.netmask 2>/dev/null
+		$UCI_DELETE network.$iface.gateway 2>/dev/null
+		$UCI_DELETE network.$iface.dns 2>/dev/null
+	else
+		$UCI_SET network.$iface.proto="static"
+	fi
+	wan_device_apply_wan_changes "$iface"
+}
+
+wan_device_get_ipcx_macaddr() {
+	local val iface="$1"
+	if [ -z "$default_wan_device_mng_interface_mac" ]; then
+		val=`$UCI_GET network.$iface.macaddr 2>/dev/null`
+		[ -n "$val" ] || val=`cat /sys/class/net/$(wan_device_get_l3_device "$iface")/address 2>/dev/null`
+	else
+		val=$default_wan_device_mng_interface_mac
+	fi
+	echo $val
+}
+
+wan_device_get_l3_device() {
+	local iface="$1"
+	local dev res
+	res=`ubus call network.interface.$iface status 2>/dev/null`
+	if [ "$?" = "0" ]; then
+		json_init
+		json_load "$res" >/dev/null 2>/dev/null
+		json_get_var dev l3_device >/dev/null 2>/dev/null
+	fi
+	[ -n "$dev" ] || dev=`$UCI_GET network.$iface.device 2>/dev/null`
+	[ -n "$dev" ] || dev=`$UCI_GET network.$iface.ifname 2>/dev/null`
+	echo "$dev"
+}
+
+wan_device_apply_wan_changes() {
+	local iface="$1"
+	common_execute_command_in_apply_service "/sbin/ifup $iface"
+	return 0
+}

@@ -1,0 +1,336 @@
+@ports eth0 eth1 eth2 eth4 eth5
+start=120.00
+@window on
+before=120.10
+@before eth0
+     rx packets [CPU 0]: 3752
+     rx packets [CPU 1]: 0
+     rx packets [CPU 2]: 0
+     rx packets [CPU 3]: 0
+     rx packets [TOTAL]: 3752
+@before eth1
+     rx packets [CPU 0]: 2100
+     rx packets [CPU 1]: 0
+     rx packets [CPU 2]: 0
+     rx packets [CPU 3]: 0
+     rx packets [TOTAL]: 2100
+@before eth2
+     rx packets [CPU 0]: 10
+     rx packets [CPU 1]: 0
+     rx packets [CPU 2]: 0
+     rx packets [CPU 3]: 0
+     rx packets [TOTAL]: 10
+@before eth4
+     rx packets [CPU 0]: 0
+     rx packets [CPU 1]: 0
+     rx packets [CPU 2]: 0
+     rx packets [CPU 3]: 0
+     rx packets [TOTAL]: 0
+@before eth5
+     rx packets [CPU 0]: 0
+     rx packets [CPU 1]: 0
+     rx packets [CPU 2]: 0
+     rx packets [CPU 3]: 0
+     rx packets [TOTAL]: 0
+after=130.20
+@after eth0
+     rx packets [CPU 0]: 3762
+     rx packets [CPU 1]: 0
+     rx packets [CPU 2]: 0
+     rx packets [CPU 3]: 0
+     rx packets [TOTAL]: 3762
+@after eth1
+     rx packets [CPU 0]: 2176
+     rx packets [CPU 1]: 0
+     rx packets [CPU 2]: 0
+     rx packets [CPU 3]: 0
+     rx packets [TOTAL]: 2176
+@after eth2
+     rx packets [CPU 0]: 10
+     rx packets [CPU 1]: 0
+     rx packets [CPU 2]: 0
+     rx packets [CPU 3]: 0
+     rx packets [TOTAL]: 10
+@after eth4
+     rx packets [CPU 0]: 0
+     rx packets [CPU 1]: 0
+     rx packets [CPU 2]: 0
+     rx packets [CPU 3]: 0
+     rx packets [TOTAL]: 0
+@after eth5
+     rx packets [CPU 0]: 0
+     rx packets [CPU 1]: 0
+     rx packets [CPU 2]: 0
+     rx packets [CPU 3]: 0
+     rx packets [TOTAL]: 0
+status={"status":0,"message":"Tăng tốc phần cứng is on","state":"on","enabled":true,"accelerated":5,"on_cpu":[]}
+pinned=5
+link eth0 speed 1000 changes 1
+link eth1 speed 1000 changes 2
+link eth2 speed -1 changes 0
+cpu_limit=195312
+cpu_dropped=1204
+@answers
+disable={"status":0,"message":"Tăng tốc phần cứng disabled","enabled":false,"action":"stop","commands":["/etc/init.d/cmm stop"]}
+@window off
+before=132.40
+@before eth0
+     rx packets [CPU 0]: 3762
+     rx packets [CPU 1]: 0
+     rx packets [CPU 2]: 0
+     rx packets [CPU 3]: 0
+     rx packets [TOTAL]: 3762
+@before eth1
+     rx packets [CPU 0]: 2176
+     rx packets [CPU 1]: 0
+     rx packets [CPU 2]: 0
+     rx packets [CPU 3]: 0
+     rx packets [TOTAL]: 2176
+@before eth2
+     rx packets [CPU 0]: 10
+     rx packets [CPU 1]: 0
+     rx packets [CPU 2]: 0
+     rx packets [CPU 3]: 0
+     rx packets [TOTAL]: 10
+@before eth4
+     rx packets [CPU 0]: 0
+     rx packets [CPU 1]: 0
+     rx packets [CPU 2]: 0
+     rx packets [CPU 3]: 0
+     rx packets [TOTAL]: 0
+@before eth5
+     rx packets [CPU 0]: 0
+     rx packets [CPU 1]: 0
+     rx packets [CPU 2]: 0
+     rx packets [CPU 3]: 0
+     rx packets [TOTAL]: 0
+after=142.50
+@after eth0
+     rx packets [CPU 0]: 404120
+     rx packets [CPU 1]: 0
+     rx packets [CPU 2]: 0
+     rx packets [CPU 3]: 0
+     rx packets [TOTAL]: 404120
+@after eth1
+     rx packets [CPU 0]: 823290
+     rx packets [CPU 1]: 0
+     rx packets [CPU 2]: 0
+     rx packets [CPU 3]: 0
+     rx packets [TOTAL]: 823290
+@after eth2
+     rx packets [CPU 0]: 10
+     rx packets [CPU 1]: 0
+     rx packets [CPU 2]: 0
+     rx packets [CPU 3]: 0
+     rx packets [TOTAL]: 10
+@after eth4
+     rx packets [CPU 0]: 0
+     rx packets [CPU 1]: 0
+     rx packets [CPU 2]: 0
+     rx packets [CPU 3]: 0
+     rx packets [TOTAL]: 0
+@after eth5
+     rx packets [CPU 0]: 0
+     rx packets [CPU 1]: 0
+     rx packets [CPU 2]: 0
+     rx packets [CPU 3]: 0
+     rx packets [TOTAL]: 0
+status={"status":0,"message":"Tăng tốc phần cứng is off","state":"off","enabled":false,"accelerated":0,"on_cpu":[]}
+pinned=5
+link eth0 speed 1000 changes 1
+link eth1 speed 1000 changes 2
+link eth2 speed -1 changes 0
+@answers
+enable={"status":0,"message":"Tăng tốc phần cứng enabled","enabled":true,"action":"start","commands":["/etc/init.d/cmm start"]}
+@window again
+before=150.80
+@before eth0
+     rx packets [CPU 0]: 404120
+     rx packets [CPU 1]: 0
+     rx packets [CPU 2]: 0
+     rx packets [CPU 3]: 0
+     rx packets [TOTAL]: 404120
+@before eth1
+     rx packets [CPU 0]: 823290
+     rx packets [CPU 1]: 0
+     rx packets [CPU 2]: 0
+     rx packets [CPU 3]: 0
+     rx packets [TOTAL]: 823290
+@before eth2
+     rx packets [CPU 0]: 10
+     rx packets [CPU 1]: 0
+     rx packets [CPU 2]: 0
+     rx packets [CPU 3]: 0
+     rx packets [TOTAL]: 10
+@before eth4
+     rx packets [CPU 0]: 0
+     rx packets [CPU 1]: 0
+     rx packets [CPU 2]: 0
+     rx packets [CPU 3]: 0
+     rx packets [TOTAL]: 0
+@before eth5
+     rx packets [CPU 0]: 0
+     rx packets [CPU 1]: 0
+     rx packets [CPU 2]: 0
+     rx packets [CPU 3]: 0
+     rx packets [TOTAL]: 0
+after=160.90
+@after eth0
+     rx packets [CPU 0]: 404131
+     rx packets [CPU 1]: 0
+     rx packets [CPU 2]: 0
+     rx packets [CPU 3]: 0
+     rx packets [TOTAL]: 404131
+@after eth1
+     rx packets [CPU 0]: 823377
+     rx packets [CPU 1]: 0
+     rx packets [CPU 2]: 0
+     rx packets [CPU 3]: 0
+     rx packets [TOTAL]: 823377
+@after eth2
+     rx packets [CPU 0]: 10
+     rx packets [CPU 1]: 0
+     rx packets [CPU 2]: 0
+     rx packets [CPU 3]: 0
+     rx packets [TOTAL]: 10
+@after eth4
+     rx packets [CPU 0]: 0
+     rx packets [CPU 1]: 0
+     rx packets [CPU 2]: 0
+     rx packets [CPU 3]: 0
+     rx packets [TOTAL]: 0
+@after eth5
+     rx packets [CPU 0]: 0
+     rx packets [CPU 1]: 0
+     rx packets [CPU 2]: 0
+     rx packets [CPU 3]: 0
+     rx packets [TOTAL]: 0
+status={"status":0,"message":"Tăng tốc phần cứng is on","state":"on","enabled":true,"accelerated":5,"on_cpu":[]}
+pinned=5
+link eth0 speed 1000 changes 1
+link eth1 speed 1000 changes 2
+link eth2 speed -1 changes 0
+cpu_limit=195312
+cpu_dropped=1211
+@answers
+logged_off=1
+logged_on=1
+@snap on-before
+eth0:rx packets [TOTAL]	1000
+eth0:rx_packets	901000
+eth0:tx_packets	2000
+eth1:rx dropped	0
+eth1:rx_packets	2000
+ip:ForwDatagrams	3000
+conntrack:invalid	0
+iptables:INVALID rules	0
+softnet:dropped	0
+tcp_be_liberal	1
+@snap on-after
+eth0:rx packets [TOTAL]	1010
+eth0:rx_packets	901010
+eth0:tx_packets	2011
+eth1:rx dropped	0
+eth1:rx_packets	2020
+ip:ForwDatagrams	3030
+conntrack:invalid	0
+iptables:INVALID rules	0
+softnet:dropped	0
+tcp_be_liberal	1
+@snap off-before
+eth0:rx packets [TOTAL]	1012
+eth0:rx_packets	901012
+eth0:tx_packets	2013
+eth1:rx dropped	0
+eth1:rx_packets	2024
+ip:ForwDatagrams	3036
+conntrack:invalid	0
+iptables:INVALID rules	0
+softnet:dropped	0
+tcp_be_liberal	1
+@snap off-after
+eth0:rx packets [TOTAL]	1812
+eth0:rx_packets	901812
+eth0:tx_packets	2700
+eth1:rx dropped	0
+eth1:rx_packets	3624
+ip:ForwDatagrams	5436
+conntrack:invalid	0
+iptables:INVALID rules	0
+softnet:dropped	0
+tcp_be_liberal	1
+@snap again-before
+eth0:rx packets [TOTAL]	1900
+eth0:rx_packets	901900
+eth0:tx_packets	2800
+eth1:rx dropped	3000
+eth1:rx_packets	3800
+ip:ForwDatagrams	5700
+conntrack:invalid	4100
+iptables:INVALID rules	4100
+softnet:dropped	0
+tcp_be_liberal	1
+@snap again-after
+eth0:rx packets [TOTAL]	1920
+eth0:rx_packets	901920
+eth0:tx_packets	2830
+eth1:rx dropped	3000
+eth1:rx_packets	3840
+ip:ForwDatagrams	5760
+conntrack:invalid	4100
+iptables:INVALID rules	4100
+softnet:dropped	0
+tcp_be_liberal	1
+@trace
+@tick 120.02 eth0 100020 200040 1 eth1 200040 100020 2
+@tick 121.05 eth0 100040 200080 1 eth1 200080 100040 2
+@tick 122.08 eth0 100060 200120 1 eth1 200120 100060 2
+@tick 123.11 eth0 100080 200160 1 eth1 200160 100080 2
+@tick 124.14 eth0 100100 200200 1 eth1 200200 100100 2
+@tick 125.17 eth0 100120 200240 1 eth1 200240 100120 2
+@tick 126.20 eth0 100140 200280 1 eth1 200280 100140 2
+@tick 127.23 eth0 100160 200320 1 eth1 200320 100160 2
+@tick 128.26 eth0 100180 200360 1 eth1 200360 100180 2
+@tick 129.29 eth0 100200 200400 1 eth1 200400 100200 2
+@tick 130.32 eth0 100220 200440 1 eth1 200440 100220 2
+@tick 131.35 eth0 100240 200480 1 eth1 200480 100240 2
+@tick 132.38 eth0 100260 200520 1 eth1 200520 100260 2
+@tick 133.41 eth0 127260 254520 1 eth1 254520 127260 2
+@tick 134.44 eth0 154260 308520 1 eth1 308520 154260 2
+@tick 135.47 eth0 181260 362520 1 eth1 362520 181260 2
+@tick 136.50 eth0 208260 416520 1 eth1 416520 208260 2
+@tick 137.53 eth0 235260 470520 1 eth1 470520 235260 2
+@tick 138.56 eth0 262260 524520 1 eth1 524520 262260 2
+@tick 139.59 eth0 289260 578520 1 eth1 578520 289260 2
+@tick 140.62 eth0 316260 632520 1 eth1 632520 316260 2
+@tick 141.65 eth0 343260 686520 1 eth1 686520 343260 2
+@tick 142.68 eth0 343280 686560 1 eth1 686560 343280 2
+@tick 143.71 eth0 343300 686600 1 eth1 686600 343300 2
+@tick 144.74 eth0 343320 686640 1 eth1 686640 343320 2
+@tick 145.77 eth0 343340 686680 1 eth1 686680 343340 2
+@tick 146.80 eth0 343360 686720 1 eth1 686720 343360 2
+@tick 147.83 eth0 343380 686760 1 eth1 686760 343380 2
+@tick 148.86 eth0 343400 686800 1 eth1 686800 343400 2
+@tick 149.89 eth0 343420 686840 1 eth1 686840 343420 2
+@tick 150.92 eth0 343440 686880 1 eth1 686880 343440 2
+@tick 151.95 eth0 343460 686920 1 eth1 686920 343460 2
+@tick 152.98 eth0 343480 686960 1 eth1 686960 343480 2
+@tick 154.01 eth0 343500 687000 1 eth1 687000 343500 2
+@tick 155.04 eth0 343520 687040 1 eth1 687040 343520 2
+@tick 156.07 eth0 343540 687080 1 eth1 687080 343540 2
+@tick 157.10 eth0 343560 687120 1 eth1 687120 343560 2
+@tick 158.13 eth0 343580 687160 1 eth1 687160 343580 2
+@tick 159.16 eth0 343600 687200 1 eth1 687200 343600 2
+@tick 160.19 eth0 343620 687240 1 eth1 687240 343620 2
+@tick 161.22 eth0 343640 687280 1 eth1 687280 343640 2
+@tick 162.25 eth0 343660 687320 1 eth1 687320 343660 2
+@tick 163.28 eth0 343680 687360 1 eth1 687360 343680 2
+@tick 164.31 eth0 343700 687400 1 eth1 687400 343700 2
+@tick 165.34 eth0 343720 687440 1 eth1 687440 343720 2
+@tick 166.37 eth0 343740 687480 1 eth1 687480 343740 2
+@tick 167.40 eth0 343760 687520 1 eth1 687520 343760 2
+@tick 168.43 eth0 343780 687560 1 eth1 687560 343780 2
+@tick 169.46 eth0 343800 687600 1 eth1 687600 343800 2
+@tick 170.49 eth0 343820 687640 1 eth1 687640 343820 2
+@tick 171.52 eth0 343840 687680 1 eth1 687680 343840 2
+@tick 172.55 eth0 343860 687720 1 eth1 687720 343860 2

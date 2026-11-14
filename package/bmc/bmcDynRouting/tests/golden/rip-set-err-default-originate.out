@@ -1,0 +1,2 @@
+{"status":-1,"message":"--default-originate must be 0 or 1","field":"default_originate"}
+exit=1

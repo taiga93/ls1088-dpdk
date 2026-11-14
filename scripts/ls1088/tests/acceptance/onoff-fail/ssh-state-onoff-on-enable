@@ -1,0 +1,11 @@
+status={"status":0,"message":"Tăng tốc phần cứng is on","state":"on","enabled":true,"reboot_required":false,"accelerated":0,"on_cpu":[]}
+boot_id=33333333-cccc
+init=complete
+layout=engine
+mark=no
+kept=
+engine=1000
+@log
+Tue Oct 21 18:00:00 2026 user.notice bmcHwAccel: Tăng tốc phần cứng turned on
+Tue Oct 21 18:00:00 2026 user.notice bmcHwAccel: Tăng tốc phần cứng turned off
+Tue Oct 21 18:00:00 2026 user.notice bmcHwAccel: Tăng tốc phần cứng turned on

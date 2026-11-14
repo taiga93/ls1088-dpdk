@@ -1,0 +1,35 @@
+#
+# Copyright (C) 2020 OpenWrt.org
+#
+
+. /lib/functions.sh
+
+case "$(board_name)" in
+	fsl,ls1012a-frwy-sdboot | \
+	fsl,ls1012a-rdb | \
+	fsl,ls1021a-iot-sdboot | \
+	fsl,ls1021a-twr | \
+	fsl,ls1021a-twr-sdboot | \
+	fsl,ls1043a-rdb | \
+	fsl,ls1043a-rdb-sdboot | \
+	fsl,ls1046a-rdb | \
+	fsl,ls1088a-rdb | \
+	fsl,ls2088a-rdb)
+		uci set system.@system[0].compat_version="2.0"
+		uci commit system
+		;;
+	fsl,ls1046a-rdb-sdboot)
+		# Hardware acceleration base, see Device/hwaccel-base in
+		# image/Makefile.
+		uci set system.@system[0].compat_version="3.0"
+		uci commit system
+		;;
+	fsl,ls1088a-rdb-sdboot)
+		# The same base on the LS1088A-RDB, see Device/ls1088-base in
+		# image/Makefile.
+		uci set system.@system[0].compat_version="3.0"
+		uci commit system
+		;;
+esac
+
+exit 0

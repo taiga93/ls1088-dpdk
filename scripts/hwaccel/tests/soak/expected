@@ -1,0 +1,31 @@
+== board root@192.168.1.1 ==
+Linux OpenWrt 6.12.94 #0 SMP Thu Oct  1 08:00:00 2026 aarch64 GNU/Linux
+[    1.812345] fsl-fman 1a00000.fman: FMan-Controller code (ver 210.10.1)
+[   34.101010] cdx: FMAN firmware 210.10.1 - ASK supported
+eth0 soc:fsl,dpaa:ethernet@2 02:00:00:46:00:00
+eth1 soc:fsl,dpaa:ethernet@3 02:00:00:46:00:01
+eth2 soc:fsl,dpaa:ethernet@4 02:00:00:46:00:02
+eth3 soc:fsl,dpaa:ethernet@5 02:00:00:46:00:03
+eth4 soc:fsl,dpaa:ethernet@8 02:00:00:46:00:04
+eth5 soc:fsl,dpaa:ethernet@9 02:00:00:46:00:05
+br-lan           UP             02:00:00:46:00:01 <BROADCAST,MULTICAST,UP,LOWER_UP>
+eth0             UP             02:00:00:46:00:00 <BROADCAST,MULTICAST,UP,LOWER_UP>
+eth1             UP             02:00:00:46:00:01 <BROADCAST,MULTICAST,UP,LOWER_UP>
+== results ==
+net            wan eth0 has no address from DHCP; using 192.168.2.1/24 until the script ends
+soak           PASS  944 Mbps over 180 s, first minute 941, last minute 946, slowest minute 941 Mbps, 40 retransmits; 3 looks at the board, at most 77 rx packets on the CPU in 10 s; bmchwaccel status at the end: on; memory available: 1503212 kB at the start, 1501876 kB at the end
+               | Mbps of every minute: 941 947 946 
+               | [ 1012.400112] br-lan: port 2(eth2) entered disabled state
+RESULT: PASS
+exit=0
+-- calls --
+ssh info
+ssh net plain
+ssh flush
+ssh soak start
+ssh sample soak
+ssh sample soak
+ssh sample soak
+ssh soak end
+ssh unnet
+iperf3 soak

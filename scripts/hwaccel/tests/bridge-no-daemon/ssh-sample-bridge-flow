@@ -1,0 +1,5 @@
+@ports eth1 eth2
+link eth1 speed 1000 changes 1
+link eth2 speed 1000 changes 1
+status={"status":0,"message":"x","state":"unavailable","reason":"module","enabled":true,"accelerated":0,"on_cpu":[]}
+@conntrack

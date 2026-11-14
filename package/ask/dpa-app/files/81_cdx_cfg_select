@@ -1,0 +1,17 @@
+# Select the FMan hardware config for this board before init runs: the
+# dpa_app helper of cdx.ko reads the fixed path /etc/cdx_cfg.xml when the
+# module is loaded (by bmcHwAccel, package/bmc/bmcHwAccel). Variants ship in
+# /etc/cdx_cfg/<device>.xml (device = board name minus the "mono,"
+# vendor prefix and the -sdboot boot-medium suffix). Idempotent, runs
+# every boot after 02_sysinfo_fixup has finalized the board name.
+do_cdx_cfg_select() {
+	[ -e /tmp/sysinfo/board_name ] || return
+	board="$(strings /tmp/sysinfo/board_name)"
+	board="${board#mono,}"
+	board="${board#fsl,}"
+	board="${board%-sdboot}"
+	[ -f "/etc/cdx_cfg/${board}.xml" ] && \
+		ln -sf "/etc/cdx_cfg/${board}.xml" /etc/cdx_cfg.xml
+}
+
+boot_hook_add preinit_main do_cdx_cfg_select

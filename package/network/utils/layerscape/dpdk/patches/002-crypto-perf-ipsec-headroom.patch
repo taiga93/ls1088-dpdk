@@ -1,0 +1,21 @@
+dpdk-test-crypto-perf makes the mbufs of an IPsec test with the headroom the
+crypto device asks for, none for dpaa2_sec, which puts the outer IP and ESP
+headers of an outbound SA in front of the packet (SEC_FLC_DHR_OUTBOUND, 114
+bytes): every op then fails with the QI status 0x45, "DHR correction
+underflow". Give an IPsec test RTE_PKTMBUF_HEADROOM at least.
+
+--- a/app/test-crypto-perf/main.c
++++ b/app/test-crypto-perf/main.c
+@@ -253,6 +253,12 @@
+ 			/* Update headroom */
+ 			opts->headroom_sz = cdev_info.min_mbuf_headroom_req;
+ 		}
++		/* An outbound IPsec SA puts its outer headers in front of the
++		 * packet: dpaa2_sec needs 114 bytes there and does not say so.
++		 */
++		if (opts->op_type == CPERF_IPSEC &&
++				opts->headroom_sz < RTE_PKTMBUF_HEADROOM)
++			opts->headroom_sz = RTE_PKTMBUF_HEADROOM;
+ 		if (opts->tailroom_sz < cdev_info.min_mbuf_tailroom_req) {
+ 			/* Update tailroom */
+ 			opts->tailroom_sz = cdev_info.min_mbuf_tailroom_req;

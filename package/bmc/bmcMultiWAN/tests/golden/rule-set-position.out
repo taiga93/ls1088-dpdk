@@ -1,0 +1,11 @@
+{"status":0,"message":"Luật chọn WAN web saved","uci_batch":"set mwan3.web=rule
+set mwan3.web.family='ipv4'
+set mwan3.web.proto='tcp'
+set mwan3.web.dest_port='80,443'
+set mwan3.web.use_policy='c_only'
+reorder mwan3.web=18
+reorder mwan3.acct=18
+reorder mwan3.voip=18
+reorder mwan3.rtp=18
+reorder mwan3.default_rule=18","commands":[]}
+exit=0

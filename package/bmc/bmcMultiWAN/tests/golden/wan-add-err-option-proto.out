@@ -1,0 +1,2 @@
+{"status":-1,"message":"option --ipaddr is only valid with --proto static","field":"ipaddr"}
+exit=1

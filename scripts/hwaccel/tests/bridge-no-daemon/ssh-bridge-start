@@ -1,0 +1,8 @@
+pc1=192.168.1.10
+pc1_mac=3c:22:fb:00:00:01
+pc2_mac=3c:22:fb:00:00:02
+pc1_port=eth1
+pc2_port=eth2
+nf_call=1
+daemon=none
+status={"status":0,"message":"x","state":"unavailable","reason":"module","enabled":true,"accelerated":0,"on_cpu":[]}

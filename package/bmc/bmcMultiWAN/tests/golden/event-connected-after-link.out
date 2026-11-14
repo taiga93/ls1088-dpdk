@@ -1,0 +1,2 @@
+{"status":0,"message":"Chuyển WAN logged","wan":"wan3","state":"online","log":"Chuyển WAN: wan3 has Internet again; Chính sách WAN default_policy now uses wan, c_only now uses wan3","time":1790000500,"commands":[]}
+exit=0

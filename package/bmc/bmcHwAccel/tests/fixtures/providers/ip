@@ -1,0 +1,3 @@
+#!/bin/sh
+# Stand-in for ip in the test of the programs of blocked.d: the addresses of br-lan.
+echo '14: br-lan    inet 192.168.5.1/24 brd 192.168.5.255 scope global br-lan\       valid_lft forever preferred_lft forever'

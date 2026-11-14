@@ -1,0 +1,18 @@
+#!/bin/sh
+
+# FRR must only be started after its configuration has been generated from UCI.
+/etc/init.d/frr stop >/dev/null 2>&1
+/etc/init.d/frr disable >/dev/null 2>&1
+uci -q batch <<'EOF'
+delete firewall.bmcDynRouting
+set firewall.bmcDynRouting=include
+set firewall.bmcDynRouting.type='script'
+set firewall.bmcDynRouting.path='/usr/share/bmcDynRouting/firewall.include'
+set firewall.bmcDynRouting.reload='1'
+EOF
+uci -q commit firewall
+# Upgrade from phase 1: move the router-id from the OSPF section to the global one (idempotent).
+# A failure keeps this script, so the migration is retried on the next boot.
+/usr/sbin/bmcdynrouting migrate >/dev/null 2>&1 || exit 1
+/etc/init.d/bmcDynRouting enable
+exit 0

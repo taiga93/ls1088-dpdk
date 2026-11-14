@@ -1,0 +1,12 @@
+{"status":0,"message":"Luật chọn WAN tcp_all saved","uci_batch":"set mwan3.tcp_all=rule
+set mwan3.tcp_all.family='ipv4'
+set mwan3.tcp_all.proto='tcp'
+set mwan3.tcp_all.src_port='1024:65535'
+set mwan3.tcp_all.dest_port='22,80,443,8000:8080'
+set mwan3.tcp_all.use_policy='c_only'
+reorder mwan3.acct=18
+reorder mwan3.voip=18
+reorder mwan3.rtp=18
+reorder mwan3.tcp_all=18
+reorder mwan3.default_rule=18","commands":[]}
+exit=0

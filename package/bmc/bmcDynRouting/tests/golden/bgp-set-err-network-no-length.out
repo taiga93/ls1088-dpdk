@@ -1,0 +1,2 @@
+{"status":-1,"message":"network 192.168.1.0 must be a prefix a.b.c.d/n","field":"networks"}
+exit=1

@@ -1,0 +1,43 @@
+@conntrack
+ipv4     2 udp      17 src=192.168.1.10 dst=198.51.100.2 sport=50011 dport=5203 [PERMANENT] packets=3 bytes=164 src=198.51.100.2 dst=192.168.3.1 sport=5203 dport=50011 packets=1 bytes=60 [ASSURED] mark=256 zone=0 use=3
+waited=90
+switch=
+@ports eth0 eth2 eth1 eth4 eth5
+wan_tx_before=500000
+wan2_tx_before=700000
+@before eth0
+     rx packets [CPU 0]: 1000
+     rx packets [TOTAL]: 1000
+@before eth2
+     rx packets [CPU 0]: 1000
+     rx packets [TOTAL]: 1000
+@before eth1
+     rx packets [CPU 0]: 1000
+     rx packets [TOTAL]: 1000
+@before eth4
+     rx packets [CPU 0]: 1000
+     rx packets [TOTAL]: 1000
+@before eth5
+     rx packets [CPU 0]: 1000
+     rx packets [TOTAL]: 1000
+wan_tx_after=500009
+wan2_tx_after=801187
+@after eth0
+     rx packets [CPU 0]: 1012
+     rx packets [TOTAL]: 1012
+@after eth2
+     rx packets [CPU 0]: 1000
+     rx packets [TOTAL]: 1000
+@after eth1
+     rx packets [CPU 0]: 1030
+     rx packets [TOTAL]: 1030
+@after eth4
+     rx packets [CPU 0]: 1000
+     rx packets [TOTAL]: 1000
+@after eth5
+     rx packets [CPU 0]: 1000
+     rx packets [TOTAL]: 1000
+status={"status":0,"message":"Tăng tốc phần cứng is on","state":"on","enabled":true,"accelerated":5,"on_cpu":[]}
+removed=
+wan=up online
+wan2=up online

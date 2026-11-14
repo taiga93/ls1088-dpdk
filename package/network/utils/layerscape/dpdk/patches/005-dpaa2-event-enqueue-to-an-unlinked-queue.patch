@@ -1,0 +1,63 @@
+event_dpaa2 sends an event to a queue through the DPCI of that queue,
+which it takes from the enqueuing port: from the copy of the queue's
+information that port_link makes. A port only has those of the queues it
+links, so an event to another queue reads a NULL DPCI and the process
+dies. bmchwaccel-engine (ticket 16 of .scratch/hw-accel-ls1088) links
+each worker's port to that worker's queue alone and wakes another worker
+with an event to its queue. Give every port the DPCI of every queue when
+it is set up, and keep it when a queue is unlinked; dequeuing still
+looks only at the queues a port links (event_port, dpcon).
+
+--- a/drivers/event/dpaa2/dpaa2_eventdev.c
++++ b/drivers/event/dpaa2/dpaa2_eventdev.c
+@@ -547,8 +547,10 @@
+ dpaa2_eventdev_port_setup(struct rte_eventdev *dev, uint8_t port_id,
+ 			  const struct rte_event_port_conf *port_conf)
+ {
++	struct dpaa2_eventdev *priv = dev->data->dev_private;
+ 	char event_port_name[32];
+ 	struct dpaa2_port *portal;
++	int i;
+ 
+ 	EVENTDEV_INIT_FUNC_TRACE();
+ 
+@@ -562,6 +564,12 @@
+ 	}
+ 
+ 	memset(portal, 0, sizeof(struct dpaa2_port));
++	/*
++	 * An enqueue takes the DPCI of the queue the event goes to from the
++	 * port: of every queue, not only those the port links.
++	 */
++	for (i = 0; i < DPAA2_EVENT_MAX_QUEUES; i++)
++		portal->evq_info[i].dpci = priv->evq_info[i].dpci;
+ 	dev->data->ports[port_id] = portal;
+ 	return 0;
+ }
+@@ -612,6 +620,7 @@
+ dpaa2_eventdev_port_unlink(struct rte_eventdev *dev, void *port,
+ 			   uint8_t queues[], uint16_t nb_unlinks)
+ {
++	struct dpaa2_eventdev *priv = dev->data->dev_private;
+ 	struct dpaa2_port *dpaa2_portal = port;
+ 	int i;
+ 	struct dpaa2_dpio_dev *dpio_dev = NULL;
+@@ -620,9 +629,6 @@
+ 
+ 	EVENTDEV_INIT_FUNC_TRACE();
+ 
+-	RTE_SET_USED(dev);
+-	RTE_SET_USED(queues);
+-
+ 	for (i = 0; i < nb_unlinks; i++) {
+ 		evq_info = &dpaa2_portal->evq_info[queues[i]];
+ 
+@@ -638,6 +644,8 @@
+ 						evq_info->dpcon->dpcon_id);
+ 		}
+ 		memset(evq_info, 0, sizeof(struct dpaa2_eventq));
++		/* still for an enqueue (port_setup) */
++		evq_info->dpci = priv->evq_info[queues[i]].dpci;
+ 		if (dpaa2_portal->num_linked_evq)
+ 			dpaa2_portal->num_linked_evq--;
+ 	}

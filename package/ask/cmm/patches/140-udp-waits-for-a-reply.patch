@@ -1,0 +1,34 @@
+From: BMC firmware
+Subject: cmm: a UDP connection goes to the forward engine after its first reply
+
+The daemon handed the sending direction of a UDP connection to the
+forward engine as soon as conntrack had the connection, before the other
+side had sent anything. Every packet after the first then went through
+the hardware, past netfilter.
+
+ddos_protect limits UDP packets of connections without a reply
+(ctstate NEW, 100 a second by default) and relies on such packets
+reaching netfilter (ADR-0011). On the board, of 5000 packets sent
+through the router with one 5-tuple at 500 a second, the rule saw one
+(logs/t22-flood-2.log, 2026-10-09).
+
+Now the sending direction waits for the first reply; the answering
+direction waits for ASSURED as before. UDP that is never answered stays
+on the CPU.
+
+---
+--- a/cmm/src/conntrack.c
++++ b/cmm/src/conntrack.c
+@@ -2422,7 +2422,11 @@
+ 				if (status & IPS_ASSURED) {
+ 					rc = __cmmCtRegister(ctx->fci_handle, ctx->handle, ct, ctEntry, ORIGINATOR | REPLIER);
+ 				}
+-				else if (status & IPS_CONFIRMED) {
++				else if ((status & (IPS_CONFIRMED | IPS_SEEN_REPLY)) == (IPS_CONFIRMED | IPS_SEEN_REPLY)) {
++					/* Not before the other side has answered: a
++					 * flood of UDP packets with one 5-tuple would
++					 * go through the forward engine after its first
++					 * packet, past the limit of ddos_protect. */
+ 					rc = __cmmCtRegister(ctx->fci_handle, ctx->handle, ct, ctEntry, ORIGINATOR);
+ 				}
+ 				else {

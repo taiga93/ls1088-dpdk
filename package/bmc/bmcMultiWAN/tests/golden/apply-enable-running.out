@@ -1,0 +1,2 @@
+{"status":0,"message":"Multi-WAN plan ready","action":"restart","commands":["/etc/init.d/mwan3 restart"]}
+exit=0

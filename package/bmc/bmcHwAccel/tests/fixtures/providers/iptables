@@ -1,0 +1,34 @@
+#!/bin/sh
+# Stand-in for iptables in the test of the programs of blocked.d: answers `-w -S <chain>` with rules as
+# iptables prints them on the board. $FAKE_FIDO "off": bmcfido is not in FORWARD.
+case "$3" in
+	BMC_SVC4)
+		cat <<'RULES'
+-N BMC_SVC4
+-A BMC_SVC4 -p tcp -m mac --mac-source AA:BB:CC:DD:EE:01 -m set --match-set agh_own_4 dst -j REJECT --reject-with tcp-reset
+-A BMC_SVC4 -p udp -m mac --mac-source AA:BB:CC:DD:EE:01 -m set --match-set agh_own_4 dst -j DROP
+-A BMC_SVC4 -m mac --mac-source AA:BB:CC:DD:EE:01 -j RETURN
+-A BMC_SVC4 -p tcp -m set --match-set agh_always_4 dst -j REJECT --reject-with tcp-reset
+-A BMC_SVC4 -p udp -m set --match-set agh_always_4 dst -j DROP
+-A BMC_SVC4 -p tcp -m set --match-set agh_utc_now_4 dst -m time --timestart 09:00:00 --timestop 23:59:59 --weekdays Mon --datestop 2038-01-19T03:14:07 -j REJECT --reject-with tcp-reset
+-A BMC_SVC4 -p tcp -m set --match-set agh_utc_early_4 dst -m time --timestart 00:00:00 --timestop 08:59:59 --weekdays Mon --datestop 2038-01-19T03:14:07 -j REJECT --reject-with tcp-reset
+-A BMC_SVC4 -p tcp -m set --match-set agh_utc_tue_4 dst -m time --weekdays Tue --datestop 2038-01-19T03:14:07 -j REJECT --reject-with tcp-reset
+-A BMC_SVC4 -p tcp -m set --match-set agh_here_tue_4 dst -m time --weekdays Tue --datestop 2038-01-19T03:14:07 --kerneltz -j REJECT --reject-with tcp-reset
+-A BMC_SVC4 -p tcp -m set --match-set agh_here_mon_4 dst -m time --weekdays Mon --datestop 2038-01-19T03:14:07 --kerneltz -j REJECT --reject-with tcp-reset
+RULES
+		;;
+	FORWARD)
+		echo '-P FORWARD DROP'
+		[ "${FAKE_FIDO:-on}" = off ] || echo '-A FORWARD -i br-lan -j BMC_FIDO'
+		echo '-A FORWARD -j MAC_FILTER'
+		;;
+	BMC_FIDO)
+		cat <<'RULES'
+-N BMC_FIDO
+-A BMC_FIDO -m set --match-set authorized_table src -j RETURN
+-A BMC_FIDO -s 192.168.1.100/32 -j RETURN
+-A BMC_FIDO -p tcp -m tcp --dport 443 -j REJECT --reject-with tcp-reset
+-A BMC_FIDO -j DROP
+RULES
+		;;
+esac

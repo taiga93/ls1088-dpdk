@@ -1,0 +1,2 @@
+config dhcpguard 'main'
+    option enabled '0'

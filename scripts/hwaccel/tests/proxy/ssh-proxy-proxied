@@ -1,0 +1,7 @@
+logged=0
+icap_requests=2
+line=
+from_board=1
+forwarded=0
+redirected=1
+status={"status":0,"message":"Tăng tốc phần cứng is on","state":"on","enabled":true,"accelerated":0,"on_cpu":[]}

@@ -1,0 +1,14 @@
+@kernel
+[    4.270001] fsl-fman_xmdio 1afd000.mdio: MDC frequency set to 2491103 Hz (was 1353965 Hz)
+[    6.452216] fsl-fman 1a00000.fman: FMan-Controller code (ver 210.10.1) (0x6a0412)
+[    6.459216] fsl_mac 1af0000.ethernet: FMan MAC address: 02:00:00:46:00:04
+[    6.902345] fsl_dpa: Probed interface eth0
+[    6.912345] fsl_dpa: Probed interface eth1
+[    6.922345] fsl_dpa: Probed interface eth2
+[    6.932345] fsl_dpa: Probed interface eth3
+[    6.942345] fsl_dpa: Probed interface eth4
+[    6.952345] fsl_dpa: Probed interface eth5
+[   31.512345] br-lan: port 1(eth1) entered forwarding state
+@phy
+port=eth4
+phy=Aquantia AQR113C

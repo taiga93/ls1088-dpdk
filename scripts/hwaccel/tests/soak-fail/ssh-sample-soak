@@ -1,0 +1,28 @@
+@ports eth0 eth1
+@before eth0
+     rx packets [CPU 0]: 4
+     rx packets [CPU 1]: 0
+     rx packets [CPU 2]: 0
+     rx packets [CPU 3]: 0
+     rx packets [TOTAL]: 4
+@before eth1
+     rx packets [CPU 0]: 4
+     rx packets [CPU 1]: 0
+     rx packets [CPU 2]: 0
+     rx packets [CPU 3]: 0
+     rx packets [TOTAL]: 4
+@after eth0
+     rx packets [CPU 0]: 812349
+     rx packets [CPU 1]: 0
+     rx packets [CPU 2]: 0
+     rx packets [CPU 3]: 0
+     rx packets [TOTAL]: 812349
+@after eth1
+     rx packets [CPU 0]: 398004
+     rx packets [CPU 1]: 0
+     rx packets [CPU 2]: 0
+     rx packets [CPU 3]: 0
+     rx packets [TOTAL]: 398004
+status={"status":0,"message":"Tăng tốc phần cứng is on","state":"on","enabled":true,"accelerated":12,"on_cpu":[]}
+@conntrack
+ipv4     2 tcp      6 src=192.168.1.10 dst=192.168.2.10 sport=50011 dport=5201 [PERMANENT] packets=3 bytes=164 src=192.168.2.10 dst=192.168.1.10 sport=5201 dport=50011 packets=1 bytes=60 [ASSURED] mark=0 zone=0 use=3

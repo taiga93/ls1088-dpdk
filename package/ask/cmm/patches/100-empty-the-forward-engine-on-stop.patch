@@ -1,0 +1,72 @@
+From: BMC firmware
+Subject: cmm: empty the forward engine when the daemon stops
+
+A daemon that gets SIGTERM closed its sockets and left every connection
+and bridged flow in the forward engine. Nothing removes them after that:
+the engine keeps forwarding connections that have ended or whose route
+changed, and "stop the daemon" does not turn fast forwarding off.
+
+On SIGTERM, refuse new connections, then reset the forward engine while
+the worker threads still run. Bridged flows are now refused as well while
+fast forwarding is off; before, only conntrack events were. The reset
+makes open connections continue through the stack, so
+nf_conntrack_tcp_be_liberal is no longer set back to 0 on exit: strict
+window checking would break every TCP connection that comes back.
+
+The conntrack entries of those connections keep IPS_PERMANENT. Clearing
+it here would let the kernel expire a connection at once whose timeout
+ran out while the engine carried it.
+
+---
+--- a/cmm/src/cmm.c
++++ b/cmm/src/cmm.c
+@@ -272,6 +272,16 @@
+ 	int ret = 0;
+ 
+ 	cmm_print(DEBUG_INFO, "%s: entered\n", __func__);
++
++	/*
++	 * Leave nothing in the forward engine: with the daemon gone, nobody
++	 * removes a connection that ended or whose route changed, and the
++	 * engine would keep forwarding it. The other threads still run, so
++	 * new connections are refused first; cmmFeReset() waits for the locks
++	 * they hold, which this thread never holds while it sits in pause().
++	 */
++	globalConf.enable = 0;
++	cmmFeReset(globalConf.cli.fci_handle);
+ 
+ 	cmmCliExit(&globalConf.cli);
+ 
+--- a/cmm/src/conntrack.c
++++ b/cmm/src/conntrack.c
+@@ -2599,7 +2599,13 @@
+ {
+ 	cmm_print(DEBUG_INFO, "%s:\n", __func__);
+ 
+-	file_write(TCP_BE_LIBERAL_PATH, "0", 1);
++	/*
++	 * nf_conntrack_tcp_be_liberal stays 1. The connections the forward
++	 * engine carried go on through the stack once the daemon is gone,
++	 * and the kernel last saw their sequence numbers before they were
++	 * offloaded: with strict window checking their packets are INVALID,
++	 * are not translated by NAT any more, and the connections break.
++	 */
+ }
+ 
+ 
+--- a/cmm/src/module_rx.c
++++ b/cmm/src/module_rx.c
+@@ -146,6 +146,13 @@
+ 	cmm_print(DEBUG_INFO, "%s\n", __func__);
+ 	cmm_l2flow_print(DEBUG_INFO, l2flow_tmp, 0);
+ 
++	/* Fast forwarding is switched off (set activate 0, or the daemon is
++	 * stopping): the flow stays with the bridge, as a routed connection
++	 * stays with the stack. No answer is sent, so the bridge module
++	 * offers the flow again and a daemon that is active later takes it. */
++	if (!globalConf.enable)
++		return 0;
++
+ 	cmm_print(DEBUG_INFO, "Input itf idx = %d ", iifi_idx);
+ 	cmm_print(DEBUG_INFO, "Output itf idx = %d ", oifi_idx);
+ 	cmm_print(DEBUG_INFO, "Mark = %0x4\n", mark);

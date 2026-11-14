@@ -1,0 +1,27 @@
+#!/bin/sh
+
+if [ "$ACTION" = "ifup" ] && [ "$INTERFACE" = "lan" ]; then
+    logger -t Squid/SquidClamAV "LAN just up, need run update Squid conf"
+    # Delete old rules first
+    iptables -t nat -D PREROUTING -i br-lan -p tcp --dport 80 -j REDIRECT --to-port 3128
+    usleep 10000 #sleep 10ms
+    iptables -t nat -D PREROUTING -i br-lan -p tcp --dport 443 -j REDIRECT --to-port 3129
+
+    /etc/squid/update_squid_conf.sh
+    /etc/c-icap/update_squidclamav_ip.sh
+
+    # Restart antivirus apps
+    /etc/init.d/clamav restart
+    usleep 10000 #sleep 10ms
+    /etc/init.d/squid restart
+    usleep 10000 #sleep 10ms
+    /etc/init.d/c-icap restart
+    usleep 10000 #sleep 10ms
+
+    CLAMAV_ENABLE="$(uci -q get clamav.clamav.enable)"
+    if [ "$CLAMAV_ENABLE" = "enable" ] || [ "$CLAMAV_ENABLE" = "1" ]; then
+        iptables -t nat -A PREROUTING -i br-lan -p tcp --dport 80 -j REDIRECT --to-port 3128
+        usleep 10000 #sleep 10ms
+        iptables -t nat -A PREROUTING -i br-lan -p tcp --dport 443 -j REDIRECT --to-port 3129
+    fi
+fi

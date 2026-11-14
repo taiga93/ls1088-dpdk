@@ -1,0 +1,289 @@
+#!/bin/sh
+# The DPAA2 layout of this boot (ADR-0013), which /etc/init.d/phy_init asks
+# for before it makes the ports:
+#   engine  the MACs of bmchwaccel-engine (UCI list bmchwaccel.global.port,
+#           dpmac.1 and dpmac.2) each get two DPNIs in the container of the
+#           engine (see ./container), and the kernel's port of each is a
+#           DPNI linked to one of them; the other MACs are as in the kernel
+#           layout. Hugepages are reserved for the engine.
+#   kernel  every MAC has a DPNI of dpaa2-eth, as on the 24.10 firmware; no
+#           engine, no hugepages.
+# The engine layout is built when Tăng tốc phần cứng is enabled (UCI
+# bmchwaccel.global.enabled, 1 when unset) and the boots before did not fail
+# to run it: neither the file $failed (why a boot could not run the engine)
+# is there, nor the boot mark $mark of two boots in a row. The id of the
+# boot is added to the mark before the engine layout is built, and the mark
+# goes once the engine has run well (`layout ok`): a boot that hung or
+# crashed on its way leaves its id. One such boot is not enough (a power cut
+# in the first minute); after two the boots are in the kernel layout. Both
+# stay until `layout retry` (bmchwaccel enable), and a sysupgrade drops
+# them, so a new firmware tries again. A boot without the memory of the
+# engine is in the kernel layout too, for that boot only. The layout of a
+# boot is decided once, at the first call, which
+# /etc/init.d/bmchwaccel-layout makes early in the boot, before the other
+# services take the memory the hugepages need. It never changes while the
+# router runs.
+#
+#   layout            engine or kernel
+#   layout current    the layout of this boot, without deciding it: kernel
+#                     while no call decided it
+#   layout ports      the MACs of the engine: dpmac.1 dpmac.2
+#   layout workers    how many workers the engine runs (1 to 4)
+#   layout reason     why the next boot is in the kernel layout even when
+#                     enabled: "engine TEXT" (a boot could not run the
+#                     engine, TEXT says why) or "boot_skipped" (two boots in
+#                     a row did not finish starting it); nothing and exit 1
+#                     otherwise
+#   layout skipped    why this boot is in the kernel layout although enabled
+#                     and the boots before did not fail: its memory; nothing
+#                     and exit 1 otherwise
+#   layout ok         the engine of this boot runs well: the mark goes
+#   layout retry      the next boot tries the engine layout again: the
+#                     reason and the marks of the boots before go
+#   layout tx-limits PORT...
+#                     the --tx-limit options of bmchwaccel-engine (ticket 21)
+#                     from UCI list bmchwaccel.global.tx_limit, 'PORT:MBPS'
+#                     each, for the kernel's names PORT... of the ports the
+#                     engine has: what its cable side sends at most, 8 to
+#                     10000 Mbps (the engine takes it down to a step of 8).
+#                     An entry of another port, of a wrong rate
+#                     or of a port given before is left out with a syslog
+#                     line, since the engine would stop at it. Read each time
+#                     the engine starts, unlike the ports and workers.
+#   layout fail [--reboot] TEXT
+#                     this boot could not run the engine layout: the boots
+#                     after build the kernel layout, with TEXT as the reason
+#                     (the first TEXT of a boot is kept), one syslog line;
+#                     the hugepages go back to the kernel. --reboot then
+#                     restarts the router, which has no way to the wire on
+#                     the ports of the engine.
+# The ports and workers are those of the boot, as its hugepages are: UCI
+# changed since takes effect at the next boot.
+#
+# BMCHWACCEL_RUN_DIR, BMCHWACCEL_STATE_DIR, BMCHWACCEL_PROC and
+# BMCHWACCEL_HUGE_DIR replace /var/run/bmchwaccel, /etc/bmcHwAccel, /proc
+# (for its mounts and the boot id) and /dev/hugepages, for tests.
+set -u
+
+run_dir=${BMCHWACCEL_RUN_DIR:-/var/run/bmchwaccel}
+# Survive a reboot; a sysupgrade drops them, so a new firmware tries again.
+state_dir=${BMCHWACCEL_STATE_DIR:-/etc/bmcHwAccel}
+failed=$state_dir/unavailable
+mark=$state_dir/booting
+proc=${BMCHWACCEL_PROC:-/proc}
+huge_dir=${BMCHWACCEL_HUGE_DIR:-/dev/hugepages}
+
+max_workers=4
+# CORE_BURST and CORE_MAX_PORTS of src/core.h
+burst=32
+max_ports=8
+
+log() { logger -t bmcHwAccel "$*"; }
+
+boot_id() { cat "$proc/sys/kernel/random/boot_id" 2>/dev/null; }
+
+# The mark of a boot before this one: that boot did not finish starting the
+# engine.
+# The ids of the boots before this one that did not finish starting the
+# engine, in a row: one line, the oldest first.
+marks_left() {
+	this=$(boot_id)
+	for id in $(cat "$mark" 2>/dev/null); do
+		[ "$id" = "$this" ] || echo "$id"
+	done
+}
+
+# Two boots in a row did not finish starting it.
+mark_skips() {
+	[ "$(marks_left | wc -l)" -ge 2 ]
+}
+
+# Writes a file of the state directory and makes sure it is on the card.
+keep() { # file, text
+	mkdir -p "$state_dir" && echo "$2" > "$1" && sync
+}
+
+uci_get() { uci -q get "bmchwaccel.global.$1"; }
+
+# The MACs of the engine; the default when one is not a MAC (bmchwaccel get
+# says so).
+uci_ports() {
+	p=$(uci_get port) || p=
+	for m in $p; do
+		case "$m" in
+		dpmac.[1-9] | dpmac.[1-9][0-9]) ;;
+		*) p= ;;
+		esac
+	done
+	[ -n "$p" ] || p="dpmac.1 dpmac.2"
+	echo $p
+}
+
+uci_workers() {
+	w=$(uci_get workers) || w=
+	case "$w" in
+	[1-9]) [ "$w" -le $max_workers ] || w=$max_workers ;;
+	*) w=$max_workers ;;
+	esac
+	echo "$w"
+}
+
+# What the boot decided with ($1: ports or workers).
+of_boot() {
+	layout > /dev/null
+	cat "$run_dir/$1"
+}
+
+# 2 MB pages for the engine: its packet buffers, as many as bmchwaccel-engine
+# makes for the queues of its ports and workers (512 Rx and 512 Tx
+# descriptors a queue, 2.5 kB each), its table of connections and what was
+# learned (about 64 MB at the defaults), 64 MB for what the EAL and the
+# eventdev take besides (44 MB measured) and for dpdk-pdump, and ESP on the
+# SEC: the sessions and the tables of 24576 SAs, 4096 tunnels (32 MB), and
+# the queue pairs, operations and credit of each worker (2 MB; 37.8 MB
+# measured for 4 workers); for Tunnel IPsec, the packet buffers the SEC
+# and the credit of each worker hold (1280, and 1024 for fragments put
+# together), the tables of the SAs held (4 MB) and the 128 buffers of 64 kB
+# of large datagrams put together (10 MB with what 2 MB pages leave over).
+# Measured on the board: see the README of bmcHwAccelDpdk.
+hugepages() {
+	nports=$(echo $(uci_ports) | wc -w)
+	nworkers=$(uci_workers)
+	mbufs=$((2 * nports * nworkers * 1024 + nworkers * 2 * burst * 2 * max_ports + 4096 +
+		nworkers * 1280 + 1024))
+	mb=$((mbufs * 5 / 2 / 1024 + 64 + 64 + 32 + 2 * nworkers + 4 + 10))
+	echo $(((mb + 1) / 2))
+}
+
+# Reserves the hugepages and mounts them; fails when the kernel gives fewer.
+hugepages_reserve() {
+	want=$(hugepages)
+	sysctl -q -w vm.nr_hugepages="$want" 2>/dev/null
+	got=$(sysctl -n vm.nr_hugepages 2>/dev/null) || got=0
+	if [ "$got" -lt "$want" ]; then
+		sysctl -q -w vm.nr_hugepages=0 2>/dev/null
+		skip "$got of $want hugepages of memory"
+		return 1
+	fi
+	if ! grep -q " $huge_dir hugetlbfs " "$proc/mounts" 2>/dev/null; then
+		mkdir -p "$huge_dir" && mount -t hugetlbfs none "$huge_dir" || {
+			sysctl -q -w vm.nr_hugepages=0 2>/dev/null
+			skip "no hugetlbfs on $huge_dir"
+			return 1
+		}
+	fi
+}
+
+# This boot is in the kernel layout although enabled, for the reason $1,
+# and the next boot tries again.
+skip() {
+	echo "$1" > "$run_dir/skipped"
+	log "Tăng tốc phần cứng off for this boot: $1"
+}
+
+# What bmcHwAccel tells of the kernel layout of a failed boot, not this.
+decide() {
+	enabled=$(uci_get enabled) || enabled=1
+	if [ "$enabled" = 0 ] || [ -e "$failed" ] || mark_skips || ! hugepages_reserve; then
+		echo kernel
+	elif keep "$mark" "$(echo $(marks_left) "$(boot_id)")"; then
+		echo engine
+	else
+		sysctl -q -w vm.nr_hugepages=0 2>/dev/null
+		skip "nothing could be written in $state_dir"
+		echo kernel
+	fi
+}
+
+layout() {
+	if [ ! -s "$run_dir/layout" ]; then
+		mkdir -p "$run_dir"
+		uci_ports > "$run_dir/ports"
+		uci_workers > "$run_dir/workers"
+		decide > "$run_dir/layout"
+	fi
+	cat "$run_dir/layout"
+}
+
+current() {
+	cat "$run_dir/layout" 2>/dev/null || echo kernel
+}
+
+reason() {
+	if [ -e "$failed" ]; then
+		echo "engine $(cat "$failed" 2>/dev/null)"
+	elif mark_skips; then
+		echo boot_skipped
+	else
+		return 1
+	fi
+}
+
+skipped() {
+	cat "$run_dir/skipped" 2>/dev/null
+}
+
+# Only in a boot that added its id: the engine layout ran well.
+ok() {
+	[ -e "$mark" ] && grep -q -w -- "$(boot_id)" "$mark" || return 0
+	rm -f "$mark" && sync
+}
+
+retry() {
+	[ -e "$failed" ] || [ -n "$(marks_left)" ] || return 0
+	rm -f "$failed"
+	if grep -q -w -- "$(boot_id)" "$mark" 2>/dev/null; then
+		keep "$mark" "$(boot_id)"
+	else
+		rm -f "$mark"
+	fi
+	sync
+}
+
+fail() {
+	reboot=0
+	[ "${1:-}" != --reboot ] || { reboot=1; shift; }
+	if [ ! -e "$failed" ]; then
+		keep "$failed" "$*"
+		log "Tăng tốc phần cứng unavailable: $*; the next boot is without it"
+	fi
+	# no engine runs this boot: pages in use, if any, stay until freed
+	sysctl -q -w vm.nr_hugepages=0 2>/dev/null
+	[ "$reboot" = 0 ] || reboot
+}
+
+tx_limits() { # PORT...
+	seen=
+	set -f
+	for e in $(uci_get tx_limit); do
+		name=${e%%:*} mbps=${e#*:} why=
+		case " $* " in *" $name "*) ;; *) why="$name is no port of the engine" ;; esac
+		case "$e" in
+		*:*) ;;
+		*) why=${why:-"no rate (PORT:MBPS)"} ;;
+		esac
+		if [ -z "$why" ]; then
+			case "$mbps" in
+			'' | 0* | *[!0-9]*) why="$mbps is no rate of 8 to 10000 Mbps" ;;
+			*) [ "$mbps" -ge 8 ] && [ "$mbps" -le 10000 ] || why="$mbps is no rate of 8 to 10000 Mbps" ;;
+			esac
+		fi
+		case " $seen " in *" $name "*) why=${why:-"$name is given twice"} ;; esac
+		if [ -n "$why" ]; then
+			log "tx_limit '$e' left out: $why"
+			continue
+		fi
+		seen="$seen $name"
+		echo "--tx-limit $name,$mbps"
+	done
+	set +f
+}
+
+case "${1:-}" in
+'') layout ;;
+current | reason | skipped | ok | retry) "$1" ;;
+ports | workers) of_boot "$1" ;;
+tx-limits) shift; tx_limits "$@" ;;
+fail) shift; fail "$@" ;;
+*) echo "usage: layout [current | ports | workers | reason | skipped | ok | retry | tx-limits PORT... | fail [--reboot] TEXT]" >&2; exit 2 ;;
+esac

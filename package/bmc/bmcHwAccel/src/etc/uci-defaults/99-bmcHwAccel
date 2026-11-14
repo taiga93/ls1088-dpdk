@@ -1,0 +1,25 @@
+#!/bin/sh
+
+# The daemon runs only while Tăng tốc phần cứng is enabled: bmcHwAccel starts and stops it, never the daemon's
+# own init script.
+# shellcheck disable=SC1091
+daemon_initd=$(. /usr/lib/bmcHwAccel/engine.sh && echo "$daemon_initd")
+"$daemon_initd" disable >/dev/null 2>&1
+/etc/init.d/bmcHwAccel enable
+
+# The firewall puts the rules of what is kept on the CPU back after each start and reload.
+uci -q batch <<'EOF'
+delete firewall.bmchwaccel
+set firewall.bmchwaccel=include
+set firewall.bmchwaccel.type='script'
+set firewall.bmchwaccel.path='/usr/share/bmcHwAccel/firewall.include'
+set firewall.bmchwaccel.reload='1'
+EOF
+uci -q commit firewall
+
+# Every minute: the connections that a feature blocks on every packet are taken out of the hardware
+# (evict.sh). A rule of client_control or of a blocked service starts to block at its hour, and a machine
+# leaves the set of bmcfido when its time is up, without anyone changing a rule.
+grep -q -s 'bmchwaccel sweep' /etc/crontabs/root ||
+	echo '* * * * * /usr/sbin/bmchwaccel sweep >/dev/null 2>&1' >> /etc/crontabs/root
+exit 0

@@ -1,0 +1,220 @@
+{
+	"start":	{
+		"version":	"iperf 3.16",
+		"test_start":	{
+			"protocol":	"TCP",
+			"num_streams":	4,
+			"duration":	5
+		}
+	},
+	"intervals":	[
+		{
+			"streams":	[
+				{
+					"socket":	5,
+					"start":	0,
+					"end":	1.000102,
+					"bytes":	9406250,
+					"bits_per_second":	75250000
+				},
+				{
+					"socket":	7,
+					"start":	0,
+					"end":	1.000102,
+					"bytes":	9406250,
+					"bits_per_second":	75250000
+				},
+				{
+					"socket":	9,
+					"start":	0,
+					"end":	1.000102,
+					"bytes":	9406250,
+					"bits_per_second":	75250000
+				},
+				{
+					"socket":	11,
+					"start":	0,
+					"end":	1.000102,
+					"bytes":	9406250,
+					"bits_per_second":	75250000
+				}
+			],
+			"sum":	{
+				"start":	0,
+				"end":	1.000102,
+				"bits_per_second":	301000000
+			}
+		},
+		{
+			"streams":	[
+				{
+					"socket":	5,
+					"start":	1,
+					"end":	2.000102,
+					"bytes":	9937500,
+					"bits_per_second":	79500000
+				},
+				{
+					"socket":	7,
+					"start":	1,
+					"end":	2.000102,
+					"bytes":	9937500,
+					"bits_per_second":	79500000
+				},
+				{
+					"socket":	9,
+					"start":	1,
+					"end":	2.000102,
+					"bytes":	9937500,
+					"bits_per_second":	79500000
+				},
+				{
+					"socket":	11,
+					"start":	1,
+					"end":	2.000102,
+					"bytes":	9937500,
+					"bits_per_second":	79500000
+				}
+			],
+			"sum":	{
+				"start":	1,
+				"end":	2.000102,
+				"bits_per_second":	318000000
+			}
+		},
+		{
+			"streams":	[
+				{
+					"socket":	5,
+					"start":	2,
+					"end":	3.000102,
+					"bytes":	10062500,
+					"bits_per_second":	80500000
+				},
+				{
+					"socket":	7,
+					"start":	2,
+					"end":	3.000102,
+					"bytes":	10062500,
+					"bits_per_second":	80500000
+				},
+				{
+					"socket":	9,
+					"start":	2,
+					"end":	3.000102,
+					"bytes":	10062500,
+					"bits_per_second":	80500000
+				},
+				{
+					"socket":	11,
+					"start":	2,
+					"end":	3.000102,
+					"bytes":	10062500,
+					"bits_per_second":	80500000
+				}
+			],
+			"sum":	{
+				"start":	2,
+				"end":	3.000102,
+				"bits_per_second":	322000000
+			}
+		},
+		{
+			"streams":	[
+				{
+					"socket":	5,
+					"start":	3,
+					"end":	4.000102,
+					"bytes":	9906250,
+					"bits_per_second":	79250000
+				},
+				{
+					"socket":	7,
+					"start":	3,
+					"end":	4.000102,
+					"bytes":	9906250,
+					"bits_per_second":	79250000
+				},
+				{
+					"socket":	9,
+					"start":	3,
+					"end":	4.000102,
+					"bytes":	9906250,
+					"bits_per_second":	79250000
+				},
+				{
+					"socket":	11,
+					"start":	3,
+					"end":	4.000102,
+					"bytes":	9906250,
+					"bits_per_second":	79250000
+				}
+			],
+			"sum":	{
+				"start":	3,
+				"end":	4.000102,
+				"bits_per_second":	317000000
+			}
+		},
+		{
+			"streams":	[
+				{
+					"socket":	5,
+					"start":	4,
+					"end":	5.000102,
+					"bytes":	10000000,
+					"bits_per_second":	80000000
+				},
+				{
+					"socket":	7,
+					"start":	4,
+					"end":	5.000102,
+					"bytes":	10000000,
+					"bits_per_second":	80000000
+				},
+				{
+					"socket":	9,
+					"start":	4,
+					"end":	5.000102,
+					"bytes":	10000000,
+					"bits_per_second":	80000000
+				},
+				{
+					"socket":	11,
+					"start":	4,
+					"end":	5.000102,
+					"bytes":	10000000,
+					"bits_per_second":	80000000
+				}
+			],
+			"sum":	{
+				"start":	4,
+				"end":	5.000102,
+				"bits_per_second":	320000000
+			}
+		}
+	],
+	"end":	{
+		"streams":	[
+			{
+				"sender":	{
+					"socket":	5,
+					"bytes":	0
+				}
+			}
+		],
+		"sum_sent":	{
+			"start":	0,
+			"end":	5.000123,
+			"bits_per_second":	317000000,
+			"retransmits":	431,
+			"sender":	true
+		},
+		"sum_received":	{
+			"start":	0,
+			"end":	5.004211,
+			"bits_per_second":	315000000,
+			"sender":	true
+		}
+	}
+}

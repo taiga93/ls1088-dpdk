@@ -1,0 +1,22 @@
+#!/bin/sh
+# Fake iperf3 for acceptance-test.sh: answers from $FIXTURE/iperf-<title>.json,
+# the title being the value of -T. A UDP run (-u) without a report file is a
+# flow that keeps running until it is killed, and so is any run with a file
+# $FIXTURE/iperf-<title>.running. A server (-s) is not logged: it
+# runs beside the script, so its line would land anywhere among the others.
+udp=
+title=
+while [ $# -gt 0 ]; do
+	[ "$1" = -T ] && title=$2
+	[ "$1" = -u ] && udp=1
+	[ "$1" = -s ] && exit 0
+	shift
+done
+echo "iperf3 $title" >> "$FIXTURE_LOG.iperf"
+if [ -f "$FIXTURE/iperf-$title.json" ]; then
+	cat "$FIXTURE/iperf-$title.json"
+	grep -q '"error"' "$FIXTURE/iperf-$title.json" && exit 1
+	exit 0
+fi
+[ -z "$udp" ] && [ ! -f "$FIXTURE/iperf-$title.running" ] || exec /bin/sleep 5
+exit 0

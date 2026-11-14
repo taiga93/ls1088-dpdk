@@ -1,0 +1,3 @@
+#!/bin/sh
+
+/usr/sbin/bmcdynrouting firewall-apply >/dev/null 2>&1

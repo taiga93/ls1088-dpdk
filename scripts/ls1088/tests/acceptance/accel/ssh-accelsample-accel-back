@@ -1,0 +1,13 @@
+first_eth0=1000 2000
+first_eth1=3000 4000
+first_wire_eth0=100000 500000
+first_wire_eth1=600000 200000
+second_eth0=1004 2000
+second_eth1=4500 4000
+second_wire_eth0=850000 500000
+second_wire_eth1=602000 200000
+status={"status":0,"message":"Tăng tốc phần cứng is on","state":"on","enabled":true,"reboot_required":false,"accelerated":4,"on_cpu":[]}
+tcp_conns=4
+udp_conns=0
+@conntrack
+ipv4     2 tcp      6 7438 ESTABLISHED src=192.168.5.10 dst=192.168.2.10 sport=53122 dport=5201 [ASSURED] mark=0 zone=0 use=2

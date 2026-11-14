@@ -1,0 +1,31 @@
+== board root@192.168.1.1 ==
+Linux bmc 6.12.94 #0 SMP PREEMPT Mon Oct 19 12:00:00 2026 aarch64 GNU/Linux
+[    4.700182] fsl_mc_bus 80c000000.fsl-mc: MC firmware version: 10.39.0
+Mon Oct 19 12:01:05 2026 user.notice phy_init: dpmac.1: eth0 (dpni.0)
+Mon Oct 19 12:01:26 2026 user.notice phy_init: dpmac.9: eth8 (dpni.8)
+eth0 dpni.0 00:04:9f:06:12:03 speed 10000 changes 1
+eth1 dpni.1 00:04:9f:06:12:04 speed 10000 changes 1
+eth8 dpni.8 00:04:9f:06:12:0b speed -1 changes 0
+br-lan           UP             00:04:9f:06:12:04 <BROADCAST,MULTICAST,UP,LOWER_UP>
+eth0             UP             00:04:9f:06:12:03 <BROADCAST,MULTICAST,UP,LOWER_UP>
+eth1             UP             00:04:9f:06:12:04 <BROADCAST,MULTICAST,UP,LOWER_UP>
+== results ==
+boot           FAIL  kernel 6.12.94; 8 ethN ports, not those phy_init makes; without a port: dpmac.4 dpmac.10; MC 10.40.0; 256 hugepages; 1 kernel line(s) of trouble
+               - MC firmware is 10.40.0, need 10.39.0
+               - 256 hugepages are reserved; the kernel layout has none
+               - eth3 (dpni.3) is on dpmac.5, need dpmac.4
+               - eth4 (dpni.4) is on dpmac.6, need dpmac.5
+               - eth4 (dpni.4) has 64 flow steering entries, need 1
+               - there is no eth5 (dpmac.6)
+               - eth8 has the MAC address 02:00:00:00:00:08, its dpmac 00:04:9f:06:12:0b
+               - the board has 8 ethN ports, need 9
+               - dpmac.4 has no port
+               - 1 kernel line(s) tell of trouble (marked ! below)
+               ! [   20.112233] fsl_dpaa2_eth dpni.5: dpaa2_eth_setup_dpio failed: -517
+               | Mon Oct 19 12:01:05 2026 user.notice phy_init: dpmac.1: eth0 (dpni.0)
+               | Mon Oct 19 12:01:26 2026 user.notice phy_init: dpmac.9: eth8 (dpni.8)
+RESULT: FAIL
+exit=1
+-- calls --
+ssh info
+ssh layout

@@ -1,0 +1,7 @@
+mode=nac
+chilli=2301
+radiusd=2203
+gateway=192.168.182.1/24
+lan_dhcp=1
+user=
+status={"status":0,"message":"Tăng tốc phần cứng is off","state":"off","enabled":false,"accelerated":0,"on_cpu":[]}

@@ -1,0 +1,2 @@
+{"status":0,"message":"BGP disabled","uci_batch":"set bmcDynRouting.bgp.enabled='0'"}
+exit=0

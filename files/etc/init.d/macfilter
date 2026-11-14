@@ -1,0 +1,78 @@
+#!/bin/sh /etc/rc.common
+
+START=92
+STOP=10
+
+SERVICE_NAME="macfilter"
+SCRIPT="/etc/bmcweb/backend/scripts/firewall/macfilter.sh"
+CHAIN="MAC_FILTER"
+
+# create chain if not exists, with its jump in front of the rules of fw3,
+# which accept what comes from br-lan
+ensure_chain() {
+    if ! iptables -L "$CHAIN" -n >/dev/null 2>&1; then
+        iptables -N "$CHAIN" 2>/dev/null || {
+            logger -t macfilter "Failed to create iptables chain $CHAIN"
+            return 1
+        }
+    fi
+
+    if iptables -C FORWARD -j "$CHAIN" >/dev/null 2>&1; then
+        return 0
+    fi
+
+    iptables -I FORWARD 1 -j "$CHAIN" 2>/dev/null || {
+        logger -t macfilter "Failed to add FORWARD jump to $CHAIN"
+        return 1
+    }
+    return 0
+}
+
+# remove all FORWARD -> CHAIN jumps and flush/delete chain
+remove_chain() {
+    # delete any FORWARD -> CHAIN jumps
+    while iptables -D FORWARD -j "$CHAIN" >/dev/null 2>&1; do
+        :
+    done
+
+    # flush & delete chain
+    iptables -F "$CHAIN" >/dev/null 2>&1 || true
+    iptables -X "$CHAIN" >/dev/null 2>&1 || true
+}
+
+start() {
+    echo "Starting macfilter..."
+    # create chain + jump
+    ensure_chain || {
+        echo "  Failed to ensure $CHAIN"
+        return 1
+    }
+
+    # if enabled in UCI, apply rules
+    STATUS=$(uci -q get ${SERVICE_NAME}.settings.status)
+    if [ "$STATUS" = "enable" ]; then
+        # call apply to load rules from UCI (script must implement 'apply')
+        if [ -x "$SCRIPT" ]; then
+            "$SCRIPT" apply >/dev/null 2>&1 || {
+                echo "  Warning: apply rules failed"
+                logger -t macfilter "apply rules failed on start"
+            }
+        else
+            echo "  Script $SCRIPT not found or not executable"
+            logger -t macfilter "$SCRIPT not found or not executable"
+        fi
+    else
+        echo "  macfilter disabled in UCI (status=$STATUS); chain created but rules not applied"
+    fi
+}
+
+stop() {
+    echo "Stopping macfilter..."
+    remove_chain
+    echo "  Removed $CHAIN and FORWARD jumps"
+}
+
+restart() {
+    stop
+    start
+}

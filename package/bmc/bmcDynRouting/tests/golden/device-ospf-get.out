@@ -1,0 +1,2 @@
+{"status":0,"message":"OSPF configuration","enabled":false,"redistribute_static":false,"redistribute_connected":false,"redistribute_rip":false,"redistribute_bgp":false,"interfaces":[],"advanced_lines":[],"warnings":[]}
+exit=0

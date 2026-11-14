@@ -1,0 +1,183 @@
+#!/bin/sh
+# The DPAA2 container of bmchwaccel-engine in the engine layout (ADR-0013),
+# made with restool, as dynamic_dpl.sh of DPDK does, but without it.
+#
+#   container build DPMAC...  at boot, from /etc/init.d/phy_init, before it
+#                     makes the kernel's ports: a child container of dprc.1,
+#                     bound to vfio-fsl-mc, with for each DPMAC (dpmac.1)
+#                       dpni.X  linked to the MAC: the wire side
+#                       dpni.Y  the kernel side, which phy_init links to the
+#                               kernel's port of the MAC (dpni.Z)
+#                     and what DPDK needs for up to 4 workers and the main
+#                     thread, an eventdev and a dpdk-pdump besides, and a
+#                     DPSECI: the SEC of the engine, for ESP. Prints and
+#                     keeps "dprc dprc.N", "port DPMAC X Y" and "sec
+#                     dpseci.N" lines; fails when an object could not be
+#                     made, but the DPSECI: without it the engine runs
+#                     without ESP, and IPsec stays with the kernel.
+#   container side DPMAC      dpni.Y of the MAC
+#   container check   before the engine starts: every object is there, each
+#                     dpni.X is linked to its MAC and each dpni.Y to a port of
+#                     the kernel, the container is bound to vfio-fsl-mc.
+#                     The DPSECI of the build is there too, with its 8 queue
+#                     pairs. Prints "dprc
+#                     dprc.N", a line "port NAME X Y" for each port, NAME
+#                     the kernel's name of it (eth0), and "sec dpseci.N";
+#                     fails otherwise, with 2 when this boot made no
+#                     container (the kernel layout).
+# What is wrong goes to stderr.
+#
+# Rules from the measurements of the LS1088 (.scratch/hw-accel-ls1088,
+# tickets 01 and 02):
+#   - no DPNI here has DPNI_OPT_SINGLE_SENDER: with the MC 10.39.0 the second
+#     DPNI made with it breaks four Tx queues of a kernel port
+#   - 8 Rx queues (RSS) and 4 Tx queues (channels) of one traffic class: one
+#     of each per worker; 4 traffic classes do not fit beside the kernel's
+#     ports
+#   - more than 10 DPIOs: each thread of DPDK takes portals of its own;
+#     4 workers and the main thread ran with 14
+#   - the objects are made once a boot: the engine starts again on the same
+#     container, and DPCONs (about 82 on the chip) are not given back
+#   - the DPSECI has 8 queue pairs, 2 for each of 4 workers, with congestion
+#     groups, as dynamic_dpl.sh makes them; its results go to the DPCONs of
+#     the workers' event queues, so it needs no DPCON of its own (ticket
+#     14). The kernel keeps dpseci.0 of the DPL for its own IPsec.
+#
+# BMCHWACCEL_RUN_DIR and BMCHWACCEL_SYS replace /var/run/bmchwaccel and
+# /sys, for tests.
+set -u
+
+run_dir=${BMCHWACCEL_RUN_DIR:-/var/run/bmchwaccel}
+state=$run_dir/container
+sys=${BMCHWACCEL_SYS:-/sys}
+
+dpni_args="--options=DPNI_OPT_CUSTOM_CG,DPNI_OPT_HAS_OPR,DPNI_OPT_OPR_PER_TC \
+--num-tcs=1 --num-channels=4 --num-queues=8 --fs-entries=1 --vlan-entries=16 \
+--qos-entries=1 --num-cgs=16"
+# kind, how many, the options of restool's create
+objects="dpmcp 3 -
+dpbp 4 -
+dpcon 5 --num-priorities=2
+dpio 14 --channel-mode=DPIO_LOCAL_CHANNEL --num-priorities=2
+dpci 4 --num-priorities=2 --options=DPCI_OPT_HAS_OPR,DPCI_OPT_OPR_SHARED"
+sec_args="--num-queues=8 --priorities=1,1,1,1,1,1,1,1 --options=DPSECI_OPT_HAS_CG"
+
+say() { echo "container: $*" >&2; }
+die() { say "$*"; exit 1; }
+
+# The object at the other end of an object ("dpni.3"), none when it has none.
+endpoint_of() {
+	restool "${1%%.*}" info "$1" 2>/dev/null | sed -n 's/^endpoint: \(dp[a-z]*\.[0-9]*\).*/\1/p'
+}
+
+# Makes an object of kind $1 with options $2... in $dprc, plugged.
+create_plugged() {
+	kind=$1
+	shift
+	obj=$(restool -s "$kind" create "$@" --container="$dprc" 2>&1) &&
+		case "$obj" in "$kind".[0-9]*) ;; *) false ;; esac || {
+		say "no $kind: $(echo $obj)"
+		return 1
+	}
+	restool dprc sync >/dev/null
+	restool dprc assign "$dprc" --object="$obj" --child="$dprc" --plugged=1 >/dev/null || {
+		say "$obj could not be plugged into $dprc"
+		return 1
+	}
+	restool dprc sync >/dev/null
+	echo "$obj"
+}
+
+build() {
+	[ $# -gt 0 ] || die "build: no MAC"
+	[ ! -s "$state" ] || die "build: made already in this boot ($(head -1 "$state"))"
+	mkdir -p "$run_dir"
+	for mac; do
+		case "$mac" in dpmac.[0-9]*) ;; *) die "build: $mac is not a MAC" ;; esac
+		peer=$(endpoint_of "$mac")
+		[ -z "$peer" ] || die "build: $mac has $peer already"
+	done
+	dprc=$(restool -s dprc create dprc.1 --label=bmchwaccel \
+		--options=DPRC_CFG_OPT_SPAWN_ALLOWED,DPRC_CFG_OPT_ALLOC_ALLOWED,DPRC_CFG_OPT_OBJ_CREATE_ALLOWED,DPRC_CFG_OPT_IRQ_CFG_ALLOWED 2>&1)
+	case "$dprc" in dprc.[0-9]*) ;; *) die "no container: $(echo $dprc)" ;; esac
+	echo "dprc $dprc" > "$state.new"
+	for mac; do
+		x=$(restool -s dpni create $dpni_args --container="$dprc" 2>&1)
+		case "$x" in dpni.[0-9]*) ;; *) die "$mac: no dpni: $(echo $x)" ;; esac
+		restool dprc sync >/dev/null
+		restool dprc connect dprc.1 --endpoint1="$x" --endpoint2="$mac" >/dev/null ||
+			die "$mac: $x could not be linked to it"
+		restool dprc sync >/dev/null
+		restool dprc assign "$dprc" --object="$x" --child="$dprc" --plugged=1 >/dev/null ||
+			die "$mac: $x could not be plugged"
+		restool dprc sync >/dev/null
+		y=$(create_plugged dpni $dpni_args) || die "$mac: no DPNI for the kernel side"
+		# any MAC: the engine passes every frame (promiscuous)
+		restool dpni update "$y" --mac-addr="02:00:00:00:00:$(printf %02x "${mac#dpmac.}")" >/dev/null
+		echo "port $mac $x $y" >> "$state.new"
+	done
+	echo "$objects" | while read -r kind n opts; do
+		[ "$opts" != - ] || opts=
+		i=0
+		while [ $i -lt "$n" ]; do
+			create_plugged "$kind" $opts >/dev/null || exit 1
+			i=$((i + 1))
+		done
+	done || die "$dprc is not complete"
+	if sec=$(create_plugged dpseci $sec_args); then
+		echo "sec $sec" >> "$state.new"
+	else
+		say "no SEC in $dprc: IPsec stays with the kernel"
+	fi
+	[ ! -e "$sys/module/vfio_iommu_type1/parameters/allow_unsafe_interrupts" ] ||
+		echo 1 > "$sys/module/vfio_iommu_type1/parameters/allow_unsafe_interrupts"
+	echo vfio-fsl-mc > "$sys/bus/fsl-mc/devices/$dprc/driver_override" &&
+		echo "$dprc" > "$sys/bus/fsl-mc/drivers/vfio-fsl-mc/bind" ||
+		die "$dprc could not be bound to vfio-fsl-mc"
+	mv "$state.new" "$state"
+	cat "$state"
+}
+
+side() {
+	[ -s "$state" ] || die "not made in this boot"
+	awk -v m="$1" '$1 == "port" && $2 == m { print $4; f = 1 } END { exit !f }' "$state" ||
+		die "$1 is not a port of $(head -1 "$state")"
+}
+
+check() {
+	[ -s "$state" ] || { say "not made in this boot"; exit 2; }
+	dprc=$(awk '$1 == "dprc" { print $2 }' "$state")
+	have=$(restool dprc show "$dprc" 2>/dev/null | awk '$1 ~ /^dp[a-z]+\.[0-9]+$/ { print $1 }')
+	[ -n "$have" ] || die "$dprc is gone"
+	[ "$(basename "$(readlink "$sys/bus/fsl-mc/devices/$dprc/driver")")" = vfio-fsl-mc ] ||
+		die "$dprc is not bound to vfio-fsl-mc"
+	echo "$objects" | while read -r kind n opts; do
+		got=$(echo "$have" | grep -c "^$kind\.")
+		[ "$got" -ge "$n" ] || { say "$dprc has $got ${kind}s of $n"; exit 1; }
+	done || exit 1
+	echo "dprc $dprc"
+	awk '$1 == "port" { print $2, $3, $4 }' "$state" | while read -r mac x y; do
+		for d in $x $y; do
+			echo "$have" | grep -qx "$d" || { say "$mac: $d is not in $dprc"; exit 1; }
+		done
+		[ "$(endpoint_of "$x")" = "$mac" ] || { say "$mac: $x is not linked to it"; exit 1; }
+		z=$(endpoint_of "$y")
+		[ -n "$z" ] || { say "$mac: $y is linked to no port of the kernel"; exit 1; }
+		name=$(ls "$sys/bus/fsl-mc/devices/$z/net" 2>/dev/null | head -1)
+		[ -n "$name" ] || { say "$mac: $z, linked to $y, is no port of the kernel"; exit 1; }
+		echo "port $name $x $y"
+	done || exit 1
+	sec=$(awk '$1 == "sec" { print $2 }' "$state")
+	[ -n "$sec" ] || return 0
+	echo "$have" | grep -qx "$sec" || die "$sec is not in $dprc"
+	restool dpseci info "$sec" 2>/dev/null | grep -q '^number of receive queues: 8$' ||
+		die "$sec has not the 8 queue pairs of the engine"
+	echo "sec $sec"
+}
+
+case "${1:-}" in
+build) shift; build "$@" ;;
+side) [ $# -eq 2 ] || die "usage: container side DPMAC"; side "$2" ;;
+check) check ;;
+*) echo "usage: container build DPMAC... | side DPMAC | check" >&2; exit 2 ;;
+esac

@@ -1,0 +1,2 @@
+{"status":0,"message":"BGP configuration","enabled":false,"local_as":"","redistribute_static":false,"redistribute_connected":false,"redistribute_ospf":false,"redistribute_rip":false,"networks":[],"peers":[],"advanced_lines":[],"warnings":[]}
+exit=0

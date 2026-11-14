@@ -1,0 +1,2 @@
+{"status":-1,"message":"option --username is only valid with --proto pppoe","field":"username"}
+exit=1

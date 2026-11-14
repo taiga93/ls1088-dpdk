@@ -1,0 +1,2 @@
+{"status":-1,"message":"gateway must be another address of 198.51.100.0/24","field":"gateway"}
+exit=1

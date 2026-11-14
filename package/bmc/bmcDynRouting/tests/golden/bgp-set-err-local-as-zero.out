@@ -1,0 +1,2 @@
+{"status":-1,"message":"local AS must be an integer from 1 to 4294967295","field":"local_as"}
+exit=1

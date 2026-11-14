@@ -1,0 +1,2 @@
+{"status":-1,"message":"usage: rule list, rule set --name N --policy P [--src-ip CIDR] [--dest-ip CIDR] [--proto tcp|udp|icmp|all] [--src-port SPEC] [--dest-port SPEC] [--position K], rule del --name N"}
+exit=1

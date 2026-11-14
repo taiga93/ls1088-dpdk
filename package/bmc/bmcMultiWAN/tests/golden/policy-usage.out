@@ -1,0 +1,2 @@
+{"status":-1,"message":"usage: policy list, policy set --name N --wan W1 [--wan W2]..., policy del --name N"}
+exit=1

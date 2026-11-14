@@ -1,0 +1,50 @@
+@ports eth0 eth2 eth1 eth4 eth5
+@before eth0
+     rx packets [CPU 0]: 1000
+     rx packets [TOTAL]: 1000
+@before eth2
+     rx packets [CPU 0]: 1000
+     rx packets [TOTAL]: 1000
+@before eth1
+     rx packets [CPU 0]: 1000
+     rx packets [TOTAL]: 1000
+@before eth4
+     rx packets [CPU 0]: 1000
+     rx packets [TOTAL]: 1000
+@before eth5
+     rx packets [CPU 0]: 1000
+     rx packets [TOTAL]: 1000
+@after eth0
+     rx packets [CPU 0]: 1031
+     rx packets [TOTAL]: 1031
+@after eth2
+     rx packets [CPU 0]: 1028
+     rx packets [TOTAL]: 1028
+@after eth1
+     rx packets [CPU 0]: 1044
+     rx packets [TOTAL]: 1044
+@after eth4
+     rx packets [CPU 0]: 1000
+     rx packets [TOTAL]: 1000
+@after eth5
+     rx packets [CPU 0]: 1000
+     rx packets [TOTAL]: 1000
+link eth0 speed 1000 changes 1
+link eth1 speed 1000 changes 1
+link eth2 speed 1000 changes 1
+status={"status":0,"message":"Tăng tốc phần cứng is on","state":"on","enabled":true,"accelerated":5,"on_cpu":[]}
+kept=0
+@conntrack
+ipv4     2 tcp      6 src=192.168.1.10 dst=198.51.100.2 sport=50011 dport=5201 [PERMANENT] packets=3 bytes=164 src=198.51.100.2 dst=192.168.2.1 sport=5201 dport=50011 packets=1 bytes=60 [ASSURED] mark=256 zone=0 use=3
+ipv4     2 tcp      6 src=192.168.1.10 dst=198.51.100.2 sport=50012 dport=5201 [PERMANENT] packets=3 bytes=164 src=198.51.100.2 dst=192.168.2.1 sport=5201 dport=50012 packets=1 bytes=60 [ASSURED] mark=256 zone=0 use=3
+ipv4     2 tcp      6 src=192.168.1.10 dst=198.51.100.2 sport=50013 dport=5201 [PERMANENT] packets=3 bytes=164 src=198.51.100.2 dst=192.168.2.1 sport=5201 dport=50013 packets=1 bytes=60 [ASSURED] mark=256 zone=0 use=3
+ipv4     2 tcp      6 src=192.168.1.10 dst=198.51.100.2 sport=50014 dport=5201 [PERMANENT] packets=3 bytes=164 src=198.51.100.2 dst=192.168.2.1 sport=5201 dport=50014 packets=1 bytes=60 [ASSURED] mark=256 zone=0 use=3
+ipv4     2 tcp      6 src=192.168.1.10 dst=198.51.100.2 sport=50021 dport=5202 [PERMANENT] packets=3 bytes=164 src=198.51.100.2 dst=192.168.3.1 sport=5202 dport=50021 packets=1 bytes=60 [ASSURED] mark=256 zone=0 use=3
+ipv4     2 tcp      6 src=192.168.1.10 dst=198.51.100.2 sport=50022 dport=5202 [PERMANENT] packets=3 bytes=164 src=198.51.100.2 dst=192.168.3.1 sport=5202 dport=50022 packets=1 bytes=60 [ASSURED] mark=256 zone=0 use=3
+ipv4     2 tcp      6 src=192.168.1.10 dst=198.51.100.2 sport=50023 dport=5202 [PERMANENT] packets=3 bytes=164 src=198.51.100.2 dst=192.168.3.1 sport=5202 dport=50023 packets=1 bytes=60 [ASSURED] mark=256 zone=0 use=3
+ipv4     2 tcp      6 src=192.168.1.10 dst=198.51.100.2 sport=50024 dport=5202 [PERMANENT] packets=3 bytes=164 src=198.51.100.2 dst=192.168.3.1 sport=5202 dport=50024 packets=1 bytes=60 [ASSURED] mark=256 zone=0 use=3
+ipv4     2 tcp      6 src=192.168.1.10 dst=198.51.100.2 sport=50031 dport=5202 [PERMANENT] packets=3 bytes=164 src=198.51.100.2 dst=192.168.3.1 sport=5202 dport=50031 packets=1 bytes=60 [ASSURED] mark=256 zone=0 use=3
+tx before eth0 500000
+tx before eth2 700000
+tx after eth0 901200
+tx after eth2 1101187

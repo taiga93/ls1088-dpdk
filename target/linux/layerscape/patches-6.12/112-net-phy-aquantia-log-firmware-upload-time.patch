@@ -1,0 +1,50 @@
+From: RaymondBien <raymond@RaymondBiens-Mac-mini.local>
+Date: Tue, 6 Oct 2026 10:00:00 +0700
+Subject: [PATCH] net: phy: aquantia: log how long the firmware upload took
+
+A PHY without a flash of its own gets its firmware over MDIO, one 32-bit
+word per three bus writes. For the AQR113C image that is about 276000
+writes, done in the probe of the PHY, and every driver probed after it
+waits. At the MDC frequency U-Boot leaves on the LS1046A-RDB this took
+about 27 seconds of the boot.
+
+Say how long the upload took, so the cost can be read from the kernel
+log instead of being guessed from the lines around it.
+
+--- a/drivers/net/phy/aquantia/aquantia_firmware.c
++++ b/drivers/net/phy/aquantia/aquantia_firmware.c
+@@ -3,6 +3,7 @@
+ #include <linux/bitfield.h>
+ #include <linux/of.h>
+ #include <linux/firmware.h>
++#include <linux/ktime.h>
+ #include <linux/crc-itu-t.h>
+ #include <linux/nvmem-consumer.h>
+ 
+@@ -154,6 +155,7 @@
+ 	u32 dram_offset = 0, dram_size = 0;
+ 	char version[VERSION_STRING_SIZE];
+ 	u32 primary_offset = 0;
++	ktime_t start;
+ 	int ret;
+ 
+ 	/* extract saved CRC at the end of the fw
+@@ -258,6 +260,8 @@
+ 	phydev_info(phydev, "loading firmware version '%s' from '%s'\n", version,
+ 		    aqr_fw_src_string[fw_src]);
+ 
++	start = ktime_get();
++
+ 	/* stall the microcprocessor */
+ 	phy_write_mmd(phydev, MDIO_MMD_VEND1, VEND1_GLOBAL_CONTROL2,
+ 		      VEND1_GLOBAL_CONTROL2_UP_RUN_STALL | VEND1_GLOBAL_CONTROL2_UP_RUN_STALL_OVD);
+@@ -276,6 +280,9 @@
+ 	if (ret)
+ 		return ret;
+ 
++	phydev_info(phydev, "firmware loaded in %lld ms (%u bytes)\n",
++		    ktime_ms_delta(ktime_get(), start), iram_size + dram_size);
++
+ 	/* make sure soft reset and low power mode are clear */
+ 	phy_clear_bits_mmd(phydev, MDIO_MMD_VEND1, VEND1_GLOBAL_SC,
+ 			   VEND1_GLOBAL_SC_SOFT_RESET | VEND1_GLOBAL_SC_LOW_POWER);

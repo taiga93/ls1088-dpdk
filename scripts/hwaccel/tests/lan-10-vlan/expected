@@ -1,0 +1,3 @@
+acceptance: VLAN 10 would be 192.168.10.0/24, the network of br-lan (BOARD 192.168.10.1); give the VLAN items other ids, for example VLAN_ID=30 (bench.md)
+exit=2
+-- calls --

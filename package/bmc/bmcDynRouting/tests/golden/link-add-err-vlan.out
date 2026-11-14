@@ -1,0 +1,2 @@
+{"status":-1,"message":"port eth1.100 is a VLAN sub-interface: a Link định tuyến needs a physical port","field":"port"}
+exit=1

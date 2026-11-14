@@ -1,0 +1,16 @@
+#!/bin/sh /etc/rc.common
+# Decides the DPAA2 layout of this boot early (/usr/lib/bmcHwAccelDpdk/layout),
+# so that the hugepages of the engine layout are there before the other
+# services take the memory. /etc/init.d/phy_init builds the layout later.
+
+START=11
+
+boot() {
+	/usr/lib/bmcHwAccelDpdk/layout >/dev/null
+}
+
+# At boot only: a start on a running router (as when the package is
+# installed) would reserve hugepages for a layout this boot did not build.
+start() {
+	:
+}

@@ -1,0 +1,2 @@
+200
+{"cmd":"bash /etc/bmcweb/backend/scripts/firewall/client_control.sh show","status":0,"message":[]}

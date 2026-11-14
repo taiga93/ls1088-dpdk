@@ -1,0 +1,15 @@
+The dpaa SoC of DPDK covers every NXP DPAA chip and builds for the
+Cortex-A72 of the LS2088A, LX2160A and LS1046A (part number 0xd08). The
+LS1088A has Cortex-A53 cores (0xd03): build for them.
+
+--- a/config/arm/meson.build
++++ b/config/arm/meson.build
+@@ -331,7 +331,7 @@
+ soc_dpaa = {
+     'description': 'NXP DPAA',
+     'implementer': '0x41',
+-    'part_number': '0xd08',
++    'part_number': '0xd03',
+     'flags': [
+         ['RTE_MACHINE', '"dpaa"'],
+         ['RTE_USE_NON_CACHE_MEM', 1],

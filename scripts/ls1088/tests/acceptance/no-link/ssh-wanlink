@@ -1,0 +1,16 @@
+carrier=0
+speed=-1
+dpmac=dpmac.1
+@ethtool
+	Speed: 10000Mb/s
+	Duplex: Full
+	Auto-negotiation: off
+	Port: Twisted Pair
+	Link detected: no
+@mc
+endpoint: dpni.0, link is up
+DPMAC link type: DPMAC_LINK_TYPE_FIXED
+DPMAC ethernet interface: DPMAC_ETH_IF_XFI
+maximum supported rate 10000 Mbps
+@events
+[   16.637779] fsl_dpaa2_eth dpni.0 eth0: Link Event: state up

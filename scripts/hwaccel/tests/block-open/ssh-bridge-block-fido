@@ -1,0 +1,7 @@
+carried=104000
+cpu=14
+rules=1
+said={"status":0,"message":"Tăng tốc phần cứng: connections of blocked machines taken out","deleted":3,"commands":["conntrack -D -s 192.168.1.10 -d 192.168.1.20"]}
+passed=104020
+cpu_under=0
+counted=0

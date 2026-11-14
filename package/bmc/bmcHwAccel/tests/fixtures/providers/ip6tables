@@ -1,0 +1,3 @@
+#!/bin/sh
+# Stand-in for ip6tables in the test of the programs of blocked.d.
+[ "$3" != BMC_SVC6 ] || echo '-A BMC_SVC6 -p tcp -m set --match-set agh_always_6 dst -j REJECT --reject-with tcp-reset'

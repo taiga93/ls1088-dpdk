@@ -1,0 +1,2 @@
+{"status":0,"message":"Tăng tốc phần cứng is unavailable: its kernel modules did not load","state":"unavailable","reason":"module","enabled":true,"reboot_required":false,"accelerated":0,"ipsec_sa":0,"on_cpu":[]}
+exit=0

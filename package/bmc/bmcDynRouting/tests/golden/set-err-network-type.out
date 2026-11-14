@@ -1,0 +1,2 @@
+{"status":-1,"message":"network type of interface lan must be point-to-point or broadcast","field":"interfaces","interface":"lan"}
+exit=1

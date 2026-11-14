@@ -1,0 +1,91 @@
+From: BMC firmware
+Subject: cmm: -R empties the forward engine without a daemon
+
+A daemon that is killed or crashes leaves every connection and bridged
+flow in the forward engine, as a daemon that got SIGTERM did before
+100-empty-the-forward-engine-on-stop.patch. Nothing removes them until a
+daemon starts again, and none does once its supervisor has given up.
+
+"cmm -R" sends the resets a stopping daemon sends and exits. It keeps no
+table of its own, so it needs no daemon; it refuses to run next to one,
+whose tables would no longer match the engine.
+
+---
+--- a/cmm/src/cmm.c
++++ b/cmm/src/cmm.c
+@@ -262,6 +262,57 @@
+ 	return 0;
+ }
+ /*****************************************************************
++ * cmmEngineEmpty()
++ *
++ *    cmm -R: removes every connection and bridged flow from the
++ *    forward engine and exits. For a supervisor whose daemon died:
++ *    a daemon that is killed or crashes leaves them there, and the
++ *    engine keeps forwarding connections that have ended or whose
++ *    route changed. Refused while a daemon runs, whose tables would
++ *    no longer match the engine.
++ *
++ *****************************************************************/
++static int cmmEngineEmpty(void)
++{
++	static const unsigned short reset[] = {
++		FPP_CMD_IPV4_RESET,
++		FPP_CMD_IPV6_RESET,
++#ifdef AUTO_BRIDGE
++		FPP_CMD_RX_L2BRIDGE_FLOW_RESET,
++#endif
++	};
++	FCI_CLIENT *fci_handle;
++	unsigned int ii;
++	int ret = EXIT_SUCCESS;
++
++	if (cmmIsDaemonRunning())
++	{
++		fprintf(stderr, "cmm daemon is running, forward engine not reset\n");
++		return EXIT_FAILURE;
++	}
++
++	fci_handle = fci_open(FCILIB_FF_TYPE, 0);
++	if (!fci_handle)
++	{
++		fprintf(stderr, "fci_open() failed, %s\n", strerror(errno));
++		return EXIT_FAILURE;
++	}
++
++	for (ii = 0; ii < sizeof(reset) / sizeof(reset[0]); ii++)
++	{
++		if (fci_write(fci_handle, reset[ii], 0, NULL))
++		{
++			fprintf(stderr, "forward engine reset 0x%04x failed\n", reset[ii]);
++			ret = EXIT_FAILURE;
++		}
++	}
++
++	fci_close(fci_handle);
++
++	return ret;
++}
++
++/*****************************************************************
+ * sig_term_hdlr
+ *
+ *
+@@ -389,7 +440,7 @@
+ 	}
+ 
+ 	// Analyse the command line
+-	while ((option = getopt(argc, argv, "c:f:n:hvF")) != -1)
++	while ((option = getopt(argc, argv, "c:f:n:hvFR")) != -1)
+ 	{
+ 		switch (option)
+ 		{
+@@ -425,6 +476,8 @@
+ 			case 'F':	// Run in foreground (do not daemonize)
+ 				foreground = 1;
+ 				break;
++			case 'R':	// Empty the forward engine and exit
++				return cmmEngineEmpty();
+ 			default:
+ 				break;
+ 		}

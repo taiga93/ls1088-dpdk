@@ -1,0 +1,2 @@
+{"status":0,"message":"RIP configuration","enabled":false,"redistribute_static":false,"redistribute_connected":false,"redistribute_ospf":false,"redistribute_bgp":false,"default_originate":false,"update_timer":"","timeout_timer":"","garbage_timer":"","interfaces":[],"advanced_lines":[],"warnings":[]}
+exit=0

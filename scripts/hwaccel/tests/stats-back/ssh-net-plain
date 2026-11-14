@@ -1,0 +1,4 @@
+note=wan eth0 has no address from DHCP; using 192.168.2.1/24 until the script ends
+temporary=yes
+dev=eth0
+addr=192.168.2.1/24

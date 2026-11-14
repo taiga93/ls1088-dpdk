@@ -1,0 +1,2 @@
+{"status":-1,"message":"ipaddr/netmask overlaps with 192.168.1.0/24 of interface lan","field":"ipaddr"}
+exit=1

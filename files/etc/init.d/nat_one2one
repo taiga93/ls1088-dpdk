@@ -1,0 +1,30 @@
+#!/bin/sh /etc/rc.common
+
+START=95
+STOP=10
+
+USE_PROCD=1
+PROG="/etc/bmcweb/backend/scripts/network/nat_one2one.sh"
+
+start_service() {
+    echo "[nat11] Start service"
+    procd_open_instance
+    procd_set_param command "$PROG" apply
+    procd_close_instance
+}
+
+stop_service() {
+    echo "[nat11] Stop service"
+    # Clear iptables chain khi stop
+    iptables -t nat -F ZONE_NAT_11 2>/dev/null
+    iptables -F nat_one2one 2>/dev/null
+}
+
+reload_service() {
+    echo "[nat11] Reload service"
+    "$PROG" apply
+}
+
+service_triggers() {
+    procd_add_reload_trigger "nat11"
+}

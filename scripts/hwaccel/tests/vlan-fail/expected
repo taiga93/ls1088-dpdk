@@ -1,0 +1,46 @@
+== board root@192.168.1.1 ==
+Linux OpenWrt 6.12.94 #0 SMP Thu Oct  1 08:00:00 2026 aarch64 GNU/Linux
+[    1.812345] fsl-fman 1a00000.fman: FMan-Controller code (ver 210.10.1)
+[   34.101010] cdx: FMAN firmware 210.10.1 - ASK supported
+eth0 soc:fsl,dpaa:ethernet@2 02:00:00:46:00:00
+eth1 soc:fsl,dpaa:ethernet@3 02:00:00:46:00:01
+eth2 soc:fsl,dpaa:ethernet@4 02:00:00:46:00:02
+eth3 soc:fsl,dpaa:ethernet@5 02:00:00:46:00:03
+eth4 soc:fsl,dpaa:ethernet@8 02:00:00:46:00:04
+eth5 soc:fsl,dpaa:ethernet@9 02:00:00:46:00:05
+br-lan           UP             02:00:00:46:00:01 <BROADCAST,MULTICAST,UP,LOWER_UP>
+eth0             UP             02:00:00:46:00:00 <BROADCAST,MULTICAST,UP,LOWER_UP>
+eth1             UP             02:00:00:46:00:01 <BROADCAST,MULTICAST,UP,LOWER_UP>
+== results ==
+vlan-wan       FAIL  946 Mbps, slowest second 912 Mbps, 12 retransmits; rx packets on the CPU in 10 s: eth0 +21, eth1 +44, eth2 +0, eth4 +0, eth5 +0; 0 accelerated, 0 masqueraded; bmchwaccel status: on, 12 accelerated
+               - no accelerated connection is masqueraded
+               - 5 accelerated connection(s) to 192.168.2.10 do not come from 192.168.10.10: PC1 is not sending through VLAN 10
+               | cmm -c 'query vlan':
+               | No VLAN entries
+               | cmm -c 'query pppoe':
+               | No PPPoE entries
+               | /proc/net/pppoe:
+               | Id   Address           Device     PPPDevice  Unit
+               | conntrack to 192.168.2.10:
+               | ipv4     2 tcp      6 src=192.168.1.10 dst=192.168.2.10 sport=50011 dport=5201 [PERMANENT] packets=3 bytes=164 src=192.168.2.10 dst=192.168.2.77 sport=5201 dport=50011 packets=1 bytes=60 [ASSURED] mark=0 zone=0 use=3
+               | log:
+               | Thu Oct  1 08:01:12 2026 daemon.info cmm-supervise[3172]: cmm: interface br-lan.10 registered
+vlan-wan-back  FAIL  no iperf3 result
+               - iperf3: unable to connect to server - server may have stopped running or use a different port, firewall issue, etc.: Can't assign requested address
+               - PC1 must have 192.168.10.10 on VLAN 10 and reach 192.168.2.10 through it
+vlan-vlan      FAIL  not measured
+               - VLAN 20 (br-lan.20) did not come up
+RESULT: FAIL
+exit=1
+-- calls --
+ssh info
+ssh net plain 10
+ssh flush
+ssh sample vlan-wan
+ssh diag vlan-wan
+ssh flush
+ssh sample vlan-wan-back
+ssh net keep 10-20
+ssh unnet
+iperf3 vlan-wan
+iperf3 vlan-wan-back

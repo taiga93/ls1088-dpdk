@@ -1,0 +1,20 @@
+kernel=6.12.94
+mc=10.39.0
+phy_init=done
+hugepages=0
+layout=kernel
+port eth0 dpni.0 dpmac.1 1 00:04:9f:06:12:03 00:04:9f:06:12:03
+port eth1 dpni.1 dpmac.2 1 00:04:9f:06:12:04 00:04:9f:06:12:04
+port eth2 dpni.2 dpmac.3 1 00:04:9f:06:12:05 00:04:9f:06:12:05
+port eth3 dpni.3 dpmac.4 1 00:04:9f:06:12:06 00:04:9f:06:12:06
+port eth4 dpni.4 dpmac.5 1 00:04:9f:06:12:07 00:04:9f:06:12:07
+port eth5 dpni.5 dpmac.6 1 00:04:9f:06:12:08 00:04:9f:06:12:08
+port eth6 dpni.6 dpmac.7 1 00:04:9f:06:12:09 00:04:9f:06:12:09
+port eth7 dpni.7 dpmac.8 1 00:04:9f:06:12:0a 00:04:9f:06:12:0a
+port eth8 dpni.8 dpmac.9 1 00:04:9f:06:12:0b 00:04:9f:06:12:0b
+free dpmac.10
+trouble=0
+@trouble
+@log
+Mon Oct 19 12:01:05 2026 user.notice phy_init: dpmac.1: eth0 (dpni.0)
+Mon Oct 19 12:01:26 2026 user.notice phy_init: dpmac.9: eth8 (dpni.8)

@@ -1,0 +1,29 @@
+#!/bin/sh /etc/rc.common
+
+START=90
+STOP=10
+
+start() {
+	local changed=0
+
+	if ! crontab -l | grep -q "/etc/chilli/check_brlan_ip.sh"; then
+	    # Not existed, add new one
+	    echo "* * * * * /etc/chilli/check_brlan_ip.sh" >> /etc/crontabs/root
+	    changed=1
+	fi
+
+	if ! crontab -l | grep -q "/etc/chilli/check_listgarden_brlan.sh"; then
+	    # Not existed, add new one
+	    echo "* * * * * /etc/chilli/check_listgarden_brlan.sh" >> /etc/crontabs/root
+	    changed=1
+	fi
+
+	if [ "$changed" = "1" ]; then
+	    # Restart cron to apply new entries
+	    /etc/init.d/cron restart
+	fi
+}
+
+stop() {
+	echo "stop!!!"
+}

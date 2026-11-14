@@ -1,0 +1,37 @@
+@ports eth0 eth1 eth2 eth4 eth5
+@before eth0
+     rx packets [CPU 0]: 1000
+     rx packets [TOTAL]: 1000
+@before eth1
+     rx packets [CPU 0]: 1000
+     rx packets [TOTAL]: 1000
+@before eth2
+     rx packets [CPU 0]: 1000
+     rx packets [TOTAL]: 1000
+@before eth4
+     rx packets [CPU 0]: 1000
+     rx packets [TOTAL]: 1000
+@before eth5
+     rx packets [CPU 0]: 1000
+     rx packets [TOTAL]: 1000
+@after eth0
+     rx packets [CPU 0]: 177200
+     rx packets [TOTAL]: 177200
+@after eth1
+     rx packets [CPU 0]: 353900
+     rx packets [TOTAL]: 353900
+@after eth2
+     rx packets [CPU 0]: 1000
+     rx packets [TOTAL]: 1000
+@after eth4
+     rx packets [CPU 0]: 1000
+     rx packets [TOTAL]: 1000
+@after eth5
+     rx packets [CPU 0]: 1000
+     rx packets [TOTAL]: 1000
+link eth0 speed 1000 changes 1
+link eth1 speed 1000 changes 1
+link eth2 speed 1000 changes 1
+status={"status":0,"message":"Tăng tốc phần cứng is on","state":"on","enabled":true,"accelerated":0,"on_cpu":[]}
+kept=5
+@conntrack

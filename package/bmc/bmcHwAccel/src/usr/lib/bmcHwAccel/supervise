@@ -1,0 +1,62 @@
+#!/bin/sh
+# supervise <daemon command...> — procd runs this as the instance of the daemon (/etc/init.d/cmm).
+#
+# Runs the daemon and starts it again when it dies by itself. A daemon that died left its Kết nối đã tăng tốc
+# in the hardware, with nobody to take them out when they end or their route changes: they are taken out
+# here, so open connections continue on the CPU, and syslog says that Tăng tốc phần cứng is unavailable. It
+# says "on" again once a restarted daemon answers.
+# After $max_deaths deaths in a row, each within $settled seconds of its start, the daemon stays stopped and
+# the router forwards on the CPU: procd reports the service as not running, `bmchwaccel status` gives the
+# reason, and `bmchwaccel apply` or `enable` starts it again.
+set -u
+
+lib_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+for lib in engine unavailable service; do
+	. "$lib_dir/$lib.sh"
+done
+
+max_deaths=5
+settled=300
+# BMCHWACCEL_RESPAWN_DELAY replaces the seconds between a death and the next start, for tests.
+respawn_delay=${BMCHWACCEL_RESPAWN_DELAY:-5}
+
+# procd stops the service with SIGTERM: the daemon gets it and empties the hardware itself before it goes.
+# The signal can come at any line, so "stopping" is looked at again wherever the daemon is not waited for.
+pid=
+waiter=
+stopping=0
+trap 'stopping=1; [ -z "$pid" ] || kill -TERM "$pid" 2>/dev/null' TERM INT
+
+starts=0
+deaths=0
+while [ "$stopping" = 0 ]; do
+	started=$(date +%s)
+	"$@" &
+	pid=$!
+	# The trap ran before it knew the daemon.
+	[ "$stopping" = 0 ] || kill -TERM "$pid" 2>/dev/null
+	# How often the daemon was started since the service was: more than once means it died.
+	starts=$((starts + 1))
+	{ mkdir -p "$run_dir" && echo "$starts" > "$run_dir/daemon-starts"; } 2>/dev/null
+	if [ "$deaths" -gt 0 ]; then
+		{ wait_until "$start_wait" daemon_answers && state_note on; } &
+		waiter=$!
+	fi
+	# wait also returns when the trap has run; the daemon may take a moment longer.
+	while kill -0 "$pid" 2>/dev/null; do
+		wait "$pid"
+	done
+	# Nothing is left to wait for an answer from.
+	[ -z "$waiter" ] || kill "$waiter" 2>/dev/null
+	waiter=
+	[ "$stopping" = 0 ] || exit 0
+	pid=
+	engine_empty
+	state_note unavailable daemon
+	[ $(($(date +%s) - started)) -lt "$settled" ] || deaths=0
+	deaths=$((deaths + 1))
+	[ "$deaths" -lt "$max_deaths" ] || exit 1
+	[ "$stopping" = 0 ] || exit 0
+	sleep "$respawn_delay" &
+	wait $!
+done

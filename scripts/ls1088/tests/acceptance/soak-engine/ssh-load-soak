@@ -1,0 +1,13 @@
+boot_id=33333333-cccc
+cpu 0 38 31
+cpu 1 4 1
+cpu 2 2 0
+cpu 3 61 55
+cpu 4 1 0
+cpu 5 3 1
+cpu 6 0 0
+cpu 7 1 0
+port_rx=702114
+port_tx=361872
+masq=4
+free_kb=7612400

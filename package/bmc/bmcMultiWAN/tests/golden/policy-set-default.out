@@ -1,0 +1,7 @@
+{"status":0,"message":"Chính sách WAN default_policy saved","uci_batch":"delete mwan3.default_policy.use_member
+add_list mwan3.default_policy.use_member='wan2_m1'
+add_list mwan3.default_policy.use_member='wan_m2'
+delete mwan3.wan_m1
+delete mwan3.wan2_m2
+delete mwan3.wan3_m3","commands":[]}
+exit=0

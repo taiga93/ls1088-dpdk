@@ -1,0 +1,21 @@
+{"status":0,"message":"RIP configuration saved","uci_batch":"delete bmcDynRouting.ri_link_eth5
+delete bmcDynRouting.ri_lan
+delete bmcDynRouting.rip.advanced_line
+set bmcDynRouting.ri_link_eth5=rip_interface
+set bmcDynRouting.ri_link_eth5.interface='link_eth5'
+set bmcDynRouting.ri_link_eth5.passive='0'
+add_list bmcDynRouting.rip.advanced_line='router rip'
+add_list bmcDynRouting.rip.advanced_line=' neighbor 192.168.50.254'
+set bmcDynRouting.ri_lan=rip_interface
+set bmcDynRouting.ri_lan.interface='lan'
+set bmcDynRouting.ri_lan.passive='1'
+delete bmcDynRouting.rip.update_timer
+delete bmcDynRouting.rip.timeout_timer
+set bmcDynRouting.rip.garbage_timer='90'
+set bmcDynRouting.rip.enabled='1'
+set bmcDynRouting.rip.redistribute_static='1'
+set bmcDynRouting.rip.redistribute_connected='1'
+set bmcDynRouting.rip.redistribute_ospf='0'
+set bmcDynRouting.rip.redistribute_bgp='0'
+set bmcDynRouting.rip.default_originate='0'","warnings":[]}
+exit=0

@@ -1,0 +1,2 @@
+{"status":-1,"message":"usage: wan set --name N [--track-ip IP]... [--down 1-10] [--up 1-10]"}
+exit=1

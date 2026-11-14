@@ -1,0 +1,33 @@
+== board root@192.168.1.1 ==
+Linux OpenWrt 6.12.103 #0 SMP Thu Oct  1 08:00:00 2026 aarch64 GNU/Linux
+[    1.812345] fsl-fman 1a00000.fman: FMan-Controller code (ver 106.4.18)
+[   34.101010] cdx: FMAN firmware 106.4.18 lacks ASK support (need package >= 209)
+eth0 soc:fsl,dpaa:ethernet@2 02:00:00:46:00:00
+eth1 soc:fsl,dpaa:ethernet@3 02:00:00:46:00:01
+eth2 soc:fsl,dpaa:ethernet@4 02:00:00:46:00:02
+eth3 soc:fsl,dpaa:ethernet@5 02:00:00:46:00:03
+eth4 soc:fsl,dpaa:ethernet@8 02:00:00:46:00:04
+eth5 soc:fsl,dpaa:ethernet@9 02:00:00:46:00:05
+br-lan           UP             02:00:00:46:00:01 <BROADCAST,MULTICAST,UP,LOWER_UP>
+eth0             UP             02:00:00:46:00:00 <BROADCAST,MULTICAST,UP,LOWER_UP>
+eth1             UP             02:00:00:46:00:01 <BROADCAST,MULTICAST,UP,LOWER_UP>
+== results ==
+boot           FAIL  kernel 6.12.103; cdx: FMAN firmware 106.4.18 lacks ASK support (need package >= 209); bmchwaccel status: unavailable
+               - kernel is 6.12.103, need 6.12.94
+               - CDX did not accept the FMan microcode
+               - /dev/cdx_ctrl is missing
+               - bmchwaccel status says unavailable, need on
+               | [   34.101010] cdx: FMAN firmware 106.4.18 lacks ASK support (need package >= 209)
+               | [   34.201010] <<<<<<<<<<<<<<<<<<<< CDX module failed initialization >>>>>>>>>>>>>>>>>>>>>>>>>
+               | Thu Oct  1 08:00:40 2026 daemon.notice procd: /etc/rc.d/S54cmm: cmm: /dev/cdx_ctrl not present, cdx.ko not loaded - not starting
+brlan-wan-noab FAIL  not measured
+               - cmm is not running
+               (experiment: does not count in RESULT)
+RESULT: FAIL
+exit=1
+-- calls --
+ssh info
+ssh boot
+ssh net plain
+ssh autobridge unload
+ssh unnet

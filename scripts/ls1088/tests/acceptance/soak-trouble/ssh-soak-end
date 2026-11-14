@@ -1,0 +1,14 @@
+boot_id=44444444-dddd
+daemon=
+starts=
+modules=0
+free_kb=7609824
+status=
+kernel_mark=yes
+syslog_mark=yes
+@kernel
+[ 1012.400112] br-lan: port 2(eth2) entered disabled state
+[ 1801.000001] fsl_dpaa2_eth dpni.1 eth1: frame from FQ 325 without context, dropped
+@trouble
+[ 1801.000001] fsl_dpaa2_eth dpni.1 eth1: frame from FQ 325 without context, dropped
+@syslog

@@ -1,0 +1,18 @@
+do_sysinfo_layerscape_fixup() {
+	[ -e /tmp/sysinfo/board_name ] || return
+	[ -e /proc/cmdline ] || return
+	# The Mono Gateway only ever boots from eMMC, so the -sdboot suffix is
+	# meaningless for it and would force every board switch to carry two names.
+	case "$(strings /tmp/sysinfo/board_name)" in
+		mono,gateway-dk) return ;;
+	esac
+	cmdline=$(strings /proc/cmdline)
+	case "${cmdline}" in
+		*root=/dev/mmcblk*)
+			board="$(strings /tmp/sysinfo/board_name)-sdboot"
+			echo ${board} > /tmp/sysinfo/board_name
+		;;
+	esac
+}
+
+boot_hook_add preinit_main do_sysinfo_layerscape_fixup

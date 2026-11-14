@@ -1,0 +1,36 @@
+diff --git a/src/squidclamav.c b/src/squidclamav.c
+index bc4a675..f4b28af 100644
+--- a/src/squidclamav.c
++++ b/src/squidclamav.c
+@@ -1289,14 +1289,14 @@ int load_patterns()
+     FILE *fp  = NULL;
+     int ret   = 0;
+ 
+-    if (isPathExists(CONFIGDIR "/" CONFIG_FILE) == 0) {
+-        fp = fopen(CONFIGDIR "/" CONFIG_FILE, "rt");
+-        debugs(0, "LOG Reading configuration from %s\n", CONFIGDIR "/" CONFIG_FILE);
++    if (isPathExists(CONFIG_FILE) == 0) {
++        fp = fopen(CONFIG_FILE, "rt");
++        debugs(0, "LOG Reading configuration from %s\n", CONFIG_FILE);
+     }
+ 
+ 
+     if (fp == NULL) {
+-        debugs(0, "FATAL unable to open configuration file: %s\n", CONFIGDIR "/" CONFIG_FILE);
++        debugs(0, "FATAL unable to open configuration file: %s\n", CONFIG_FILE);
+         return 0;
+     }
+ 
+diff --git a/src/squidclamav.h b/src/squidclamav.h
+index 20502b2..abe22de 100644
+--- a/src/squidclamav.h
++++ b/src/squidclamav.h
+@@ -43,7 +43,7 @@ void logit(char *, char *, ...);
+ 
+ /* squidclamav.h */
+ /*************  Default configuration file location  ***********/
+-#define CONFIG_FILE "squidclamav.conf"
++#define CONFIG_FILE "/etc/c-icap/squidclamav.conf"
+ 
+ /************* Proxy configuration *************/
+ #define PROXY_SERVER "127.0.0.1"

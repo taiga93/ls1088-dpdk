@@ -1,0 +1,12 @@
+#!/bin/sh
+
+# The firewall puts the rules of bmcfirewall back after each start and reload.
+uci -q batch <<'EOT'
+delete firewall.bmcfirewall
+set firewall.bmcfirewall=include
+set firewall.bmcfirewall.type='script'
+set firewall.bmcfirewall.path='/usr/share/bmcfirewall/firewall.include'
+set firewall.bmcfirewall.reload='1'
+EOT
+uci -q commit firewall
+exit 0

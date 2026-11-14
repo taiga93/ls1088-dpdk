@@ -1,0 +1,4 @@
+#!/bin/sh
+# Fake sleep for acceptance-test.sh: long enough for the fake iperf3, started
+# in the background just before, to have written its report.
+exec /bin/sleep 0.2

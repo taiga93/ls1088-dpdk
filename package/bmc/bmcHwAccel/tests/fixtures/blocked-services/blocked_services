@@ -1,0 +1,6 @@
+echo 'to agh_video_4 D0:11:E5:6D:2D:BA'
+echo 'to agh_video_6 d0:11:e5:6d:2d:ba'
+echo 'own d0:11:e5:6d:2d:ba'
+echo 'to agh_chat_4 any'
+echo 'to agh_empty_4 any'
+echo 'to bad;name any'

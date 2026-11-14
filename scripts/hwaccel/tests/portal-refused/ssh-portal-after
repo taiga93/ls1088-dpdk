@@ -1,0 +1,6 @@
+mac=AA-BB-CC-00-11-22
+state=dnat
+authorized=0
+name=-
+forwarded=0
+status={"status":0,"message":"Tăng tốc phần cứng is off","state":"off","enabled":false,"accelerated":0,"on_cpu":[]}

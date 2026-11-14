@@ -1,0 +1,9 @@
+status={"status":0,"message":"Tăng tốc phần cứng is unavailable: it stopped 3 times within 5 minutes; the router restarted without it; enable it to try again","state":"unavailable","reason":"engine","enabled":true,"reboot_required":false,"accelerated":0,"on_cpu":[]}
+boot_id=33333333-cccc
+init=complete
+layout=kernel
+mark=yes
+kept=it stopped 3 times within 5 minutes
+engine=
+@log
+Tue Oct 21 18:00:00 2026 user.notice bmcHwAccel: Tăng tốc phần cứng unavailable: it stopped 3 times within 5 minutes; the router restarted without it; enable it to try again

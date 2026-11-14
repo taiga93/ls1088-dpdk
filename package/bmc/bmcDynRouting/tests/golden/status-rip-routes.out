@@ -1,0 +1,2 @@
+{"status":0,"message":"RIP status","data":{"routes":[{"code":"R","sub_code":"d","network":"0.0.0.0/0","next_hop":"0.0.0.0","metric":1,"from":"self","tag":0,"time":""},{"code":"O","sub_code":"r","network":"192.168.3.0/24","next_hop":"0.0.0.0","metric":1,"from":"self (ospf:10)","tag":0,"time":""},{"code":"C","sub_code":"i","network":"192.168.50.0/24","next_hop":"0.0.0.0","metric":1,"from":"self","tag":0,"time":""},{"code":"R","sub_code":"n","network":"192.168.60.0/24","next_hop":"192.168.50.254","metric":2,"from":"192.168.50.254","tag":0,"time":"02:51"}]}}
+exit=0

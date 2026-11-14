@@ -1,0 +1,13 @@
+{"status":0,"message":"BGP configuration saved","uci_batch":"set bmcDynRouting.bgp=bgp
+set bmcDynRouting.bp_203_0_113_1=bgp_peer
+set bmcDynRouting.bp_203_0_113_1.address='203.0.113.1'
+set bmcDynRouting.bp_203_0_113_1.remote_as='64500'
+set bmcDynRouting.bp_203_0_113_1.enabled='1'
+set bmcDynRouting.bp_203_0_113_1.receive='all'
+set bmcDynRouting.bgp.local_as='65001'
+set bmcDynRouting.bgp.enabled='0'
+set bmcDynRouting.bgp.redistribute_static='0'
+set bmcDynRouting.bgp.redistribute_connected='0'
+set bmcDynRouting.bgp.redistribute_ospf='0'
+set bmcDynRouting.bgp.redistribute_rip='0'","warnings":[{"peer":"203.0.113.1","code":"bgp_peer_not_connected","message":"Peer BGP 203.0.113.1 is not in any interface subnet: only directly connected eBGP peers are supported."}]}
+exit=0

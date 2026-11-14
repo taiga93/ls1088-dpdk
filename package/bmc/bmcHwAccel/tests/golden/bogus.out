@@ -1,0 +1,2 @@
+{"status":-1,"message":"usage: bmchwaccel [--dry-run] get | enable | disable | apply | status | ports | sa"}
+exit=1

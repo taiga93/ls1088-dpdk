@@ -1,0 +1,704 @@
+#!/usr/bin/env bash
+# Cụm ảo DynRouting: R1-R2-R3 OSPF triangle over Link định tuyến, ISP-A on R1's WAN,
+# ISP-B on R2's WAN, a legacy RIP-only router behind R3, all QEMU guests of one armsr/armv8 image built from
+# this tree. See dynrouting-virtual/README.md. Reuses the HA virtual cluster's switch and console helpers
+# (ha-virtual/*.py). Written for bash 3.2 (macOS) as well.
+
+set -euo pipefail
+
+root=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
+state=${DYNR_CLUSTER_STATE:-"${TMPDIR:-/tmp}/bmc-dynrouting-cluster"}
+output=${DYNR_VIRTUAL_OUTPUT:-"$root/build/dynrouting-virtual"}
+port_base=${DYNR_CLUSTER_PORT_BASE:-20000}
+qemu=${QEMU_SYSTEM_AARCH64:-qemu-system-aarch64}
+python=${PYTHON3:-python3}
+
+vms='r1 r2 r3 ispa ispb legacy'
+networks='lan1 lan2 lan3 wana wanb l12 l13 l23 leg lan60'
+# Networks whose "cable" is plugged only once both ends are Link định tuyến: while the port is still in
+# br-lan the three LANs would be bridged into one loop.
+link_networks='l12 l13 l23 leg'
+
+usage() {
+	cat <<'EOF'
+Usage: scripts/dynrouting-cluster <command> [arguments]
+
+Commands:
+  build                       Build the armsr/armv8 image in DYNR_BUILD_TREE (default: this checkout).
+  up                          Start r1, r2, r3, ispa, ispb, legacy; link cables start unplugged.
+  down                        Stop and remove the whole Cụm ảo DynRouting.
+  status                      Show QEMU process state and the virtual switches.
+  exec <vm> <command...>      Run a shell command through a VM serial console.
+  set_link <vm> <nic> <up|down>
+                              Change one QEMU NIC link state (carrier) of a VM.
+  cable <network> <plug|unplug>
+                              Change the carrier of every NIC on a network (a cable pulled or plugged).
+  power <vm> <off|on>         Abruptly stop or start one VM.
+  capture <network> [pcap]    Start a PCAP capture on a virtual switch.
+  configure                   Configure R1-R3 with the bmcdynrouting CLI (the cluster must be up and booted).
+  check                       Every acceptance check on a configured cluster.
+  accept                      up, configure, check.
+
+VMs: r1 r2 r3 ispa ispb legacy. Networks (also the NIC names): lan1 lan2 lan3 wana wanb l12 l13 l23 leg lan60.
+EOF
+}
+
+die() {
+	echo "$*" >&2
+	exit 1
+}
+
+# NICs of a VM in eth0, eth1, ... order; each NIC is named after the network it is cabled to.
+vm_nics() {
+	case "$1" in
+		# eth4 on ISP-B's network is left unconfigured (no br-lan): the free port of Multi-WAN tests.
+		r1) echo 'lan1 wana l12 l13 wanb' ;;
+		r2) echo 'lan2 wanb l12 l23' ;;
+		r3) echo 'lan3 l13 l23 leg' ;;
+		ispa) echo 'wana' ;;
+		ispb) echo 'wanb' ;;
+		legacy) echo 'leg lan60' ;;
+		*) echo "unknown VM: $1" >&2; return 1 ;;
+	esac
+}
+
+vm_id() {
+	case "$1" in
+		r1) echo 01 ;; r2) echo 02 ;; r3) echo 03 ;; ispa) echo 04 ;; ispb) echo 05 ;; legacy) echo 06 ;;
+		*) echo "unknown VM: $1" >&2; return 1 ;;
+	esac
+}
+
+network_members() {
+	local net vm
+	for vm in $vms; do
+		for net in $(vm_nics "$vm"); do
+			if [ "$net" = "$1" ]; then echo "$vm"; fi
+		done
+	done
+}
+
+# TCP port of the switch port that VM $1's NIC on network $2 connects to.
+switch_port() {
+	local index=0 net member slot
+	for net in $networks; do
+		if [ "$net" = "$2" ]; then
+			slot=0
+			for member in $(network_members "$net"); do
+				if [ "$member" = "$1" ]; then
+					echo $((port_base + index * 10 + slot))
+					return 0
+				fi
+				slot=$((slot + 1))
+			done
+		fi
+		index=$((index + 1))
+	done
+	echo "$1 has no NIC on network $2" >&2
+	return 1
+}
+
+need_state() {
+	test -d "$state" || die "Cụm ảo DynRouting is not running: $state"
+}
+
+image_paths() {
+	image=$(ls -t "$output"/*-ext4-combined-efi.img 2>/dev/null | head -n 1 || true)
+	kernel=$(ls -t "$output"/*-kernel.bin 2>/dev/null | grep -v initramfs | head -n 1 || true)
+	test -n "$image" && test -n "$kernel" || die "virtual image is missing in $output; run: $0 build"
+}
+
+# --- build ---
+
+# Copies directory $1 of this checkout to the same place in $2 and checks the copy: right after an edit on a
+# macOS host, a copy through a container bind mount has been seen to be truncated.
+sync_dir() {
+	local attempt
+	for attempt in 1 2 3; do
+		rm -rf -- "${2:?}/$1"
+		mkdir -p "$(dirname -- "$2/$1")"
+		cp -R "$root/$1" "$2/$1"
+		if diff -r "$root/$1" "$2/$1" >/dev/null; then return 0; fi
+		sleep 2
+	done
+	die "copy of $1 to $2 differs from the source"
+}
+
+# The EXIT trap of build: puts back the build tree's own .config.
+restore_build_config() {
+	local file
+	for file in .config .config.old; do
+		if [ -f "$build_tree/$file.dynrouting-virtual.bak" ]; then
+			mv "$build_tree/$file.dynrouting-virtual.bak" "$build_tree/$file"
+		fi
+	done
+}
+
+build() {
+	local tree=${DYNR_BUILD_TREE:-$root} make_cmd=${MAKE:-make} jobs file built_image built_kernel libc
+	jobs=${DYNR_BUILD_JOBS:-$(getconf _NPROCESSORS_ONLN 2>/dev/null || echo 4)}
+	# Not `| grep -q`: with pipefail, make dying of SIGPIPE after grep exits would fail the test.
+	case "$("$make_cmd" --version 2>/dev/null || true)" in
+		*'GNU Make'*) ;;
+		*) make_cmd=$(command -v gmake) || die 'GNU make is required (install gmake on macOS)' ;;
+	esac
+	test -f "$tree/rules.mk" || die "not an OpenWrt tree: $tree"
+	tree=$(CDPATH= cd -- "$tree" && pwd)
+	if [ "$tree" != "$root" ]; then
+		sync_dir package/bmc/bmcDynRouting "$tree"
+		sync_dir package/bmc/bmc-dynrouting-virtual-bootstrap "$tree"
+		sync_dir package/bmc/bmcMultiWAN "$tree"
+	fi
+	# A copy of FRR in the tree (package/frr) replaces the one of the packages feed: two packages of one
+	# name cannot both be in the build.
+	if [ -f "$tree/package/frr/Makefile" ]; then rm -f -- "$tree/package/feeds/packages/frr"; fi
+	# The tree's own profile (LS1046, another test image) comes back once the image is built.
+	for file in .config .config.old; do
+		if [ -f "$tree/$file" ]; then cp "$tree/$file" "$tree/$file.dynrouting-virtual.bak"; fi
+	done
+	build_tree=$tree
+	trap restore_build_config EXIT
+	cp "$root/config_DYNROUTING_VIRTUAL" "$tree/.config"
+	"$make_cmd" -C "$tree" defconfig
+	grep -qx 'CONFIG_PACKAGE_bmcDynRouting=y' "$tree/.config" || die 'defconfig dropped bmcDynRouting (missing FRR feed?)'
+	grep -qx 'CONFIG_PACKAGE_mwan3=y' "$tree/.config" || die 'defconfig dropped mwan3 (missing packages feed?)'
+	grep -qx 'CONFIG_PACKAGE_bmcMultiWAN=y' "$tree/.config" || die 'defconfig dropped bmcMultiWAN'
+	# A profile that names its C library must get it: defconfig falls back to the default without a word.
+	libc=$(sed -n 's/^CONFIG_LIBC="\(.*\)"$/\1/p' "$root/config_DYNROUTING_VIRTUAL")
+	if [ -n "$libc" ]; then
+		grep -qx "CONFIG_LIBC=\"$libc\"" "$tree/.config" || die "defconfig did not keep $libc"
+	fi
+	"$make_cmd" -C "$tree" -j"$jobs"
+	mkdir -p "$output"
+	rm -f -- "$output"/*.img "$output"/*.bin
+	built_image=$(ls -t "$tree"/bin/targets/armsr/armv8*/*-ext4-combined-efi.img 2>/dev/null | head -n 1 || true)
+	built_kernel=$(ls -t "$tree"/bin/targets/armsr/armv8*/*-kernel.bin 2>/dev/null | grep -v initramfs | head -n 1 || true)
+	test -n "$built_image" && test -n "$built_kernel" || die "no armsr ext4 image or kernel in $tree/bin/targets"
+	cp "$built_image" "$built_kernel" "$output/"
+	echo "image in $output"
+}
+
+# --- VMs and switches ---
+
+control() {
+	"$python" - "$state/$1.sock" "$2" <<'PY'
+import socket, sys
+client = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+client.connect(sys.argv[1])
+client.sendall((sys.argv[2] + "\n").encode())
+print(client.recv(4096).decode(), end="")
+PY
+}
+
+start_switch() {
+	local net=$1 member
+	local -a ports=()
+	for member in $(network_members "$net"); do
+		ports+=(--port "$member:$(switch_port "$member" "$net")")
+	done
+	"$python" "$root/ha-virtual/ethernet_switch.py" --control "$state/$net.sock" "${ports[@]}" \
+		>"$state/$net-switch.log" 2>&1 &
+	echo $! >"$state/$net-switch.pid"
+}
+
+start_vm() {
+	local vm=$1 id nic index=0 memory=256
+	local -a nic_args=()
+	id=$(vm_id "$vm")
+	case "$vm" in r*) memory=512 ;; esac
+	rm -f -- "$state/$vm.serial" "$state/$vm.qmp"
+	for nic in $(vm_nics "$vm"); do
+		# virtio-net devices enumerate in reverse creation order on this machine type: the NIC created last
+		# becomes eth0, so each NIC is put in front of the ones before it.
+		nic_args=(-netdev "socket,id=$vm-$nic,connect=127.0.0.1:$(switch_port "$vm" "$nic")"
+			-device "virtio-net-device,netdev=$vm-$nic,mac=02:44:52:00:$id:0$index" ${nic_args[@]+"${nic_args[@]}"})
+		index=$((index + 1))
+	done
+	"$qemu" -machine virt -cpu cortex-a57 -m "$memory" -nographic \
+		-kernel "$kernel" -append 'root=/dev/vda2 rootwait console=ttyAMA0' \
+		-drive "if=none,id=$vm-disk,file=$state/$vm.img,format=raw" \
+		-device "virtio-blk-device,drive=$vm-disk" \
+		-serial "unix:$state/$vm.serial,server=on,wait=off" \
+		-qmp "unix:$state/$vm.qmp,server=on,wait=off" "${nic_args[@]}" \
+		>"$state/$vm.log" 2>&1 &
+	echo $! >"$state/$vm.pid"
+}
+
+up() {
+	local net vm
+	command -v "$qemu" >/dev/null || die 'qemu-system-aarch64 is required'
+	command -v "$python" >/dev/null || die 'python3 is required'
+	image_paths
+	down
+	mkdir -p "$state"
+	for net in $networks; do start_switch "$net"; done
+	sleep 1
+	for vm in $vms; do
+		cp "$image" "$state/$vm.img"
+		start_vm "$vm"
+	done
+	for vm in $vms; do
+		wait_until 30 "$vm QMP socket" test -S "$state/$vm.qmp"
+	done
+	for net in $link_networks; do cable "$net" unplug >/dev/null; done
+	echo "Cụm ảo DynRouting started in $state (link cables unplugged)"
+}
+
+down() {
+	local pid
+	if test -d "$state"; then
+		for pid in "$state"/*.pid; do
+			test -f "$pid" || continue
+			kill "$(cat "$pid")" 2>/dev/null || true
+		done
+		# A dying QEMU unlinks its sockets; let it finish before `up` reuses the paths.
+		for pid in "$state"/*.pid; do
+			test -f "$pid" || continue
+			for _ in $(seq 50); do kill -0 "$(cat "$pid")" 2>/dev/null || break; sleep 0.2; done
+		done
+		rm -rf -- "$state"
+	fi
+}
+
+status() {
+	local vm net
+	need_state
+	for vm in $vms; do
+		if test -f "$state/$vm.pid" && kill -0 "$(cat "$state/$vm.pid")" 2>/dev/null; then
+			echo "$vm: running"
+		else
+			echo "$vm: stopped"
+		fi
+	done
+	for net in $networks; do printf '%s: ' "$net"; control "$net" '{"action":"status"}'; done
+}
+
+exec_vm() {
+	need_state
+	local vm=$1
+	shift
+	test -S "$state/$vm.serial" || { echo "unknown or stopped VM: $vm" >&2; return 1; }
+	"$python" "$root/ha-virtual/serial_exec.py" "$state/$vm.serial" "$*"
+}
+
+set_link() {
+	need_state
+	local vm=$1 nic=$2 link
+	switch_port "$vm" "$nic" >/dev/null
+	case "$3" in up) link=true ;; down) link=false ;; *) die 'state must be up or down' ;; esac
+	"$python" "$root/ha-virtual/qmp.py" "$state/$vm.qmp" set_link "{\"name\":\"$vm-$nic\",\"up\":$link}" >/dev/null
+}
+
+cable() {
+	local net=$1 member link
+	case "$2" in plug) link=up ;; unplug) link=down ;; *) die 'cable action must be plug or unplug' ;; esac
+	test -n "$(network_members "$net")" || die "unknown network: $net"
+	for member in $(network_members "$net"); do set_link "$member" "$net" "$link"; done
+	# Remembered so that a VM powered on again keeps this cable unplugged.
+	if [ "$link" = down ]; then : >"$state/$net.unplugged"; else rm -f -- "$state/$net.unplugged"; fi
+	echo "$net ${2}ged"
+}
+
+power() {
+	need_state
+	local vm=$1 pid nic
+	vm_id "$vm" >/dev/null
+	case "$2" in
+		off)
+			pid=$(cat "$state/$vm.pid")
+			kill -KILL "$pid"
+			for _ in 1 2 3 4 5 6 7 8 9 10; do kill -0 "$pid" 2>/dev/null || break; sleep 0.1; done
+			! kill -0 "$pid" 2>/dev/null || die "$vm did not stop"
+			rm -f -- "$state/$vm.serial" "$state/$vm.qmp"
+			echo "$vm powered off" ;;
+		on)
+			image_paths
+			start_vm "$vm"
+			wait_until 30 "$vm QMP socket" test -S "$state/$vm.qmp"
+			for nic in $(vm_nics "$vm"); do
+				if [ -f "$state/$nic.unplugged" ]; then set_link "$vm" "$nic" down; fi
+			done
+			echo "$vm powered on" ;;
+		*) die 'power action must be off or on' ;;
+	esac
+}
+
+capture() {
+	need_state
+	local net=$1 path=${2:-"$state/$1.pcap"}
+	test -n "$(network_members "$net")" || die "unknown network: $net"
+	control "$net" "{\"action\":\"capture\",\"path\":\"$path\"}"
+}
+
+# --- scenario helpers ---
+
+monotonic_ms() {
+	"$python" -c 'import time; print(int(time.monotonic() * 1000))'
+}
+
+# wait_until TIMEOUT_S WHAT COMMAND...: the command is run again every half second.
+wait_until() {
+	local timeout_s=$1 what=$2 started
+	shift 2
+	started=$(monotonic_ms)
+	until "$@" >/dev/null 2>&1; do
+		if (( $(monotonic_ms) - started >= timeout_s * 1000 )); then
+			echo "$what did not happen within ${timeout_s}s" >&2
+			return 1
+		fi
+		sleep 0.5
+	done
+}
+
+fail() {
+	echo "FAIL: $*" >&2
+	exit 1
+}
+
+pass() {
+	echo "PASS: $*"
+}
+
+step() {
+	printf '\n=== %s\n' "$*"
+}
+
+# Output of a command on a VM without the console's echo of the command line.
+# The colour codes that ip-full prints on a console are taken out.
+vm_output() {
+	exec_vm "$1" "echo '@@''BEGIN'; $2; echo '@@''END'" | tr -d '\r' | sed $'s/\033\\[[0-9;]*m//g' |
+		sed -n '/^@@BEGIN$/,/^@@END$/p' | sed '1d;$d'
+}
+
+# Runs `bmcdynrouting ARGS` on VM $1 in the background and prints its JSON reply: an apply that restarts FRR
+# can outlast the serial console's 30 s command limit on TCG. Arguments must not contain spaces or quotes.
+cli() {
+	local vm=$1 reply
+	shift
+	# The job is started inside a subshell: serial_exec.py appends "; printf ...", and "&;" is a syntax error.
+	exec_vm "$vm" "rm -f /tmp/dynr-cli.out /tmp/dynr-cli.rc; ( (bmcdynrouting $* >/tmp/dynr-cli.out 2>&1; echo \$? >/tmp/dynr-cli.rc) </dev/null >/dev/null 2>&1 & )" >/dev/null || return 1
+	wait_until 180 "bmcdynrouting $1 on $vm" exec_vm "$vm" 'test -f /tmp/dynr-cli.rc' || return 1
+	reply=$(vm_output "$vm" 'cat /tmp/dynr-cli.out')
+	echo "$vm: bmcdynrouting $* -> $reply" >&2
+	printf '%s\n' "$reply"
+}
+
+# cli, and the reply must have status 0.
+cli_ok() {
+	local reply
+	reply=$(cli "$@") || fail "bmcdynrouting $2 $3 on $1 did not finish"
+	case "$reply" in '{"status":0'*) ;; *) fail "bmcdynrouting $2 $3 on $1 failed: $reply" ;; esac
+	printf '%s\n' "$reply"
+}
+
+# json_eval EXPRESSION: evaluates a Python expression over the JSON document on stdin (bound to `d`) and
+# prints the result; exits non-zero when the document does not parse or the expression raises.
+json_eval() {
+	"$python" -c '
+import json, sys
+d = json.load(sys.stdin)
+result = eval(sys.argv[1])
+print(json.dumps(result) if isinstance(result, (dict, list, bool)) or result is None else result)
+' "$1"
+}
+
+# JSON of vtysh `show ... json` on a plain FRR VM (ISP or legacy router).
+vtysh_json() {
+	vm_output "$1" "vtysh -c '$2'"
+}
+
+# Field $3 of Peer BGP $2 in `bmcdynrouting status bgp peers` on R $1.
+bgp_peer_field() {
+	vm_output "$1" 'bmcdynrouting status bgp peers' | json_eval "d['data']['peers']['$2'].get('$3')"
+}
+
+bgp_established() {
+	test "$(bgp_peer_field "$1" "$2" state)" = Established
+}
+
+# Prefixes in the BGP table of a plain FRR VM ($1) or, with $2 = bmc, of R $1 through the CLI.
+bgp_prefixes() {
+	if [ "${2:-}" = bmc ]; then
+		vm_output "$1" 'bmcdynrouting status bgp routes' | json_eval "' '.join(sorted(d['data'].get('routes', {})))"
+	else
+		vtysh_json "$1" 'show bgp ipv4 unicast json' | json_eval "' '.join(sorted(d.get('routes', {})))"
+	fi
+}
+
+# Prefixes that R $1 holds from Peer BGP $2.
+bgp_prefixes_from() {
+	vm_output "$1" 'bmcdynrouting status bgp routes' |
+		json_eval "' '.join(sorted(p for p, paths in d['data'].get('routes', {}).items() if any(x.get('peerId') == '$2' for x in paths)))"
+}
+
+# True when the BGP table of plain FRR VM $1 lacks prefix $2; a table that cannot be read fails the run
+# instead of passing as "absent".
+lacks_bgp_prefix() {
+	local prefixes
+	prefixes=$(bgp_prefixes "$1") || fail "cannot read the BGP table of $1"
+	case " $prefixes " in *" $2 "*) return 1 ;; esac
+}
+
+# Prefixes that plain FRR VM $1 advertises to its neighbour $2.
+advertised_prefixes() {
+	vtysh_json "$1" "show bgp ipv4 unicast neighbors $2 advertised-routes json" |
+		json_eval "' '.join(sorted(d.get('advertisedRoutes', {})))"
+}
+
+has_bgp_prefix() {
+	case " $(bgp_prefixes "$1" "${3:-}") " in *" $2 "*) return 0 ;; esac
+	return 1
+}
+
+# Router IDs of the OSPF neighbours of R $1 in state Full.
+ospf_full_neighbors() {
+	vm_output "$1" 'bmcdynrouting status ospf neighbors' | json_eval "' '.join(sorted(rid for rid, entries in d['data']['neighbors'].items() if any(e.get('nbrState', '').startswith('Full') for e in entries)))"
+}
+
+ospf_full_with() {
+	test "$(ospf_full_neighbors "$1")" = "$2"
+}
+
+# Kernel route of VM $1 to prefix $2 (one line of `ip route`), empty when there is none.
+kernel_route() {
+	vm_output "$1" "ip -4 route show" | grep "^$2 " || true
+}
+
+has_kernel_route() {
+	test -n "$(kernel_route "$1" "$2")"
+}
+
+# Prefixes of the RIP routes in zebra's RIB of the legacy router.
+legacy_rip_prefixes() {
+	vtysh_json legacy 'show ip route rip json' | json_eval "' '.join(sorted(d))"
+}
+
+legacy_has_rip() {
+	case " $(legacy_rip_prefixes) " in *" $1 "*) return 0 ;; esac
+	return 1
+}
+
+next_hop_is() {
+	case "$(vm_output "$1" "ip -4 route get $2")" in *" via $3 "*) return 0 ;; esac
+	return 1
+}
+
+# Packet counter of iptables chain/rule lines of VM $1 matching the extended regex $3 in `iptables -nvx -L $2`.
+iptables_packets() {
+	vm_output "$1" "iptables -nvx -L $2" | awk -v re="$3" '$0 ~ re { sum += $1 } END { print sum + 0 }'
+}
+
+wait_for_boot() {
+	wait_until 240 "$1 finishing boot" exec_vm "$1" "logread | grep -q 'procd: - init complete -'"
+}
+
+# --- configure: R1-R3 through the CLI, as an operator would ---
+
+configure() {
+	local vm
+	need_state
+	step 'Waiting for every VM to finish booting'
+	for vm in $vms; do wait_for_boot "$vm"; done
+	# The bootstrap enables FRR during the first boot's uci-defaults, after procd has listed the init scripts.
+	for vm in ispa ispb legacy; do
+		exec_vm "$vm" 'pidof watchfrr >/dev/null || /etc/init.d/frr start' >/dev/null
+	done
+
+	step 'Link định tuyến (bmcdynrouting link add), then the link cables are plugged'
+	cli_ok r1 link add eth2 10.0.12.1/30 >/dev/null
+	cli_ok r1 link add eth3 10.0.13.1/30 >/dev/null
+	cli_ok r2 link add eth2 10.0.12.2/30 >/dev/null
+	cli_ok r2 link add eth3 10.0.23.1/30 >/dev/null
+	cli_ok r3 link add eth1 10.0.13.2/30 >/dev/null
+	cli_ok r3 link add eth2 10.0.23.2/30 >/dev/null
+	cli_ok r3 link add eth3 192.168.50.1/24 >/dev/null
+	for net in $link_networks; do cable "$net" plug; done
+
+	step 'Router ID, OSPF, RIP (R3) and BGP (R1, R2)'
+	cli_ok r1 router-id set --router-id 1.1.1.1 >/dev/null
+	cli_ok r2 router-id set --router-id 2.2.2.2 >/dev/null
+	cli_ok r3 router-id set --router-id 3.3.3.3 >/dev/null
+	ospf_r1 0 >/dev/null
+	cli_ok r2 ospf set --enabled 1 --interface lan --passive 1 --interface link_eth2 --interface link_eth3 >/dev/null
+	cli_ok r3 ospf set --enabled 1 --redistribute-rip 1 --interface lan --passive 1 \
+		--interface link_eth1 --interface link_eth2 >/dev/null
+	cli_ok r3 rip set --enabled 1 --redistribute-ospf 1 --redistribute-connected 1 --default-originate 1 \
+		--interface link_eth3 >/dev/null
+	cli_ok r1 bgp set --enabled 1 --local-as 65001 --network 192.168.1.0/24 \
+		--peer 203.0.113.1 --remote-as 64500 --description ISP-A --receive all >/dev/null
+	bgp_r2 0 >/dev/null
+}
+
+# R1's OSPF configuration; $1 = redistribute BGP (the no-transit step), $2 = cost of link_eth3 ('' = none).
+ospf_r1() {
+	local cost=
+	if [ -n "${2:-}" ]; then cost="--cost $2"; fi
+	# shellcheck disable=SC2086 # $cost is empty or two words
+	cli_ok r1 ospf set --enabled 1 --redistribute-bgp "$1" --interface lan --passive 1 \
+		--interface link_eth2 --interface link_eth3 $cost
+}
+
+# R2's BGP configuration; $1 = redistribute OSPF (the no-transit step).
+bgp_r2() {
+	cli_ok r2 bgp set --enabled 1 --local-as 65001 --network 192.168.2.0/24 --redistribute-ospf "$1" \
+		--peer 198.51.100.1 --remote-as 64501 --description ISP-B --receive default
+}
+
+# --- acceptance checks ---
+
+check_ospf() {
+	step 'OSPF: Full adjacency on every link of the triangle'
+	wait_until 180 'R1 Full with R2 and R3' ospf_full_with r1 '2.2.2.2 3.3.3.3' || fail "R1 neighbours: $(ospf_full_neighbors r1)"
+	wait_until 60 'R2 Full with R1 and R3' ospf_full_with r2 '1.1.1.1 3.3.3.3' || fail "R2 neighbours: $(ospf_full_neighbors r2)"
+	wait_until 60 'R3 Full with R1 and R2' ospf_full_with r3 '1.1.1.1 2.2.2.2' || fail "R3 neighbours: $(ospf_full_neighbors r3)"
+	pass 'OSPF Full on R1-R2, R1-R3, R2-R3'
+}
+
+check_rip() {
+	local prefix vm
+	step 'RIP: the legacy router learns LAN R1/R2 and a default route; R1-R3 learn 192.168.60.0/24'
+	for prefix in 192.168.1.0/24 192.168.2.0/24 0.0.0.0/0; do
+		wait_until 180 "legacy learning $prefix" legacy_has_rip "$prefix" || fail "legacy RIP routes: $(legacy_rip_prefixes)"
+	done
+	pass "legacy router RIP routes: $(legacy_rip_prefixes)"
+	for vm in r3 r1 r2; do
+		wait_until 120 "$vm learning 192.168.60.0/24" has_kernel_route "$vm" 192.168.60.0/24 ||
+			fail "$vm has no route to 192.168.60.0/24"
+		pass "$vm: $(kernel_route "$vm" 192.168.60.0/24)"
+	done
+	exec_vm r1 'ping -c 3 -W 2 -I 192.168.1.1 192.168.60.1' >/dev/null || fail 'LAN R1 -> legacy LAN 192.168.60.1 ping failed'
+	pass 'LAN R1 reaches the legacy LAN 192.168.60.1'
+}
+
+check_bgp() {
+	step 'BGP: sessions Established; ISPs receive the BMC LANs; receive=default takes only the default route'
+	wait_until 180 'R1-ISP-A Established' bgp_established r1 203.0.113.1 || fail "R1-ISP-A: $(bgp_peer_field r1 203.0.113.1 state)"
+	wait_until 180 'R2-ISP-B Established' bgp_established r2 198.51.100.1 || fail "R2-ISP-B: $(bgp_peer_field r2 198.51.100.1 state)"
+	pass 'R1-ISP-A and R2-ISP-B Established'
+	wait_until 120 'ISP-A receiving 192.168.1.0/24' has_bgp_prefix ispa 192.168.1.0/24 || fail "ISP-A table: $(bgp_prefixes ispa)"
+	wait_until 120 'ISP-B receiving 192.168.2.0/24' has_bgp_prefix ispb 192.168.2.0/24 || fail "ISP-B table: $(bgp_prefixes ispb)"
+	pass "ISP-A receives: $(bgp_prefixes ispa); ISP-B receives: $(bgp_prefixes ispb)"
+	# receive=all (R1) is the control: ISP-A sends a default and 100.64.1.0/24, ISP-B the same shape.
+	wait_until 60 'R1 receiving 100.64.1.0/24' has_bgp_prefix r1 100.64.1.0/24 bmc || fail "R1 BGP table: $(bgp_prefixes r1 bmc)"
+	wait_until 60 'R2 receiving the default route' has_bgp_prefix r2 0.0.0.0/0 bmc || fail "R2 BGP table: $(bgp_prefixes r2 bmc)"
+	# ISP-B does offer more than the default: the filter, not a quiet ISP, keeps it out of R2.
+	case " $(advertised_prefixes ispb 198.51.100.2) " in
+		*' 100.64.2.0/24 '*) ;;
+		*) fail "ISP-B does not advertise 100.64.2.0/24 to R2: $(advertised_prefixes ispb 198.51.100.2)" ;;
+	esac
+	sleep 5
+	test "$(bgp_prefixes_from r2 198.51.100.1)" = 0.0.0.0/0 ||
+		fail "R2 (receive=default) holds from ISP-B: $(bgp_prefixes_from r2 198.51.100.1)"
+	pass "R2 (receive=default) holds from ISP-B only 0.0.0.0/0; R1 (receive=all) from ISP-A: $(bgp_prefixes_from r1 203.0.113.1)"
+}
+
+check_no_transit() {
+	step 'No transit: R1 BGP->OSPF and R2 OSPF->BGP, ISP-B must never see ISP-A prefixes'
+	ospf_r1 1 >/dev/null
+	bgp_r2 1 >/dev/null
+	# Both redistributions work: ISP-A's prefix reaches R2 through OSPF, R1's LAN reaches ISP-B through BGP.
+	wait_until 120 'R2 learning 100.64.1.0/24 over OSPF' has_kernel_route r2 100.64.1.0/24 || fail 'ISP-A prefix did not reach R2'
+	pass "R2: $(kernel_route r2 100.64.1.0/24)"
+	wait_until 120 'ISP-B receiving 192.168.1.0/24' has_bgp_prefix ispb 192.168.1.0/24 || fail "ISP-B table: $(bgp_prefixes ispb)"
+	wait_until 60 'R2 established again' bgp_established r2 198.51.100.1 || fail 'R2-ISP-B session did not come back'
+	sleep 15
+	lacks_bgp_prefix ispb 100.64.1.0/24 || fail "ISP-B received ISP-A's prefix: $(bgp_prefixes ispb)"
+	lacks_bgp_prefix ispb 0.0.0.0/0 || fail "ISP-B received a default route from R2: $(bgp_prefixes ispb)"
+	lacks_bgp_prefix ispa 100.64.2.0/24 || fail "ISP-A received ISP-B's prefix: $(bgp_prefixes ispa)"
+	pass "ISP-B receives $(bgp_prefixes ispb) - no 100.64.1.0/24, no default"
+}
+
+check_firewall() {
+	local before after
+	step 'Firewall: TCP 179 only from the Peer BGP address'
+	exec_vm ispa 'ip addr add 203.0.113.9/24 dev eth0 2>/dev/null; true' >/dev/null
+	before=$(iptables_packets r1 zone_wan_src_REJECT 'reject')
+	exec_vm ispa 'socat -u /dev/null TCP:203.0.113.2:179,bind=203.0.113.9,connect-timeout=5' >/dev/null 2>&1 &&
+		fail 'TCP 179 from 203.0.113.9 (not a Peer BGP) was accepted by R1'
+	after=$(iptables_packets r1 zone_wan_src_REJECT 'reject')
+	(( after > before )) || fail "R1 wan zone REJECT counter did not move ($before -> $after)"
+	bgp_established r1 203.0.113.1 || fail 'R1-ISP-A session dropped'
+	pass "TCP 179 from 203.0.113.9 refused by the wan zone ($before -> $after rejected), ISP-A session still Established"
+
+	step 'Firewall: RIP only on an Interface RIP'
+	# A RIPv2 response for 10.99.99.0/24 sent by R1 to R3 over link R1-R3, which is not an Interface RIP of R3.
+	before=$(iptables_packets r3 zone_dynrouting_src_REJECT 'reject')
+	exec_vm r1 "for i in 1 2 3; do printf '\\002\\002\\000\\000\\000\\002\\000\\000\\012\\143\\143\\000\\377\\377\\377\\000\\000\\000\\000\\000\\000\\000\\000\\001' | socat -u - UDP-SENDTO:10.0.13.2:520,sourceport=520; done" >/dev/null
+	sleep 2
+	after=$(iptables_packets r3 zone_dynrouting_src_REJECT 'reject')
+	(( after >= before + 3 )) || fail "R3 dynrouting zone REJECT counter: $before -> $after"
+	# The control: RIP from the legacy router on R3's Interface RIP goes through the bmcDynRouting rule.
+	(( $(iptables_packets r3 INPUT 'dpt:520 .*bmcDynRouting') > 0 )) || fail 'no RIP packet accepted on R3 Interface RIP'
+	pass "RIP from R1 on link_eth1 rejected ($before -> $after), RIP on link_eth3 accepted"
+}
+
+check_restart_per_daemon() {
+	local epoch pid reply after
+	step 'Restart per daemon: an OSPF change on R1 keeps the R1-ISP-A session'
+	epoch=$(bgp_peer_field r1 203.0.113.1 peerUptimeEstablishedEpoch)
+	pid=$(vm_output r1 'pidof bgpd')
+	test -n "$epoch" && test -n "$pid" || fail 'no BGP session uptime / bgpd on R1'
+	reply=$(ospf_r1 1 20)
+	case "$reply" in *'"frr_restarted":["ospfd"]'*) ;; *) fail "expected only ospfd restarted: $reply" ;; esac
+	sleep 10
+	bgp_established r1 203.0.113.1 || fail 'R1-ISP-A session dropped after the OSPF change'
+	# FRR derives the epoch from wall clock minus uptime, so it can move by a second between two queries.
+	after=$(bgp_peer_field r1 203.0.113.1 peerUptimeEstablishedEpoch)
+	(( after - epoch <= 2 && epoch - after <= 2 )) || fail "R1-ISP-A session was reset (established $epoch -> $after)"
+	test "$(vm_output r1 'pidof bgpd')" = "$pid" || fail 'bgpd restarted'
+	check_ospf
+	pass "only ospfd restarted; BGP established since epoch $epoch, bgpd pid $pid unchanged"
+}
+
+check_link_failure() {
+	step 'Link R1-R2 pulled: LAN R1 -> LAN R2 goes around through R3'
+	# Before the cut the direct link (cost 10) beats the way through R3 (at least 20).
+	wait_until 60 'R1 reaching LAN R2 over R1-R2' next_hop_is r1 192.168.2.1 10.0.12.2 ||
+		fail "R1 route to LAN R2: $(vm_output r1 'ip -4 route get 192.168.2.1')"
+	cable l12 unplug
+	wait_until 60 'R1 rerouting LAN R2 over R3' next_hop_is r1 192.168.2.1 10.0.13.2 ||
+		fail "R1 route to LAN R2 after the cut: $(vm_output r1 'ip -4 route get 192.168.2.1')"
+	wait_until 60 'R2 rerouting LAN R1 over R3' next_hop_is r2 192.168.1.1 10.0.23.2 ||
+		fail "R2 route to LAN R1 after the cut: $(vm_output r2 'ip -4 route get 192.168.1.1')"
+	exec_vm r1 'ping -c 3 -W 2 -I 192.168.1.1 192.168.2.1' >/dev/null || fail 'LAN R1 -> LAN R2 ping failed after the cut'
+	vm_output r1 'traceroute -n -m 3 -w 2 -s 192.168.1.1 192.168.2.1' >"$state/traceroute.txt"
+	test "$(awk '$1 == 1 { print $2 }' "$state/traceroute.txt")" = 10.0.13.2 ||
+		fail "first hop is not R3: $(cat "$state/traceroute.txt")"
+	pass 'LAN R1 -> LAN R2 via R3 (10.0.13.2)'
+	cable l12 plug
+	wait_until 120 'R1 back on R1-R2' next_hop_is r1 192.168.2.1 10.0.12.2 || fail 'R1-R2 did not come back'
+	pass 'R1-R2 plugged again, the direct path is back'
+}
+
+# Every acceptance check, in order, on a cluster that `configure` has set up.
+check() {
+	need_state
+	check_ospf
+	check_rip
+	check_bgp
+	check_no_transit
+	check_firewall
+	check_restart_per_daemon
+	check_link_failure
+}
+
+accept() {
+	local started
+	started=$(monotonic_ms)
+	up
+	configure
+	check
+	printf '\nPASS: every check in %ss; the cluster is still up (%s down)\n' \
+		$(( ($(monotonic_ms) - started) / 1000 )) "$0"
+}
+
+case "${1:-help}" in
+	help|-h|--help) usage ;;
+	build|up|down|status|configure|check|accept) "$1" ;;
+	exec) shift; exec_vm "$@" ;;
+	set_link) shift; set_link "$@" ;;
+	cable) shift; cable "$@" ;;
+	power) shift; power "$@" ;;
+	capture) shift; capture "$@" ;;
+	*) usage >&2; exit 2 ;;
+esac

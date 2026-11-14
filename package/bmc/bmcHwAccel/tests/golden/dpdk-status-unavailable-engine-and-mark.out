@@ -1,0 +1,2 @@
+{"status":0,"message":"Tăng tốc phần cứng is unavailable: its ports could not be made at boot; the router restarted without it; enable it to try again","state":"unavailable","reason":"engine","enabled":true,"reboot_required":false,"accelerated":0,"ipsec_sa":0,"on_cpu":[]}
+exit=0

@@ -1,0 +1,10 @@
+tcp      6 431999 ESTABLISHED src=192.168.5.10 dst=203.0.113.7 sport=50000 dport=443 src=203.0.113.7 dst=192.168.2.1 sport=443 dport=50000 [ASSURED] mark=0 use=1
+tcp      6 431999 ESTABLISHED src=192.168.5.10 dst=203.0.113.7 sport=50001 dport=443 src=203.0.113.7 dst=192.168.2.1 sport=443 dport=50001 [ASSURED] mark=0 use=1
+udp      17 100 src=192.168.5.20 dst=203.0.113.8 sport=4000 dport=443 src=203.0.113.8 dst=192.168.2.1 sport=443 dport=4000 [ASSURED] mark=0 use=1
+tcp      6 431999 ESTABLISHED src=192.168.5.10 dst=198.51.100.5 sport=50002 dport=443 src=198.51.100.5 dst=192.168.2.1 sport=443 dport=50002 [ASSURED] mark=0 use=1
+tcp      6 431999 ESTABLISHED src=192.168.5.20 dst=198.51.100.5 sport=50003 dport=443 src=198.51.100.5 dst=192.168.2.1 sport=443 dport=50003 [ASSURED] mark=0 use=1
+tcp      6 431999 ESTABLISHED src=192.0.2.99 dst=198.51.100.5 sport=50004 dport=443 src=198.51.100.5 dst=192.0.2.99 sport=443 dport=50004 [ASSURED] mark=0 use=1
+tcp      6 431999 ESTABLISHED src=198.51.100.5 dst=192.168.2.1 sport=6000 dport=8080 src=192.168.5.30 dst=198.51.100.5 sport=80 dport=6000 [ASSURED] mark=0 use=1
+icmp     1 29 src=192.168.5.20 dst=198.51.100.5 type=8 code=0 id=1 src=198.51.100.5 dst=192.168.2.1 type=0 code=0 id=1 mark=0 use=1
+tcp      6 431999 ESTABLISHED src=fd00::10 dst=2001:db8::7 sport=50005 dport=443 src=2001:db8::7 dst=fd00::10 sport=443 dport=50005 [ASSURED] mark=0 use=1
+tcp      6 431999 ESTABLISHED src=192.168.5.20 dst=192.0.2.50 sport=50006 dport=443 src=192.0.2.50 dst=192.168.2.1 sport=443 dport=50006 [ASSURED] mark=0 use=1

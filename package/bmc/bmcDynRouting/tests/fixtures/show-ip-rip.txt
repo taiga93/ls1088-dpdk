@@ -1,0 +1,13 @@
+Codes: K - kernel route, C - connected, L - local, S - static,
+       R - RIP, O - OSPF, I - IS-IS, B - BGP, E - EIGRP, N - NHRP,
+       T - Table, v - VNC, V - VNC-Direct, A - Babel, F - PBR,
+       f - OpenFabric, t - Table-Direct
+Sub-codes:
+      (n) - normal, (s) - static, (d) - default, (r) - redistribute,
+      (i) - interface
+
+     Network            Next Hop         Metric From            Tag Time
+R(d) 0.0.0.0/0          0.0.0.0               1 self              0
+O(r) 192.168.3.0/24     0.0.0.0               1 self (ospf:10)    0
+C(i) 192.168.50.0/24    0.0.0.0               1 self              0
+R(n) 192.168.60.0/24    192.168.50.254        2 192.168.50.254    0 02:51

@@ -1,0 +1,4 @@
+dev=eth0
+up=qdisc cake 1: root refcnt 2 bandwidth 100Mbit diffserv4 dual-srchost nat nowash no-ack-filter split-gso rtt 100ms raw overhead 0
+down=qdisc cake 8002: root refcnt 2 bandwidth 100Mbit diffserv4 dual-dsthost nat nowash ingress no-ack-filter split-gso rtt 100ms raw overhead 0
+status={"status":0,"message":"Tăng tốc phần cứng is on","state":"on","enabled":true,"accelerated":5,"on_cpu":[]}

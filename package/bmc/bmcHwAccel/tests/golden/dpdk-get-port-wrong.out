@@ -1,0 +1,2 @@
+{"status":0,"message":"Tăng tốc phần cứng configuration; port must list MACs such as dpmac.1: eth1; the next boot uses dpmac.1 dpmac.2","field":"port","enabled":true,"workers":4,"port":["dpmac.1","dpmac.2"]}
+exit=0

@@ -1,0 +1,8 @@
+{"status":0,"message":"Luật chọn WAN voip saved","uci_batch":"set mwan3.voip=rule
+set mwan3.voip.family='ipv4'
+set mwan3.voip.proto='udp'
+set mwan3.voip.dest_port='5060'
+set mwan3.voip.use_policy='b_first'
+reorder mwan3.voip=13
+reorder mwan3.default_rule=13","commands":[]}
+exit=0

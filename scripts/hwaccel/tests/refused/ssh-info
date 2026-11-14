@@ -1,0 +1,4 @@
+Linux BMCOS 6.6.93 #0 SMP Mon Sep 14 08:00:00 2026 aarch64 GNU/Linux
+[    1.812345] fsl-fman 1a00000.fman: FMan-Controller code (ver 106.4.18)
+eth0 1ae2000.ethernet 02:00:00:46:00:02
+eth1 1ae4000.ethernet 02:00:00:46:00:03

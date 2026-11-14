@@ -1,0 +1,18 @@
+{"status":0,"message":"OSPF configuration saved","uci_batch":"delete bmcDynRouting.oi_lan
+delete bmcDynRouting.oi_wan
+delete bmcDynRouting.oi_guest
+delete bmcDynRouting.oi_link_eth7
+set bmcDynRouting.oi_wan=ospf_interface
+set bmcDynRouting.oi_wan.interface='wan'
+set bmcDynRouting.oi_wan.area='0'
+set bmcDynRouting.oi_wan.passive='0'
+set bmcDynRouting.oi_guest=ospf_interface
+set bmcDynRouting.oi_guest.interface='guest'
+set bmcDynRouting.oi_guest.area='0'
+set bmcDynRouting.oi_guest.passive='1'
+set bmcDynRouting.ospf.enabled='1'
+set bmcDynRouting.ospf.redistribute_static='0'
+set bmcDynRouting.ospf.redistribute_connected='0'
+set bmcDynRouting.ospf.redistribute_rip='0'
+set bmcDynRouting.ospf.redistribute_bgp='0'","warnings":[{"interface":"wan","code":"zone_masquerade","message":"Interface OSPF wan is in zone wan, which masquerades: LAN-to-LAN traffic through it will be NATed."},{"interface":"wan","code":"zone_forward_blocked","message":"Interface OSPF wan is in zone wan, which blocks forwarding: LAN-to-LAN traffic through it will be dropped even when the adjacency is up."}]}
+exit=0

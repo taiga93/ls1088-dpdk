@@ -1,0 +1,217 @@
+@ports eth0 eth1 eth2 eth4 eth5
+start=120.00
+@window on
+before=120.10
+@before eth0
+     rx packets [CPU 0]: 3752
+     rx packets [CPU 1]: 0
+     rx packets [CPU 2]: 0
+     rx packets [CPU 3]: 0
+     rx packets [TOTAL]: 3752
+@before eth1
+     rx packets [CPU 0]: 2100
+     rx packets [CPU 1]: 0
+     rx packets [CPU 2]: 0
+     rx packets [CPU 3]: 0
+     rx packets [TOTAL]: 2100
+@before eth2
+     rx packets [CPU 0]: 10
+     rx packets [CPU 1]: 0
+     rx packets [CPU 2]: 0
+     rx packets [CPU 3]: 0
+     rx packets [TOTAL]: 10
+@before eth4
+     rx packets [CPU 0]: 0
+     rx packets [CPU 1]: 0
+     rx packets [CPU 2]: 0
+     rx packets [CPU 3]: 0
+     rx packets [TOTAL]: 0
+@before eth5
+     rx packets [CPU 0]: 0
+     rx packets [CPU 1]: 0
+     rx packets [CPU 2]: 0
+     rx packets [CPU 3]: 0
+     rx packets [TOTAL]: 0
+after=130.20
+@after eth0
+     rx packets [CPU 0]: 3762
+     rx packets [CPU 1]: 0
+     rx packets [CPU 2]: 0
+     rx packets [CPU 3]: 0
+     rx packets [TOTAL]: 3762
+@after eth1
+     rx packets [CPU 0]: 2176
+     rx packets [CPU 1]: 0
+     rx packets [CPU 2]: 0
+     rx packets [CPU 3]: 0
+     rx packets [TOTAL]: 2176
+@after eth2
+     rx packets [CPU 0]: 10
+     rx packets [CPU 1]: 0
+     rx packets [CPU 2]: 0
+     rx packets [CPU 3]: 0
+     rx packets [TOTAL]: 10
+@after eth4
+     rx packets [CPU 0]: 0
+     rx packets [CPU 1]: 0
+     rx packets [CPU 2]: 0
+     rx packets [CPU 3]: 0
+     rx packets [TOTAL]: 0
+@after eth5
+     rx packets [CPU 0]: 0
+     rx packets [CPU 1]: 0
+     rx packets [CPU 2]: 0
+     rx packets [CPU 3]: 0
+     rx packets [TOTAL]: 0
+status={"status":0,"message":"Tăng tốc phần cứng is on","state":"on","enabled":true,"accelerated":5,"on_cpu":[]}
+pinned=5
+link eth0 speed 1000 changes 1
+link eth1 speed 1000 changes 2
+link eth2 speed -1 changes 0
+cpu_limit=195312
+cpu_dropped=1204
+@answers
+disable={"status":-1,"message":"Saved, but Tăng tốc phần cứng failed to stop","enabled":false,"action":"stop","commands":["/etc/init.d/cmm stop"]}
+@window off
+before=132.40
+@before eth0
+     rx packets [CPU 0]: 3762
+     rx packets [CPU 1]: 0
+     rx packets [CPU 2]: 0
+     rx packets [CPU 3]: 0
+     rx packets [TOTAL]: 3762
+@before eth1
+     rx packets [CPU 0]: 2176
+     rx packets [CPU 1]: 0
+     rx packets [CPU 2]: 0
+     rx packets [CPU 3]: 0
+     rx packets [TOTAL]: 2176
+@before eth2
+     rx packets [CPU 0]: 10
+     rx packets [CPU 1]: 0
+     rx packets [CPU 2]: 0
+     rx packets [CPU 3]: 0
+     rx packets [TOTAL]: 10
+@before eth4
+     rx packets [CPU 0]: 0
+     rx packets [CPU 1]: 0
+     rx packets [CPU 2]: 0
+     rx packets [CPU 3]: 0
+     rx packets [TOTAL]: 0
+@before eth5
+     rx packets [CPU 0]: 0
+     rx packets [CPU 1]: 0
+     rx packets [CPU 2]: 0
+     rx packets [CPU 3]: 0
+     rx packets [TOTAL]: 0
+after=142.50
+@after eth0
+     rx packets [CPU 0]: 3770
+     rx packets [CPU 1]: 0
+     rx packets [CPU 2]: 0
+     rx packets [CPU 3]: 0
+     rx packets [TOTAL]: 3770
+@after eth1
+     rx packets [CPU 0]: 2260
+     rx packets [CPU 1]: 0
+     rx packets [CPU 2]: 0
+     rx packets [CPU 3]: 0
+     rx packets [TOTAL]: 2260
+@after eth2
+     rx packets [CPU 0]: 10
+     rx packets [CPU 1]: 0
+     rx packets [CPU 2]: 0
+     rx packets [CPU 3]: 0
+     rx packets [TOTAL]: 10
+@after eth4
+     rx packets [CPU 0]: 0
+     rx packets [CPU 1]: 0
+     rx packets [CPU 2]: 0
+     rx packets [CPU 3]: 0
+     rx packets [TOTAL]: 0
+@after eth5
+     rx packets [CPU 0]: 0
+     rx packets [CPU 1]: 0
+     rx packets [CPU 2]: 0
+     rx packets [CPU 3]: 0
+     rx packets [TOTAL]: 0
+status={"status":0,"message":"Tăng tốc phần cứng is on","state":"on","enabled":false,"accelerated":5,"on_cpu":[]}
+pinned=5
+link eth0 speed 1000 changes 1
+link eth1 speed 1000 changes 2
+link eth2 speed -1 changes 0
+@answers
+enable={"status":0,"message":"Tăng tốc phần cứng enabled","enabled":true,"action":"start","commands":["/etc/init.d/cmm start"]}
+@window again
+before=150.80
+@before eth0
+     rx packets [CPU 0]: 3770
+     rx packets [CPU 1]: 0
+     rx packets [CPU 2]: 0
+     rx packets [CPU 3]: 0
+     rx packets [TOTAL]: 3770
+@before eth1
+     rx packets [CPU 0]: 2260
+     rx packets [CPU 1]: 0
+     rx packets [CPU 2]: 0
+     rx packets [CPU 3]: 0
+     rx packets [TOTAL]: 2260
+@before eth2
+     rx packets [CPU 0]: 10
+     rx packets [CPU 1]: 0
+     rx packets [CPU 2]: 0
+     rx packets [CPU 3]: 0
+     rx packets [TOTAL]: 10
+@before eth4
+     rx packets [CPU 0]: 0
+     rx packets [CPU 1]: 0
+     rx packets [CPU 2]: 0
+     rx packets [CPU 3]: 0
+     rx packets [TOTAL]: 0
+@before eth5
+     rx packets [CPU 0]: 0
+     rx packets [CPU 1]: 0
+     rx packets [CPU 2]: 0
+     rx packets [CPU 3]: 0
+     rx packets [TOTAL]: 0
+after=160.90
+@after eth0
+     rx packets [CPU 0]: 3775
+     rx packets [CPU 1]: 0
+     rx packets [CPU 2]: 0
+     rx packets [CPU 3]: 0
+     rx packets [TOTAL]: 3775
+@after eth1
+     rx packets [CPU 0]: 2270
+     rx packets [CPU 1]: 0
+     rx packets [CPU 2]: 0
+     rx packets [CPU 3]: 0
+     rx packets [TOTAL]: 2270
+@after eth2
+     rx packets [CPU 0]: 10
+     rx packets [CPU 1]: 0
+     rx packets [CPU 2]: 0
+     rx packets [CPU 3]: 0
+     rx packets [TOTAL]: 10
+@after eth4
+     rx packets [CPU 0]: 0
+     rx packets [CPU 1]: 0
+     rx packets [CPU 2]: 0
+     rx packets [CPU 3]: 0
+     rx packets [TOTAL]: 0
+@after eth5
+     rx packets [CPU 0]: 0
+     rx packets [CPU 1]: 0
+     rx packets [CPU 2]: 0
+     rx packets [CPU 3]: 0
+     rx packets [TOTAL]: 0
+status={"status":0,"message":"Tăng tốc phần cứng is on","state":"on","enabled":true,"accelerated":0,"on_cpu":[]}
+pinned=5
+link eth0 speed 1000 changes 1
+link eth1 speed 1000 changes 2
+link eth2 speed -1 changes 0
+cpu_limit=195312
+cpu_dropped=1211
+@answers
+logged_off=0
+logged_on=1

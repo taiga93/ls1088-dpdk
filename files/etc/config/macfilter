@@ -1,0 +1,5 @@
+
+config macfilter 'settings'
+	option status 'disable'
+	option mode 'blacklist'
+

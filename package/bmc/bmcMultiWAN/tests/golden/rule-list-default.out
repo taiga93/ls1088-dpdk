@@ -1,0 +1,2 @@
+{"status":0,"message":"Luật chọn WAN list","rules":[{"name":"default_rule","policy":"default_policy","src_ip":"","dest_ip":"0.0.0.0/0","proto":"all","src_port":"","dest_port":"","position":null,"default":true}]}
+exit=0

@@ -1,0 +1,2 @@
+{"status":0,"message":"Tăng tốc phần cứng enabled","uci_batch":"set bmchwaccel.global=global\nset bmchwaccel.global.enabled='1'","enabled":true,"action":"none","commands":[]}
+exit=0

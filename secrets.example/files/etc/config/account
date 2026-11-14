@@ -1,0 +1,12 @@
+config web_account 'root'
+	option enabled '1'
+	option username 'bmcroot'
+	option password 'CHANGE_ME'
+	option superadminenable '1'
+	option def_setting '1'
+
+config web_account 'admin'
+	option enabled '1'
+	option username 'admin'
+	option password 'CHANGE_ME'
+	option def_setting '1'

@@ -1,0 +1,2 @@
+{"status":-1,"message":"dead interval (5) of interface lan must be greater than its hello interval (10)","field":"interfaces","interface":"lan"}
+exit=1

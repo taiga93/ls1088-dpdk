@@ -1,0 +1,10 @@
+boot_id=22222222-bbbb
+daemon=2201
+starts=1
+modules=3
+free_kb=1501876
+status={"status":0,"message":"Tăng tốc phần cứng is on","state":"on","enabled":true,"accelerated":12,"on_cpu":[]}
+kernel_mark=yes
+@kernel
+@trouble
+@syslog

@@ -1,0 +1,11 @@
+# Whom bmcfido lets send (../../../lib/bmcHwAccel/evict.sh). Its rules are read, chain BMC_FIDO: what comes
+# in from the LAN passes when its source is a member of the ipset of the machines signed in, or one of the
+# servers the chain names by address; the rest is dropped. A member leaves the set when its time is up, by
+# the kernel's own clock, so nobody is there to say it. Nothing to say while the chain is not in FORWARD.
+lan=$(iptables -w -S FORWARD 2>/dev/null | sed -n 's/^-A FORWARD -i \([^ ]*\) -j BMC_FIDO$/\1/p' | head -n 1)
+[ -n "$lan" ] || exit 0
+rules=$(iptables -w -S BMC_FIDO 2>/dev/null)
+members=$(printf '%s\n' "$rules" | sed -n 's/^-A BMC_FIDO -m set --match-set \([^ ]*\) src -j RETURN$/\1/p' | head -n 1)
+[ -n "$members" ] || exit 0
+ip -4 -o addr show dev "$lan" 2>/dev/null | awk -v members="$members" '{ for (i = 1; i < NF; i++) if ($i == "inet") print "only", $(i + 1), members }'
+printf '%s\n' "$rules" | sed -n 's/^-A BMC_FIDO -s \([0-9.]*\)\/32 -j RETURN$/also \1/p'

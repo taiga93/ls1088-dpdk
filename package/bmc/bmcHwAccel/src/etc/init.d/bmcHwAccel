@@ -1,0 +1,22 @@
+#!/bin/sh /etc/rc.common
+
+# Where the daemon's own init script started it: after the firewall (S19) and the network (S20).
+START=54
+STOP=10
+
+# The init script of the daemon on this board (engine.sh).
+daemon_initd() {
+	(. /usr/lib/bmcHwAccel/engine.sh && echo "$daemon_initd")
+}
+
+start() {
+	/usr/sbin/bmchwaccel apply >/dev/null
+}
+
+stop() {
+	"$(daemon_initd)" stop >/dev/null 2>&1 || true
+}
+
+reload() {
+	start
+}

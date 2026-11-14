@@ -1,0 +1,4 @@
+server=1
+listen=1
+dnsfilter=1
+fido=0

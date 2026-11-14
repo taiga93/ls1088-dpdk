@@ -1,0 +1,4 @@
+pid=100
+held=4
+gone=10
+status={"status":0,"message":"Tăng tốc phần cứng is unavailable: its service is not running","state":"unavailable","reason":"daemon","enabled":true,"reboot_required":false,"accelerated":0,"on_cpu":[]}

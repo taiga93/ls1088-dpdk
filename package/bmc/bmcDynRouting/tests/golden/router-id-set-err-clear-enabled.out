@@ -1,0 +1,2 @@
+{"status":-1,"message":"Router ID is required when OSPF or BGP is enabled: set it with \"router-id set --router-id ID\"","field":"router_id"}
+exit=1

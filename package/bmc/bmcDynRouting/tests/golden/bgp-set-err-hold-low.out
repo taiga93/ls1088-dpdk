@@ -1,0 +1,2 @@
+{"status":-1,"message":"hold time of peer 203.0.113.1 must be 0 or an integer from 3 to 65535","field":"hold","peer":"203.0.113.1"}
+exit=1

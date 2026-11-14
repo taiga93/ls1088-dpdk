@@ -1,0 +1,8 @@
+status={"status":0,"message":"Tăng tốc phần cứng is off","state":"off","enabled":false,"reboot_required":false,"accelerated":0,"on_cpu":[]}
+boot_id=33333333-cccc
+init=complete
+layout=kernel
+mark=no
+kept=
+engine=
+@log

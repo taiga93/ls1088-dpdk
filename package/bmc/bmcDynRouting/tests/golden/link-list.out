@@ -1,0 +1,2 @@
+{"status":0,"message":"Link định tuyến list","links":[{"name":"link_eth6","port":"eth6","ip":"10.0.12.1","prefix":"30"},{"name":"link_eth7","port":"eth7","ip":"10.0.13.1","prefix":"30"}]}
+exit=0

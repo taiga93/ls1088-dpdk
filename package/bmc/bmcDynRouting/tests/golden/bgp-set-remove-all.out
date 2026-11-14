@@ -1,0 +1,10 @@
+{"status":0,"message":"BGP configuration saved","uci_batch":"delete bmcDynRouting.bp_203_0_113_1
+delete bmcDynRouting.bgp.network
+delete bmcDynRouting.bgp.advanced_line
+set bmcDynRouting.bgp.local_as='65001'
+set bmcDynRouting.bgp.enabled='1'
+set bmcDynRouting.bgp.redistribute_static='0'
+set bmcDynRouting.bgp.redistribute_connected='0'
+set bmcDynRouting.bgp.redistribute_ospf='0'
+set bmcDynRouting.bgp.redistribute_rip='0'","warnings":[]}
+exit=0

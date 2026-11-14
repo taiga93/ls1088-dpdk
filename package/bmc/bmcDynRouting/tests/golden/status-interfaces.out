@@ -1,0 +1,2 @@
+{"status":0,"message":"OSPF status","data":{"interfaces":{"eth1":{"ospfEnabled":true,"passive":false,"state":"Point-To-Point"}}}}
+exit=0

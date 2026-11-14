@@ -1,0 +1,29 @@
+#!/bin/sh
+
+# mwan3 runs only while Multi-WAN is enabled: bmcMultiWAN starts and stops it, never mwan3's own init script.
+/etc/init.d/mwan3 disable >/dev/null 2>&1
+# A firewall restart removes mwan3's chains: the include restarts a running mwan3 (reload '1': also run on reload).
+uci -q batch <<'EOF_UCI'
+delete firewall.bmcMultiWAN
+set firewall.bmcMultiWAN=include
+set firewall.bmcMultiWAN.type='script'
+set firewall.bmcMultiWAN.path='/usr/share/bmcMultiWAN/firewall.include'
+set firewall.bmcMultiWAN.reload='1'
+EOF_UCI
+uci -q commit firewall
+# Every Chuyển WAN is logged from mwan3's hook /etc/mwan3.user. The file is a conffile of mwan3 that the operator
+# may edit: add the call once and keep the rest.
+if ! grep -q 'bmcmultiwan event' /etc/mwan3.user 2>/dev/null; then
+	[ -f /etc/mwan3.user ] || printf '#!/bin/sh\n' > /etc/mwan3.user
+	cat >> /etc/mwan3.user <<'EOF_HOOK'
+
+# bmcMultiWAN: logs every Chuyển WAN to syslog and keeps the time of the last one for `bmcmultiwan status`.
+/usr/sbin/bmcmultiwan event "$ACTION" "$INTERFACE" >/dev/null 2>&1
+EOF_HOOK
+	chmod 755 /etc/mwan3.user
+fi
+# Replace the sample /etc/config/mwan3 once; a configuration kept by sysupgrade is left untouched.
+# A failure keeps this script, so it is retried on the next boot.
+/usr/sbin/bmcmultiwan defaults >/dev/null 2>&1 || exit 1
+/etc/init.d/bmcMultiWAN enable
+exit 0

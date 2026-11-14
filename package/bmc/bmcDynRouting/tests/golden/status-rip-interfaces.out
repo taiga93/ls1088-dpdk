@@ -1,0 +1,2 @@
+{"status":0,"message":"RIP status","data":{"interfaces":[{"interface":"br-lan","send_version":"2","receive_version":"2","passive":true},{"interface":"eth5","send_version":"2","receive_version":"2","passive":false}],"neighbors":[{"address":"192.168.50.254","bad_packets":0,"bad_routes":0,"last_update":"00:00:07"}]}}
+exit=0

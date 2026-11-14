@@ -1,0 +1,27 @@
+version: '3'
+
+services:
+  webauthn-server:
+    build: .
+    ports:
+      - "4443:4443"
+    environment:
+      - ENABLE_HTTPS=false
+      - SESSION_KEY=${SESSION_KEY}
+      - CAPTIVE_PORTAL=false
+      - FAS_SHARED_KEY=
+      - RP_ID=domain.example
+      - ORIGIN=https://domain.example:port
+      - HOST=webauthn-server
+      - SESSION_EXPIRE_TIME=5
+      - MONGO_HOST=database
+    networks:
+      - backend
+  database:
+    image: "mongo:5.0.5"
+    networks:
+      - backend
+
+networks:
+  backend:
+    driver: bridge

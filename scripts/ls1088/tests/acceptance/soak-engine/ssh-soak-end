@@ -1,0 +1,12 @@
+boot_id=22222222-bbbb
+daemon=1000
+starts=
+modules=0
+free_kb=7609824
+status={"status":0,"message":"Tăng tốc phần cứng is on","state":"on","enabled":true,"reboot_required":false,"accelerated":4,"on_cpu":[]}
+kernel_mark=yes
+syslog_mark=yes
+@kernel
+[ 1012.400112] br-lan: port 2(eth2) entered disabled state
+@trouble
+@syslog

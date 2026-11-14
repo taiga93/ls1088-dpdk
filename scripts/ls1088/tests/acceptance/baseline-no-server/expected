@@ -1,0 +1,24 @@
+== board root@192.168.1.1 ==
+Linux bmc 6.12.94 #0 SMP PREEMPT Mon Oct 19 12:00:00 2026 aarch64 GNU/Linux
+[    4.700182] fsl_mc_bus 80c000000.fsl-mc: MC firmware version: 10.39.0
+Mon Oct 19 12:01:05 2026 user.notice phy_init: dpmac.1: eth0 (dpni.0)
+Mon Oct 19 12:01:26 2026 user.notice phy_init: dpmac.9: eth8 (dpni.8)
+eth0 dpni.0 00:04:9f:06:12:03 speed 10000 changes 1
+eth1 dpni.1 00:04:9f:06:12:04 speed 10000 changes 1
+eth8 dpni.8 00:04:9f:06:12:0b speed -1 changes 0
+br-lan           UP             00:04:9f:06:12:04 <BROADCAST,MULTICAST,UP,LOWER_UP>
+eth0             UP             00:04:9f:06:12:03 <BROADCAST,MULTICAST,UP,LOWER_UP>
+eth1             UP             00:04:9f:06:12:04 <BROADCAST,MULTICAST,UP,LOWER_UP>
+== results ==
+net            wan eth0 has no address from DHCP; using 192.168.2.1/24 until the script ends
+baseline       FAIL  not measured
+               - iperf3: unable to connect to server: Connection refused
+RESULT: FAIL
+exit=1
+-- calls --
+ssh info
+ssh net plain
+ssh flush
+ssh load baseline
+ssh unnet
+iperf3 baseline

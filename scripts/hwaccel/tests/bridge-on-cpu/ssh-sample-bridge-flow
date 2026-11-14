@@ -1,0 +1,22 @@
+@ports eth1 eth2
+@before eth1
+     rx packets [CPU 0]: 1000
+     rx packets [TOTAL]: 1000
+tx before eth1 5000
+@before eth2
+     rx packets [CPU 0]: 1000
+     rx packets [TOTAL]: 1000
+tx before eth2 5000
+@after eth1
+     rx packets [CPU 0]: 611000
+     rx packets [TOTAL]: 611000
+tx after eth1 400000
+@after eth2
+     rx packets [CPU 0]: 306000
+     rx packets [TOTAL]: 306000
+tx after eth2 800000
+link eth1 speed 1000 changes 1
+link eth2 speed 1000 changes 1
+status={"status":0,"message":"Tăng tốc phần cứng is on","state":"on","enabled":true,"accelerated":0,"on_cpu":[]}
+kept=0
+@conntrack

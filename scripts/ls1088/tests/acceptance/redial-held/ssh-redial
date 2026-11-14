@@ -1,0 +1,11 @@
+session_before=00000001
+addr_before=10.99.0.2/32
+udp_before=1
+down=yes
+held_down=1
+wire_tx_before=500000
+wire_tx_after=530000
+held_after=1
+up=yes
+session_after=00000001
+addr_after=10.99.0.2/32

@@ -1,0 +1,2 @@
+{"status":-1,"message":"--cost must follow --interface","field":"interfaces"}
+exit=1

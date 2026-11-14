@@ -1,0 +1,21 @@
+dpaa2_sec starts every outbound SA without ESN at sequence number 1. An
+SA that the kernel already sends on (bmchwaccel-engine, ticket 15 of
+.scratch/hw-accel-ls1088) must go on from a later number, or the peer
+drops every packet as a replay. Without ESN, take a non-zero esn.low of
+the IPsec xform as the number of the first packet; 0 keeps 1.
+
+--- a/drivers/crypto/dpaa2_sec/dpaa2_sec_dpseci.c
++++ b/drivers/crypto/dpaa2_sec/dpaa2_sec_dpseci.c
+@@ -3400,6 +3400,12 @@
+ 		 * Refer: RFC4303 section: 3.3.3.Sequence Number Generation
+ 		 */
+ 		encap_pdb.seq_num = 1;
++		/* Without ESN, esn.low other than 0 is the number of the
++		 * first packet: an SA whose numbers another sender used up
++		 * to some point goes on after them.
++		 */
++		if (!ipsec_xform->options.esn && conf->ipsec.esn.low)
++			encap_pdb.seq_num = conf->ipsec.esn.low;
+ 		if (ipsec_xform->options.esn) {
+ 			encap_pdb.options |= PDBOPTS_ESP_ESN;
+ 			encap_pdb.seq_num_ext_hi = conf->ipsec.esn.hi;

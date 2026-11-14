@@ -1,0 +1,143 @@
+From: RaymondBien <raymond@RaymondBiens-Mac-mini.local>
+Date: Thu, 1 Oct 2026 23:30:00 +0700
+Subject: [PATCH] sdk_dpaa: temporary MAC address for a port the bootloader
+ gave none
+
+mac_probe() fails when the device tree has no valid MAC address for a
+MAC, so a board whose U-Boot environment was never given its addresses
+comes up without that port; with no port at all there is no network to
+reach the board over.
+
+Give such a MAC a temporary address instead: locally administered, made
+from the NXP unique ID fuses of the SoC (SFP FUIDR0/1, the registers
+U-Boot calls fsl_uid) and the cell-index of the MAC, so every port of a
+board differs and a board keeps its addresses across reboots. When the
+fuses cannot be read or are blank the address is random.
+
+The address is chosen in mac_probe(), before FMan and the net device
+copy it, so the hardware, the interface and the ASK fast path agree.
+The interface is marked NET_ADDR_RANDOM and a warning names it once it
+is registered. An address from the bootloader is used as before, and a
+deferred probe is still passed on.
+
+--- a/drivers/net/ethernet/freescale/sdk_dpaa/mac.c
++++ b/drivers/net/ethernet/freescale/sdk_dpaa/mac.c
+@@ -51,6 +51,8 @@
+ #include <linux/phy.h>
+ #include <linux/phylink.h>
+ #include <linux/io.h>
++#include <linux/etherdevice.h>
++#include <linux/hash.h>
+ 
+ #include "lnxwrp_fm_ext.h"
+ 
+@@ -77,6 +79,51 @@
+ 	return mac_dev->uninit(mac_dev->get_mac_handle(mac_dev));
+ }
+ 
++/* NXP unique ID of the SoC: fuse registers FUIDR0 and FUIDR1 of the SFP. */
++#define SFP_FUIDR0	0x21c
++
++static u64 soc_unique_id(void)
++{
++	struct device_node *np;
++	void __iomem *sfp;
++	u64 uid;
++
++	np = of_find_compatible_node(NULL, NULL, "fsl,ls1021a-sfp");
++	if (!np)
++		return 0;
++	sfp = of_iomap(np, 0);
++	of_node_put(np);
++	if (!sfp)
++		return 0;
++	uid = (u64)ioread32be(sfp + SFP_FUIDR0) << 32;
++	uid |= ioread32be(sfp + SFP_FUIDR0 + 4);
++	iounmap(sfp);
++
++	return uid;
++}
++
++/* The bootloader gave this MAC no address. Make one from the unique ID of the
++ * SoC, so that a board keeps its addresses across reboots; the cell-index
++ * tells the MACs of one FMan apart. Without a unique ID the address is random.
++ * Returns whether the address is the same at every boot.
++ */
++static bool temporary_mac_addr(u8 *addr, u32 cell_index)
++{
++	u64 uid = soc_unique_id();
++
++	if (uid == 0 || uid == U64_MAX) {
++		eth_random_addr(addr);
++		return false;
++	}
++
++	u64_to_ether_addr(hash_64(uid, 48), addr);
++	addr[0] &= 0xfe;	/* unicast */
++	addr[0] |= 0x02;	/* locally administered */
++	addr[5] += cell_index;
++
++	return true;
++}
++
+ static const struct of_device_id mac_match[] = {
+ 	{ .compatible	= "fsl,fman-memac" },
+ 	{}
+@@ -210,10 +257,16 @@
+ 	/* Get the MAC address */
+ 	_errno = of_get_mac_address(mac_node, mac_dev->addr);
+ 	if (unlikely(_errno)) {
+-		dev_err(dev, "of_get_mac_address(%s) failed\n",
+-				mac_node->full_name);
+-		_errno = -EINVAL;
+-		goto _return_dev_set_drvdata;
++		if (_errno == -EPROBE_DEFER)
++			goto _return_dev_set_drvdata;
++
++		/* Chosen here, before FMan and the net device copy the address;
++		 * dpa_netdev_init() warns once the interface has its name.
++		 */
++		mac_dev->addr_temporary = true;
++		mac_dev->addr_stable = temporary_mac_addr(mac_dev->addr,
++							  cell_index);
++		_errno = 0;
+ 	}
+ 
+ 	/* Verify the number of port handles */
+--- a/drivers/net/ethernet/freescale/sdk_dpaa/mac.h
++++ b/drivers/net/ethernet/freescale/sdk_dpaa/mac.h
+@@ -46,6 +46,8 @@
+ 	struct resource		*res;
+ 	void __iomem		*vaddr;
+ 	uint8_t			 addr[ETH_ALEN];
++	bool			 addr_temporary;	/* not from the bootloader */
++	bool			 addr_stable;	/* temporary, same at every boot */
+ 	bool			 promisc;
+ 	bool			 allmulti;
+ 
+--- a/drivers/net/ethernet/freescale/sdk_dpaa/dpaa_eth_common.c
++++ b/drivers/net/ethernet/freescale/sdk_dpaa/dpaa_eth_common.c
+@@ -111,6 +111,9 @@
+ 
+ 	memcpy(net_dev->perm_addr, mac_addr, net_dev->addr_len);
+ 	eth_hw_addr_set(net_dev, mac_addr);
++	/* Tell user space that this is not an address of the device itself. */
++	if (priv->mac_dev && priv->mac_dev->addr_temporary)
++		net_dev->addr_assign_type = NET_ADDR_RANDOM;
+ 
+ 	net_dev->ethtool_ops = &dpa_ethtool_ops;
+ 
+@@ -122,6 +125,13 @@
+ 		dev_err(dev, "register_netdev() = %d\n", err);
+ 		return err;
+ 	}
++
++	if (priv->mac_dev && priv->mac_dev->addr_temporary)
++		netdev_warn(net_dev, "no valid MAC address from the bootloader: using temporary MAC %pM (%s)\n",
++			    net_dev->dev_addr,
++			    priv->mac_dev->addr_stable ?
++			    "stable, from the SoC unique ID" :
++			    "random, changes at every boot");
+ 
+ #ifdef CONFIG_FSL_DPAA_DBG_LOOP
+ 	/* create debugfs entry for this net_device */

@@ -1,0 +1,19 @@
+diff --git a/conf/up.sh.in b/conf/up.sh.in
+index caf3de6..f72b248 100755
+--- a/conf/up.sh.in
++++ b/conf/up.sh.in
+@@ -57,10 +57,10 @@ run_up() {
+ 		ipt_in -p udp --dst $ADDR --dport 53 -j ACCEPT
+ 		ipt_in -p icmp --dst $ADDR -j ACCEPT
+ 		
+-		if [ "$ONLY8021Q" != "1" ]
+-		then
+-		    ipt -I INPUT -i $DHCPIF -j DROP
+-		fi
++		# if [ "$ONLY8021Q" != "1" ]
++		# then
++		#     ipt -I INPUT -i $DHCPIF -j DROP
++		# fi
+ 	    fi
+ 	    
+ 	    if [ "$ONLY8021Q" != "1" ]

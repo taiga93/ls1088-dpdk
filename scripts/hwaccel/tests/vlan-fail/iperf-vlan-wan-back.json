@@ -1,0 +1,9 @@
+{
+	"start":	{
+		"version":	"iperf 3.16"
+	},
+	"intervals":	[],
+	"end":	{
+	},
+	"error":	"unable to connect to server - server may have stopped running or use a different port, firewall issue, etc.: Can't assign requested address"
+}

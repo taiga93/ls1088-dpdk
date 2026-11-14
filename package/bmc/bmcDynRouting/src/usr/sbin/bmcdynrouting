@@ -1,0 +1,224 @@
+#!/bin/sh
+# bmcdynrouting — CLI của feature Định tuyến động (DynRouting).
+#
+# Toàn bộ logic của feature nằm ở CLI này và /usr/lib/bmcDynRouting; web UI và TR-069 chỉ gọi nó (ADR-0003).
+# Mọi lệnh công khai in đúng một object JSON {status, message, ...}; status -1 kèm exit code 1,
+# và lỗi kiểm tra đầu vào kèm "field".
+# Mỗi lệnh đọc snapshot UCI, lập kế hoạch rồi thực thi; --dry-run in kế hoạch thay vì thực thi.
+#
+#   router-id get | router-id set --router-id ID     Router ID chung của router (rỗng = xoá)
+#   ospf get
+#   ospf set --enabled 0                     chỉ tắt OSPF, giữ nguyên Cấu hình OSPF
+#   ospf set --enabled 0|1 [--redistribute-static 0|1] [--redistribute-connected 0|1] [--redistribute-rip 0|1]
+#            [--redistribute-bgp 0|1]
+#            [--interface NAME [--area A] [--passive 0|1] [--cost N] [--hello-interval N]
+#                              [--dead-interval N] [--network-type point-to-point|broadcast]]...
+#            [--advanced-line LINE]...       ghi đè toàn bộ Cấu hình OSPF rồi apply
+#   rip get
+#   rip set --enabled 0                      chỉ tắt RIP, giữ nguyên Cấu hình RIP
+#   rip set --enabled 0|1 [--redistribute-static 0|1] [--redistribute-connected 0|1] [--redistribute-ospf 0|1]
+#           [--redistribute-bgp 0|1] [--default-originate 0|1] [--update-timer N] [--timeout-timer N] [--garbage-timer N]
+#           [--interface NAME [--passive 0|1]]... [--advanced-line LINE]...
+#                                            ghi đè toàn bộ Cấu hình RIP rồi apply
+#   bgp get                                  không trả mật khẩu, chỉ password_set
+#   bgp set --enabled 0                      chỉ tắt BGP, giữ nguyên Cấu hình BGP
+#   bgp set --enabled 0|1 [--local-as N] [--network PREFIX]...
+#           [--redistribute-static 0|1] [--redistribute-connected 0|1] [--redistribute-ospf 0|1] [--redistribute-rip 0|1]
+#           [--peer IP --remote-as N [--description S] [--peer-enabled 0|1] [--password S | --keep-password]
+#                    [--receive all|default] [--max-prefix N] [--keepalive N] [--hold N]]...
+#           [--advanced-line LINE]...       ghi đè toàn bộ Cấu hình BGP rồi apply; cờ peer áp cho --peer đứng trước
+#   interface list
+#   link list | link available-ports | link add PORT IP/PREFIX | link del PORT
+#   status ospf neighbors|routes|database|interfaces | status rip routes|interfaces | status bgp peers|routes
+#   apply                                    chỉ restart daemon FRR có phần cấu hình đổi
+# Dùng nội bộ: hotplug INTERFACE (hotplug iface, in JSON), firewall-apply (firewall include, không in gì),
+# migrate (uci-defaults, chuyển cấu hình phase 1).
+set -eu
+
+lib_dir=$(CDPATH= cd -- "$(dirname -- "$0")/../lib/bmcDynRouting" && pwd)
+for lib in json uci ipv4 network protocol router ospf rip bgp frr link; do
+	. "$lib_dir/$lib.sh"
+done
+
+dry_run=0
+exit_code=0
+vtysh_bin=${BMCDYNROUTING_VTYSH:-vtysh}
+
+reply() {
+	[ "$1" = 0 ] || exit_code=1
+	printf '{"status":%s,"message":%s%s}\n' "$1" "$(json_string "$2")" "${3:-}"
+}
+
+# Lỗi kiểm tra đầu vào: kèm "field" (router_id, interfaces, advanced_lines, port, cidr, ...) để UI
+# đánh dấu đúng ô; $3 là phần JSON thêm (vd. "interface" của dòng Interface OSPF bị lỗi).
+fail() {
+	reply -1 "$2" ",\"field\":\"$1\"${3:-}"
+}
+
+usage() {
+	reply -1 'usage: bmcdynrouting [--dry-run] router-id get|set, ospf get|set, rip get|set, bgp get|set, interface list, link list|available-ports|add|del, status ospf neighbors|routes|database|interfaces, status rip routes|interfaces, status bgp peers|routes, apply'
+}
+
+load_config() {
+	load_router
+	load_ospf
+	load_rip
+	load_bgp
+}
+
+# Với --dry-run: trả lời bằng batch đã lập ($1 message, $2 phần JSON thêm) và trả về 1.
+# Ngược lại: commit batch vào các config "$3..."; lỗi thì trả lời và trả về 1.
+plan_or_commit() {
+	message=$1 extra=$2
+	shift 2
+	if [ "$dry_run" = 1 ]; then
+		reply 0 "$message" ",\"uci_batch\":$(json_string "$uci_batch")$extra"
+		return 1
+	fi
+	if ! batch_commit "$@"; then
+		reply -1 "failed to save the configuration"
+		return 1
+	fi
+}
+
+with_timeout() {
+	if command -v timeout >/dev/null 2>&1; then timeout 5 "$@"; else "$@"; fi
+}
+
+# Trả lời bằng JSON của lệnh show "$2" khi giao thức $1 bật ($3 = 1).
+frr_json_status() {
+	if [ "$3" != 1 ]; then
+		reply -1 "$1 disabled"
+		return
+	fi
+	data=$(with_timeout "$vtysh_bin" -c "$2" 2>/dev/null) || data=
+	# "show bgp ipv4 unicast json" kết thúc bằng "} " nên bỏ khoảng trắng ở cuối.
+	data=${data%"${data##*[![:space:]]}"}
+	case "$data" in
+		'{'*'}'|'['*']') reply 0 "$1 status" ",\"data\":$data" ;;
+		*) reply -1 'unable to query FRR: is it running?' ;;
+	esac
+}
+
+ospf_status() {
+	case "${1:-}" in
+		neighbors) show=neighbor ;;
+		routes) show=route ;;
+		database) show=database ;;
+		interfaces) show=interface ;;
+		*) reply -1 'usage: status ospf neighbors|routes|database|interfaces'; return ;;
+	esac
+	frr_json_status OSPF "show ip ospf $show json" "$ospf_enabled"
+}
+
+# peers: trạng thái session, uptime, số prefix nhận/gửi của từng Peer BGP (summary); routes: bảng BGP.
+bgp_status() {
+	case "${1:-}" in
+		peers) show='show bgp ipv4 unicast summary json' ;;
+		routes) show='show bgp ipv4 unicast json' ;;
+		*) reply -1 'usage: status bgp peers|routes'; return ;;
+	esac
+	frr_json_status BGP "$show" "$bgp_enabled"
+}
+
+# ripd không có lệnh show dạng JSON: output văn bản của lệnh show chỉ được nhận khi có dòng tiêu đề (header)
+# của bảng, rồi hàm chuyển (convert) trong rip.sh dựng JSON từ nó.
+rip_status() {
+	case "${1:-}" in
+		routes) show='show ip rip' header='^     Network  *Next Hop' convert=rip_status_routes_json ;;
+		interfaces) show='show ip rip status' header='^    Interface  *Send  *Recv' convert=rip_status_interfaces_json ;;
+		*) reply -1 'usage: status rip routes|interfaces'; return ;;
+	esac
+	if [ "$rip_enabled" != 1 ]; then
+		reply -1 'RIP disabled'
+		return
+	fi
+	data=$(with_timeout "$vtysh_bin" -c "$show" 2>/dev/null) || data=
+	if printf '%s\n' "$data" | grep -q "$header"; then
+		reply 0 'RIP status' ",\"data\":$(printf '%s\n' "$data" | "$convert")"
+	else
+		reply -1 'unable to query FRR: is it running?'
+	fi
+}
+
+status_command() {
+	case "${1:-}" in
+		ospf) ospf_status "${2:-}" ;;
+		rip) rip_status "${2:-}" ;;
+		bgp) bgp_status "${2:-}" ;;
+		neighbors|routes|database|interfaces) reply -1 "status $1 was replaced by status ospf $1" ;;
+		*) reply -1 'usage: status ospf neighbors|routes|database|interfaces | status rip routes|interfaces | status bgp peers|routes' ;;
+	esac
+}
+
+hotplug() {
+	if [ -n "${1:-}" ] && { { [ "$ospf_enabled" = 1 ] && is_ospf_interface "$1"; } ||
+		{ [ "$rip_enabled" = 1 ] && is_rip_interface "$1"; }; }; then
+		apply_command
+	else
+		reply 0 "interface ${1:-} is not an active Interface OSPF or Interface RIP: nothing to do" ',"action":"none"'
+	fi
+}
+
+if [ "${1:-}" = --dry-run ]; then
+	dry_run=1
+	shift
+fi
+uci_load_snapshot
+load_config
+command=${1:-}
+subcommand=${2:-}
+[ "$#" -eq 0 ] || shift
+[ "$#" -eq 0 ] || shift
+case "$command" in
+	router-id)
+		case "$subcommand" in
+			get) router_id_get ;;
+			set) router_id_set "$@" ;;
+			*) usage ;;
+		esac
+		;;
+	ospf)
+		case "$subcommand" in
+			get) ospf_get ;;
+			set) ospf_set "$@" ;;
+			*) usage ;;
+		esac
+		;;
+	rip)
+		case "$subcommand" in
+			get) rip_get ;;
+			set) rip_set "$@" ;;
+			*) usage ;;
+		esac
+		;;
+	bgp)
+		case "$subcommand" in
+			get) bgp_get ;;
+			set) bgp_set "$@" ;;
+			*) usage ;;
+		esac
+		;;
+	interface)
+		case "$subcommand" in
+			list) interface_list ;;
+			*) usage ;;
+		esac
+		;;
+	link)
+		case "$subcommand" in
+			list) link_list ;;
+			available-ports) link_available_ports ;;
+			add) link_add "$@" ;;
+			del) link_del "$@" ;;
+			*) usage ;;
+		esac
+		;;
+	status) status_command "$subcommand" "$@" ;;
+	apply) apply_command ;;
+	hotplug) hotplug "$subcommand" ;;
+	firewall-apply) firewall_sync ;;
+	migrate) migrate ;;
+	*) usage ;;
+esac
+exit "$exit_code"

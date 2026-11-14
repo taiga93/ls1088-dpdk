@@ -1,0 +1,2 @@
+{"status":0,"message":"RIP configuration","enabled":true,"redistribute_static":false,"redistribute_connected":false,"redistribute_ospf":true,"redistribute_bgp":false,"default_originate":true,"update_timer":"10","timeout_timer":"60","garbage_timer":"","interfaces":[{"interface":"link_eth5","passive":false},{"interface":"lan","passive":true}],"advanced_lines":["router rip"," distance 110"],"warnings":[]}
+exit=0

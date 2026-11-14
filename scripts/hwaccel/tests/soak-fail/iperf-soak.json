@@ -1,0 +1,36 @@
+{
+	"intervals":	[{
+			"sum":	{
+				"start":	0,
+				"end":	60.000102,
+				"bits_per_second":	946000000
+			}
+		},{
+			"sum":	{
+				"start":	60,
+				"end":	120.000102,
+				"bits_per_second":	931000000
+			}
+		},{
+			"sum":	{
+				"start":	120,
+				"end":	180.000102,
+				"bits_per_second":	902000000
+			}
+		}],
+	"end":	{
+		"sum_sent":	{
+			"start":	0,
+			"end":	180.000123,
+			"bits_per_second":	928300000,
+			"retransmits":	40,
+			"sender":	 true
+		},
+		"sum_received":	{
+			"start":	0,
+			"end":	180.004211,
+			"bits_per_second":	926300000,
+			"sender":	true
+		}
+	}
+}

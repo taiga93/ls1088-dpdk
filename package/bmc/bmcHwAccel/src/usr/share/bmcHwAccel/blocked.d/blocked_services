@@ -1,0 +1,31 @@
+# What the blocked services of bmcfirewall drop at this hour (../../../lib/bmcHwAccel/evict.sh). bmcfirewall
+# has no command that says it, so its rules are read: chain BMC_SVC4 of iptables and BMC_SVC6 of ip6tables.
+# A rule names the ipset of a service, the machine if it is one's own rule, and the hours of a weekday if the
+# service is blocked by schedule; the kernel takes those hours as UTC unless the rule says --kerneltz. Every
+# rule comes for TCP and for UDP: one is read. A machine with rules of its own has a RETURN rule and is
+# passed by the rules for everybody.
+for tables in "iptables BMC_SVC4" "ip6tables BMC_SVC6"; do
+	${tables% *} -w -S "${tables#* }" 2>/dev/null
+done | awk -v here="$(date '+%a %H:%M:%S')" -v utc="$(date -u '+%a %H:%M:%S')" '
+	function option(name,    i) {
+		for (i = 1; i < NF; i++) if ($i == name) return $(i + 1)
+		return ""
+	}
+	function has(name,    i) {
+		for (i = 1; i <= NF; i++) if ($i == name) return 1
+		return 0
+	}
+	$1 != "-A" { next }
+	option("-j") == "RETURN" && option("--mac-source") != "" { print "own", option("--mac-source"); next }
+	option("-p") != "tcp" || option("--match-set") == "" { next }
+	{
+		if (has("time")) {
+			split(has("--kerneltz") ? here : utc, now, " ")
+			days = option("--weekdays")
+			if (days != "" && index("," days ",", "," now[1] ",") == 0) next
+			if (option("--timestart") != "" && now[2] < option("--timestart")) next
+			if (option("--timestop") != "" && now[2] > option("--timestop")) next
+		}
+		machine = option("--mac-source")
+		print "to", option("--match-set"), (machine == "" ? "any" : machine)
+	}'

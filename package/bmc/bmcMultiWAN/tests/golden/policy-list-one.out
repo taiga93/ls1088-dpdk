@@ -1,0 +1,2 @@
+{"status":0,"message":"Chính sách WAN list","policies":[{"name":"default_policy","wans":["wan"],"default":true,"rules":[]}]}
+exit=0

@@ -1,0 +1,29 @@
+. /lib/functions.sh
+. /lib/upgrade/common.sh
+
+move_config() {
+	local board=$(board_name)
+	local partdev
+
+	case "$board" in
+	fsl,ls1012a-frwy-sdboot | \
+	fsl,ls1021a-iot-sdboot | \
+	fsl,ls1021a-twr-sdboot | \
+	fsl,ls1028a-rdb-sdboot | \
+	fsl,ls1043a-rdb-sdboot | \
+	fsl,ls1046a-frwy-sdboot | \
+	fsl,ls1046a-rdb-sdboot | \
+	fsl,ls1088a-rdb-sdboot)
+		# The kernel partition is the first one of the disk the board
+		# booted from; platform_copy_config_sdboot left the backup there.
+		if export_bootdevice && export_partdevice partdev 1; then
+			mkdir -p /boot
+			mount -t ext4 -o rw,noatime "/dev/$partdev" /boot 2>&1
+			[ -f "/boot/$BACKUP_FILE" ] && mv -f "/boot/$BACKUP_FILE" /
+			umount /boot
+		fi
+		;;
+	esac
+}
+
+boot_hook_add preinit_mount_root move_config

@@ -1,0 +1,11 @@
+{"status":0,"message":"Luật chọn WAN rtp saved","uci_batch":"delete mwan3.rtp
+set mwan3.rtp=rule
+set mwan3.rtp.family='ipv4'
+set mwan3.rtp.proto='udp'
+set mwan3.rtp.dest_port='5062,10000:20000'
+set mwan3.rtp.use_policy='b_first'
+reorder mwan3.acct=18
+reorder mwan3.rtp=18
+reorder mwan3.voip=18
+reorder mwan3.default_rule=18","commands":[]}
+exit=0

@@ -1,0 +1,2 @@
+{"status":0,"message":"Router ID saved","uci_batch":"set bmcDynRouting.global.router_id='4.4.4.4'"}
+exit=0

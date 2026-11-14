@@ -1,0 +1,55 @@
+== board root@192.168.1.1 ==
+Linux OpenWrt 6.12.94 #0 SMP Thu Oct  1 08:00:00 2026 aarch64 GNU/Linux
+[    1.812345] fsl-fman 1a00000.fman: FMan-Controller code (ver 210.10.1)
+[   34.101010] cdx: FMAN firmware 210.10.1 - ASK supported
+eth0 soc:fsl,dpaa:ethernet@2 02:00:00:46:00:00
+eth1 soc:fsl,dpaa:ethernet@3 02:00:00:46:00:01
+eth2 soc:fsl,dpaa:ethernet@4 02:00:00:46:00:02
+eth3 soc:fsl,dpaa:ethernet@5 02:00:00:46:00:03
+eth4 soc:fsl,dpaa:ethernet@8 02:00:00:46:00:04
+eth5 soc:fsl,dpaa:ethernet@9 02:00:00:46:00:05
+br-lan           UP             02:00:00:46:00:01 <BROADCAST,MULTICAST,UP,LOWER_UP>
+eth0             UP             02:00:00:46:00:00 <BROADCAST,MULTICAST,UP,LOWER_UP>
+eth1             UP             02:00:00:46:00:01 <BROADCAST,MULTICAST,UP,LOWER_UP>
+== results ==
+net            wan eth0 has no address from DHCP; using 192.168.2.1/24 until the script ends
+soak           FAIL  926 Mbps over 180 s, first minute 946, last minute 902, slowest minute 902 Mbps, 40 retransmits; 3 looks at the board, at most 1210345 rx packets on the CPU in 10 s; bmchwaccel status at the end: unavailable; memory available: 1503212 kB at the start, 1203340 kB at the end
+               - second 8: eth0: 812345 rx packets reached the CPU, need fewer than 1000
+               - second 8: eth1: 398000 rx packets reached the CPU, need fewer than 1000
+               - second 8: no accelerated connection is masqueraded
+               - second 108: eth0: 812345 rx packets reached the CPU, need fewer than 1000
+               - second 108: eth1: 398000 rx packets reached the CPU, need fewer than 1000
+               - second 108: no accelerated connection is masqueraded
+               - second 160: eth0: 812345 rx packets reached the CPU, need fewer than 1000
+               - second 160: eth1: 398000 rx packets reached the CPU, need fewer than 1000
+               - second 160: no accelerated connection is masqueraded
+               - the last minute carried 902 Mbps, the first 946 Mbps: more than 2 % lower
+               - the daemon process was 2201 at the start and is 3377 now: it died under the run
+               - the daemon was started 2 times, 1 at the start
+               - at the end: bmchwaccel status says unavailable, need on
+               - 2 kernel line(s) of the run tell of trouble (marked ! below)
+               - 1 bmcHwAccel syslog line(s) under the run: hardware acceleration was switched or became unavailable
+               | Mbps of every minute: 946 931 902 
+               ! [ 2890.100001] cdx: cdx_ioc_set_dpa_params::failed to add entry, error -12
+               ! [ 2891.000000] WARNING: CPU: 1 PID: 2201 at drivers/net/ethernet/freescale/sdk_dpaa/dpaa_eth.c:1 0x0
+               | [ 2890.100001] cdx: cdx_ioc_set_dpa_params::failed to add entry, error -12
+               | [ 2890.100050] br-lan: port 2(eth2) entered disabled state
+               | [ 2891.000000] WARNING: CPU: 1 PID: 2201 at drivers/net/ethernet/freescale/sdk_dpaa/dpaa_eth.c:1 0x0
+               | Tue Oct  6 21:14:01 2026 daemon.err cmm: exited
+               ! Tue Oct  6 21:14:02 2026 user.notice bmcHwAccel: Tăng tốc phần cứng unavailable: the daemon is not running
+               | log:
+               | Tue Oct  6 21:14:01 2026 daemon.err cmm: exited
+RESULT: FAIL
+exit=1
+-- calls --
+ssh info
+ssh net plain
+ssh flush
+ssh soak start
+ssh sample soak
+ssh sample soak
+ssh sample soak
+ssh soak end
+ssh diag soak
+ssh unnet
+iperf3 soak

@@ -1,0 +1,3 @@
+acceptance: cannot run commands on root@192.168.1.1 over ssh
+exit=2
+-- calls --

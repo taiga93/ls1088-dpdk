@@ -1,0 +1,3 @@
+bmchwaccel.global=global
+bmchwaccel.global.enabled='1'
+bmchwaccel.global.workers='four'

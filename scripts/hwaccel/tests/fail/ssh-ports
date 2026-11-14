@@ -1,0 +1,3 @@
+wan=eth5
+lan=br-lan
+members=eth0 eth3 

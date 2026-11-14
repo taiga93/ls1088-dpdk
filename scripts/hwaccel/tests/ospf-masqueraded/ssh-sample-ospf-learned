@@ -1,0 +1,46 @@
+@ports eth0 eth2 eth1 eth4 eth5
+@before eth0
+     rx packets [CPU 0]: 1000
+     rx packets [TOTAL]: 1000
+tx before eth0 500000
+@before eth2
+     rx packets [CPU 0]: 1000
+     rx packets [TOTAL]: 1000
+tx before eth2 500000
+@before eth1
+     rx packets [CPU 0]: 1000
+     rx packets [TOTAL]: 1000
+@before eth4
+     rx packets [CPU 0]: 1000
+     rx packets [TOTAL]: 1000
+@before eth5
+     rx packets [CPU 0]: 1000
+     rx packets [TOTAL]: 1000
+@after eth0
+     rx packets [CPU 0]: 1000
+     rx packets [TOTAL]: 1000
+tx after eth0 500009
+@after eth2
+     rx packets [CPU 0]: 1035
+     rx packets [TOTAL]: 1035
+tx after eth2 1301187
+@after eth1
+     rx packets [CPU 0]: 1020
+     rx packets [TOTAL]: 1020
+@after eth4
+     rx packets [CPU 0]: 1000
+     rx packets [TOTAL]: 1000
+@after eth5
+     rx packets [CPU 0]: 1000
+     rx packets [TOTAL]: 1000
+link eth0 speed 1000 changes 1
+link eth2 speed 1000 changes 1
+link eth1 speed 1000 changes 1
+status={"status":0,"message":"Tăng tốc phần cứng is on","state":"on","enabled":true,"accelerated":5,"on_cpu":[]}
+kept=0
+@conntrack
+ipv4     2 tcp      6 src=192.168.1.10 dst=10.17.0.1 sport=50011 dport=5201 [PERMANENT] packets=3 bytes=164 src=10.17.0.1 dst=192.168.2.1 sport=5201 dport=50011 packets=1 bytes=60 [ASSURED] mark=0 zone=0 use=3
+ipv4     2 tcp      6 src=192.168.1.10 dst=10.17.0.1 sport=50012 dport=5201 [PERMANENT] packets=3 bytes=164 src=10.17.0.1 dst=192.168.2.1 sport=5201 dport=50012 packets=1 bytes=60 [ASSURED] mark=0 zone=0 use=3
+ipv4     2 tcp      6 src=192.168.1.10 dst=10.17.0.1 sport=50013 dport=5201 [PERMANENT] packets=3 bytes=164 src=10.17.0.1 dst=192.168.2.1 sport=5201 dport=50013 packets=1 bytes=60 [ASSURED] mark=0 zone=0 use=3
+ipv4     2 tcp      6 src=192.168.1.10 dst=10.17.0.1 sport=50014 dport=5201 [PERMANENT] packets=3 bytes=164 src=10.17.0.1 dst=192.168.2.1 sport=5201 dport=50014 packets=1 bytes=60 [ASSURED] mark=0 zone=0 use=3
+ipv4     2 tcp      6 src=192.168.1.10 dst=10.17.0.1 sport=50015 dport=5201 [PERMANENT] packets=3 bytes=164 src=10.17.0.1 dst=192.168.2.1 sport=5201 dport=50015 packets=1 bytes=60 [ASSURED] mark=0 zone=0 use=3

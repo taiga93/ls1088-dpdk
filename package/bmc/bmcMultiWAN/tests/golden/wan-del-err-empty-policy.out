@@ -1,0 +1,2 @@
+{"status":-1,"message":"cannot delete WAN wan2: it is the only WAN of Chính sách WAN b_only","field":"name","policy":"b_only"}
+exit=1

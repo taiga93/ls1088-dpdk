@@ -1,0 +1,10 @@
+#!/bin/sh
+# Exits 0 while procd runs the daemon of Tăng tốc phần cứng, the one that hands connections to the hardware
+# and takes them back (engine.sh: cmm on the LS1046, bmchwaccel-syncd on the LS1088); 1 otherwise. For other
+# features that must know whether a connection can be in the hardware, without naming the daemon of a board:
+# bmcMultiWAN (flush.sh). It takes no lock and prints nothing.
+set -eu
+
+lib_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+. "$lib_dir/engine.sh"
+daemon_running

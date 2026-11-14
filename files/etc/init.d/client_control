@@ -1,0 +1,70 @@
+#!/bin/sh /etc/rc.common
+
+START=92
+STOP=10
+
+UCI_CONF="client_control"
+CHAIN="CLIENTCTL"
+
+ensure_uci_root() {
+    if ! uci -q get $UCI_CONF.@client_control[0] >/dev/null 2>&1; then
+        uci set $UCI_CONF.client_control=client_control
+        uci commit $UCI_CONF >/dev/null 2>&1
+    fi
+}
+
+ensure_chain() {
+    iptables -nL "$CHAIN" >/dev/null 2>&1 || iptables -N "$CHAIN"
+    iptables -C FORWARD -j "$CHAIN" >/dev/null 2>&1 || iptables -I FORWARD -j "$CHAIN"
+}
+
+flush_chain() {
+    iptables -F "$CHAIN" >/dev/null 2>&1
+}
+
+normalize_weekdays() {
+    local s="$*"
+    if echo "$s" | grep -q ','; then
+        echo "$s" | sed 's/ *, */,/g;s/,,*/,/g;s/^,//;s/,$//'
+    else
+        echo "$s" | sed 's/ \+/,/g;s/,,*/,/g;s/^,//;s/,$//'
+    fi
+}
+
+apply_rules() {
+    ensure_uci_root
+    ensure_chain
+    flush_chain
+
+    for section in $(uci show $UCI_CONF | grep "=rule" | cut -d. -f2 | cut -d= -f1); do
+        mac=$(uci -q get $UCI_CONF.$section.mac)
+        timestart=$(uci -q get $UCI_CONF.$section.timestart)
+        timestop=$(uci -q get $UCI_CONF.$section.timestop)
+        weekdays_raw=$(uci -q get $UCI_CONF.$section.weekdays)
+        weekdays=$(normalize_weekdays "$weekdays_raw")
+
+        [ -z "$mac" ] && continue
+        [ -z "$timestart" ] && continue
+        [ -z "$timestop" ] && continue
+        [ -z "$weekdays" ] && continue
+
+        iptables -A "$CHAIN" -m mac --mac-source "$mac" \
+            -m time --kerneltz --timestart "$timestart" --timestop "$timestop" --weekdays "$weekdays" \
+            -j DROP
+    done
+}
+
+start() {
+    echo "Applying access control rules..."
+    apply_rules
+}
+
+stop() {
+    echo "Flushing access control rules..."
+    iptables -F "$CHAIN" 2>/dev/null
+}
+
+restart() {
+    stop
+    start
+}

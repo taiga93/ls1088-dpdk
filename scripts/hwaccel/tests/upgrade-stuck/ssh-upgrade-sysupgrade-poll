@@ -1,0 +1,5 @@
+boot_id=aaaa-old
+init=complete
+@log
+upgrade: Saving config files...
+Failed to create the configuration backup.

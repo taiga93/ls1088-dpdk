@@ -1,0 +1,2 @@
+{"status":-1,"message":"local AS is required when BGP is enabled","field":"local_as"}
+exit=1

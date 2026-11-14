@@ -1,0 +1,40 @@
+translated=5
+seen=5
+@ports eth0 eth2 eth1 eth4 eth5
+wan_tx_before=500000
+wan2_tx_before=700000
+@before eth0
+     rx packets [CPU 0]: 1000
+     rx packets [TOTAL]: 1000
+@before eth2
+     rx packets [CPU 0]: 1000
+     rx packets [TOTAL]: 1000
+@before eth1
+     rx packets [CPU 0]: 1000
+     rx packets [TOTAL]: 1000
+@before eth4
+     rx packets [CPU 0]: 1000
+     rx packets [TOTAL]: 1000
+@before eth5
+     rx packets [CPU 0]: 1000
+     rx packets [TOTAL]: 1000
+wan_tx_after=500014
+wan2_tx_after=1102310
+@after eth0
+     rx packets [CPU 0]: 1000
+     rx packets [TOTAL]: 1000
+@after eth2
+     rx packets [CPU 0]: 1025
+     rx packets [TOTAL]: 1025
+@after eth1
+     rx packets [CPU 0]: 1018
+     rx packets [TOTAL]: 1018
+@after eth4
+     rx packets [CPU 0]: 1000
+     rx packets [TOTAL]: 1000
+@after eth5
+     rx packets [CPU 0]: 1000
+     rx packets [TOTAL]: 1000
+status={"status":0,"message":"Tăng tốc phần cứng is on","state":"on","enabled":true,"accelerated":5,"on_cpu":[]}
+@conntrack
+ipv4     2 tcp      6 src=198.51.100.2 dst=192.168.3.1 sport=40001 dport=5302 [PERMANENT] packets=3 bytes=164 src=192.168.1.10 dst=198.51.100.2 sport=5301 dport=40001 packets=1 bytes=60 [ASSURED] mark=512 zone=0 use=3

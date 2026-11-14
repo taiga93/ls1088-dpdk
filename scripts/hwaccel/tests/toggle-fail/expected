@@ -1,0 +1,42 @@
+== board root@192.168.1.1 ==
+Linux OpenWrt 6.12.94 #0 SMP Thu Oct  1 08:00:00 2026 aarch64 GNU/Linux
+[    1.812345] fsl-fman 1a00000.fman: FMan-Controller code (ver 210.10.1)
+[   34.101010] cdx: FMAN firmware 210.10.1 - ASK supported
+eth0 soc:fsl,dpaa:ethernet@2 02:00:00:46:00:00
+eth1 soc:fsl,dpaa:ethernet@3 02:00:00:46:00:01
+eth2 soc:fsl,dpaa:ethernet@4 02:00:00:46:00:02
+eth3 soc:fsl,dpaa:ethernet@5 02:00:00:46:00:03
+eth4 soc:fsl,dpaa:ethernet@8 02:00:00:46:00:04
+eth5 soc:fsl,dpaa:ethernet@9 02:00:00:46:00:05
+br-lan           UP             02:00:00:46:00:01 <BROADCAST,MULTICAST,UP,LOWER_UP>
+eth0             UP             02:00:00:46:00:00 <BROADCAST,MULTICAST,UP,LOWER_UP>
+eth1             UP             02:00:00:46:00:01 <BROADCAST,MULTICAST,UP,LOWER_UP>
+== results ==
+net            wan eth0 has no address from DHCP; using 192.168.2.1/24 until the script ends
+toggle         FAIL  rx packets on the CPU in 10 s, and iperf3 meanwhile: 86 on (945 Mbps), 92 disabled (945 Mbps), 15 enabled again; disabled: bmchwaccel status: on, 5 accelerated, 5 conntrack entries still pinned; enabled again: bmchwaccel status: on, 0 accelerated, 53 Mbps to the end of the run; limit on traffic through the CPU: 195312 packets/s again, 7 dropped by it since the first window; a new connection at second 22: no result; iperf3 over both switches: 496 Mbps, slowest second 0 Mbps, 431 retransmits; syslog: 0 line off, 1 line on
+               - bmchwaccel disable: {"status":-1,"message":"Saved, but Tăng tốc phần cứng failed to stop","enabled":false,"action":"stop","commands":["/etc/init.d/cmm stop"]}
+               - disabled: bmchwaccel status says on, need off
+               - disabled: bmchwaccel status counts 5 accelerated connections
+               - disabled: 92 rx packets reached the CPU in 10 s: the hardware still forwards the traffic, or the TCP sessions stopped
+               - enabled again: bmchwaccel status counts 0 accelerated connections
+               - enabled again: 53 Mbps from second 38.8 of iperf3 to its end, below 900 Mbps: the TCP sessions did not last or were not accelerated again
+               - enabled again: iperf3 stood still in 37 of the seconds from second 38.8 to its end
+               - enabled again: 4 of the iperf3 streams carried nothing in the last 5 s: its TCP session did not last
+               - syslog has 0 bmcHwAccel line(s) for off and 1 for on, need 1 and 1
+               | Mbps each second (| on | disabled | enabled again |): 912 946 946 946 946 946 946 946 946 | 946 946 946 946 946 946 946 946 946 946 | 946 946 | 946 946 946 946 946 946 946 946 946 946 | 946 946 946 946 946 946 946 946 | 946 946 0 0 0 0 0 0 0 0 | 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 
+               | ping each second (! answered, . lost): .............................................................................. (no answer at all: PC2 does not answer ping; Windows does not unless its firewall allows ICMPv4 echo)
+               | new connection, Mbps each second: 
+               | second by second (s of iperf3, its Mbps, ping, packets per port):
+               | counters that changed in the window on:
+               | counters that changed in the window off:
+RESULT: FAIL
+exit=1
+-- calls --
+ssh info
+ssh net plain
+ssh flush
+ssh toggle
+ssh diag toggle
+ssh unnet
+iperf3 toggle
+iperf3 toggle-probe

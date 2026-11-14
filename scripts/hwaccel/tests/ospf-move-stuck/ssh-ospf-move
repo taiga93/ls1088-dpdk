@@ -1,0 +1,6 @@
+waited=20
+moved=no
+neighbor_eth2=1
+neighbor_eth4=1
+route=10.17.0.1 nhid 21 via 10.17.1.2 dev eth2 metric 20
+via=eth2

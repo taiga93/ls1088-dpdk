@@ -1,0 +1,40 @@
+session_before=0001
+@conntrack
+ipv4     2 udp      17 src=192.168.1.10 dst=10.99.0.1 sport=50011 dport=5202 [PERMANENT] packets=3 bytes=164 src=10.99.0.1 dst=10.99.0.2 sport=5202 dport=50011 packets=1 bytes=60 [ASSURED] mark=0 zone=0 use=3
+@ports eth0 eth1 eth2 eth4 eth5
+down=yes
+wan_tx_before=2800411
+@before eth0
+     rx packets [CPU 0]: 6200
+     rx packets [TOTAL]: 6200
+@before eth1
+     rx packets [CPU 0]: 4300
+     rx packets [TOTAL]: 4300
+@before eth2
+     rx packets [CPU 0]: 10
+     rx packets [TOTAL]: 10
+@before eth4
+     rx packets [CPU 0]: 0
+     rx packets [TOTAL]: 0
+@before eth5
+     rx packets [CPU 0]: 0
+     rx packets [TOTAL]: 0
+wan_tx_after=2800426
+@after eth0
+     rx packets [CPU 0]: 6204
+     rx packets [TOTAL]: 6204
+@after eth1
+     rx packets [CPU 0]: 108550
+     rx packets [TOTAL]: 108550
+@after eth2
+     rx packets [CPU 0]: 10
+     rx packets [TOTAL]: 10
+@after eth4
+     rx packets [CPU 0]: 0
+     rx packets [TOTAL]: 0
+@after eth5
+     rx packets [CPU 0]: 0
+     rx packets [TOTAL]: 0
+up=yes
+session_after=0002
+addr_after=10.99.0.2

@@ -1,0 +1,15 @@
+{"status":0,"message":"RIP configuration saved","uci_batch":"delete bmcDynRouting.ri_link_eth5
+delete bmcDynRouting.ri_lan
+delete bmcDynRouting.rip.advanced_line
+set bmcDynRouting.ri_lan=rip_interface
+set bmcDynRouting.ri_lan.interface='lan'
+set bmcDynRouting.ri_lan.passive='0'
+delete bmcDynRouting.rip.update_timer
+delete bmcDynRouting.rip.timeout_timer
+set bmcDynRouting.rip.enabled='1'
+set bmcDynRouting.rip.redistribute_static='0'
+set bmcDynRouting.rip.redistribute_connected='0'
+set bmcDynRouting.rip.redistribute_ospf='0'
+set bmcDynRouting.rip.redistribute_bgp='1'
+set bmcDynRouting.rip.default_originate='0'","warnings":[{"code":"redistribute_bgp_into_igp","message":"RIP redistributes BGP: every route accepted from a Peer BGP (up to its maximum prefix count) is injected into RIP and advertised to every RIP router."},{"interface":"lan","code":"dhcp_on_active_interface","message":"Interface RIP lan is not passive but runs a DHCP server."}]}
+exit=0

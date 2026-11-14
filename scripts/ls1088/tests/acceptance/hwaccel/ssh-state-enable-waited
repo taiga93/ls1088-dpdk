@@ -1,0 +1,9 @@
+status={"status":0,"message":"Tăng tốc phần cứng is off; it takes effect after a restart","state":"off","enabled":true,"reboot_required":true,"accelerated":0,"on_cpu":[]}
+boot_id=33333333-cccc
+init=complete
+layout=kernel
+mark=no
+kept=
+engine=
+@log
+Tue Oct 21 18:00:00 2026 user.notice bmcHwAccel: Tăng tốc phần cứng enabled: it takes effect after a restart

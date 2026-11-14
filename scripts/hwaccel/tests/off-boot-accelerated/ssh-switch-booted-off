@@ -1,0 +1,4 @@
+boot_id=22222222-bbbb
+init=complete
+status={"status":0,"message":"Tăng tốc phần cứng is on","state":"on","enabled":true,"accelerated":12,"on_cpu":[]}
+modules=3

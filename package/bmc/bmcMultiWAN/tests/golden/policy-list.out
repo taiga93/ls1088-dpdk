@@ -1,0 +1,2 @@
+{"status":0,"message":"Chính sách WAN list","policies":[{"name":"default_policy","wans":["wan","wan2","wan3"],"default":true,"rules":[]},{"name":"b_first","wans":["wan2","wan"],"default":false,"rules":["acct","voip","rtp"]},{"name":"c_only","wans":["wan3"],"default":false,"rules":[]}]}
+exit=0

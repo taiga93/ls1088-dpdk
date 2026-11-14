@@ -1,0 +1,5 @@
+pc1=192.168.1.10
+mac=AA:BB:CC:00:11:22
+macfilter=disable
+ddos=disable
+status={"status":0,"message":"Tăng tốc phần cứng is off","state":"off","enabled":false,"accelerated":0,"on_cpu":[]}

@@ -1,0 +1,2 @@
+{"status":-1,"message":"usage: wan list, wan add --name N --port P --proto dhcp|static|pppoe [--ipaddr IP --netmask MASK --gateway IP [--dns IP]...] [--username U --password P], wan set --name N [--track-ip IP]... [--down 1-10] [--up 1-10], wan del --name N"}
+exit=1

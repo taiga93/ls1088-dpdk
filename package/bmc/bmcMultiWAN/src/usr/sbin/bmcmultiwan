@@ -1,0 +1,141 @@
+#!/bin/sh
+# bmcmultiwan — CLI of the Multi-WAN feature.
+#
+# The whole logic of the feature lives in this CLI and /usr/lib/bmcMultiWAN; web UI and TR-069 only call it
+# (ADR-0003). mwan3 is the engine and /etc/config/mwan3 the source of truth for WANs, policies and rules
+# (ADR-0009), /etc/config/network for the interface of each added WAN; /etc/config/bmcMultiWAN only holds
+# "enabled".
+# Every public command prints exactly one JSON object {status, message, ...}; status -1 comes with exit code 1,
+# and input validation errors come with "field".
+# Every command reads a UCI snapshot, builds a plan then executes it; --dry-run prints the plan instead.
+#
+#   get
+#   set --enabled 0|1                        only saves; apply makes it effective
+#   apply                                    starts, restarts or stops mwan3 according to "enabled"
+#   status                                   link, Internet state and IPv4 address of each WAN, the WAN carrying
+#                                            the default Chính sách WAN, the last Chuyển WAN
+#   wan list
+#   wan add --name N --port P --proto dhcp|static|pppoe [--ipaddr IP --netmask MASK --gateway IP [--dns IP]...]
+#           [--username U --password P]
+#   wan set --name N [--track-ip IP]... [--down 1-10] [--up 1-10]
+#   wan del --name N
+#   policy list
+#   policy set --name N --wan W1 [--wan W2]...  a Chính sách WAN: 1-4 WANs in order of preference
+#   policy del --name N
+#   rule list
+#   rule set --name N --policy P [--src-ip CIDR] [--dest-ip CIDR] [--proto tcp|udp|icmp|all] [--src-port SPEC]
+#            [--dest-port SPEC] [--position K]    a Luật chọn WAN; SPEC is a port, a range a-b or a list a,b.
+#                                            Replaces the whole rule: options not given are cleared.
+#   rule del --name N
+# wan add|set|del, policy set|del and rule set|del restart a running mwan3 so that the change is effective at once.
+# Internal: defaults (uci-defaults, writes the initial /etc/config/mwan3 once), firewall-apply (firewall include,
+# restarts a running mwan3 whose chains a firewall restart removed), event ACTION WAN (hook /etc/mwan3.user, logs
+# each Chuyển WAN; with Tăng tốc phần cứng running, removes the connections of a WAN that traffic has to leave).
+set -eu
+
+lib_dir=$(CDPATH= cd -- "$(dirname -- "$0")/../lib/bmcMultiWAN" && pwd)
+for lib in json uci ipv4 network mwan3 service status flush wan policy rule; do
+	. "$lib_dir/$lib.sh"
+done
+
+dry_run=0
+exit_code=0
+newline='
+'
+
+reply() {
+	[ "$1" = 0 ] || exit_code=1
+	printf '{"status":%s,"message":%s%s}\n' "$1" "$(json_string "$2")" "${3:-}"
+}
+
+# Input validation error: comes with "field" so that the UI marks the right input, and extra JSON $3.
+fail() {
+	reply -1 "$2" ",\"field\":\"$1\"${3:-}"
+}
+
+# Value of the shell variable named $1.
+value_of() {
+	eval "printf '%s' \"\$$1\""
+}
+
+usage() {
+	reply -1 'usage: bmcmultiwan [--dry-run] get, set --enabled 0|1, apply, status, wan list|add|set|del, policy list|set|del, rule list|set|del'
+}
+
+load_config() {
+	enabled=$(uci_get bmcMultiWAN.global.enabled)
+	[ "$enabled" = 1 ] || enabled=0
+}
+
+# With --dry-run: replies with the planned batch ($1 message, $2 extra JSON) and returns 1.
+# Otherwise: commits the batch into configs "$3..."; on error replies and returns 1.
+plan_or_commit() {
+	message=$1 extra=$2
+	shift 2
+	if [ "$dry_run" = 1 ]; then
+		reply 0 "$message" ",\"uci_batch\":$(json_string "$uci_batch")$extra"
+		return 1
+	fi
+	if ! batch_commit "$@"; then
+		reply -1 "failed to save the configuration"
+		return 1
+	fi
+}
+
+get_command() {
+	reply 0 'Multi-WAN configuration' ",\"enabled\":$(json_bool "$enabled")"
+}
+
+set_command() {
+	new_enabled=
+	while [ "$#" -gt 0 ]; do
+		case "$1" in
+			--enabled)
+				if [ "$#" -lt 2 ]; then
+					fail enabled 'option --enabled requires a value'
+					return
+				fi
+				new_enabled=$2
+				shift 2
+				;;
+			*)
+				reply -1 "unknown option $1"
+				return
+				;;
+		esac
+	done
+	case "$new_enabled" in
+		0|1) ;;
+		'') fail enabled 'usage: set --enabled 0|1'; return ;;
+		*) fail enabled 'enabled must be 0 or 1'; return ;;
+	esac
+	batch_reset
+	batch_add 'set bmcMultiWAN.global=global'
+	batch_add "set bmcMultiWAN.global.enabled='$new_enabled'"
+	extra=",\"enabled\":$(json_bool "$new_enabled")"
+	plan_or_commit 'Multi-WAN configuration saved' "$extra" bmcMultiWAN || return 0
+	reply 0 'Multi-WAN configuration saved' "$extra"
+}
+
+if [ "${1:-}" = --dry-run ]; then
+	dry_run=1
+	shift
+fi
+uci_load_snapshot
+load_config
+command=${1:-}
+[ "$#" -eq 0 ] || shift
+case "$command" in
+	get) get_command ;;
+	wan) wan_command "$@" ;;
+	policy) policy_command "$@" ;;
+	rule) rule_command "$@" ;;
+	set) set_command "$@" ;;
+	apply) apply_command ;;
+	status) status_command ;;
+	defaults) defaults_command ;;
+	firewall-apply) firewall_apply_command ;;
+	event) event_command "$@" ;;
+	*) usage ;;
+esac
+exit "$exit_code"

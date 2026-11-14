@@ -1,0 +1,43 @@
+@ports eth0 eth2 eth1 eth4 eth5
+@before eth0
+     rx packets [CPU 0]: 1000
+     rx packets [TOTAL]: 1000
+tx before eth0 500000
+@before eth2
+     rx packets [CPU 0]: 1000
+     rx packets [TOTAL]: 1000
+tx before eth2 500000
+@before eth1
+     rx packets [CPU 0]: 1000
+     rx packets [TOTAL]: 1000
+@before eth4
+     rx packets [CPU 0]: 1000
+     rx packets [TOTAL]: 1000
+@before eth5
+     rx packets [CPU 0]: 1000
+     rx packets [TOTAL]: 1000
+@after eth0
+     rx packets [CPU 0]: 1000
+     rx packets [TOTAL]: 1000
+tx after eth0 500009
+@after eth2
+     rx packets [CPU 0]: 1004
+     rx packets [TOTAL]: 1004
+tx after eth2 500006
+@after eth1
+     rx packets [CPU 0]: 102200
+     rx packets [TOTAL]: 102200
+@after eth4
+     rx packets [CPU 0]: 1000
+     rx packets [TOTAL]: 1000
+@after eth5
+     rx packets [CPU 0]: 1000
+     rx packets [TOTAL]: 1000
+link eth0 speed 1000 changes 1
+link eth2 speed 1000 changes 1
+link eth1 speed 1000 changes 1
+status={"status":0,"message":"Tăng tốc phần cứng is on","state":"on","enabled":true,"accelerated":0,"on_cpu":[]}
+kept=0
+@conntrack
+ipv4     2 tcp      6 src=192.168.1.10 dst=10.17.0.1 sport=50011 dport=5203 packets=3 bytes=164 src=10.17.0.1 dst=192.168.1.10 sport=5203 dport=50011 packets=1 bytes=60 [ASSURED] mark=0 zone=0 use=3
+ipv4     2 udp      17 src=192.168.1.10 dst=10.17.0.1 sport=50011 dport=5203 packets=3 bytes=164 src=10.17.0.1 dst=192.168.1.10 sport=5203 dport=50011 packets=1 bytes=60 [ASSURED] mark=0 zone=0 use=3

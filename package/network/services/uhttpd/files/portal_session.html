@@ -1,0 +1,1646 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Portal Session</title>
+  <link rel="icon" type="image/png" href="./iconnho.png" />
+  <link rel="shortcut icon" type="image/png" href="./iconnho.png" />
+
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg-1: #040b16;
+      --bg-2: #091326;
+      --panel: rgba(10, 18, 34, 0.88);
+      --panel-soft: rgba(255, 255, 255, 0.04);
+      --border: rgba(148, 163, 184, 0.18);
+      --border-strong: rgba(56, 189, 248, 0.24);
+      --text-main: #f8fafc;
+      --text-body: #dbe4f1;
+      --text-soft: rgba(226, 232, 240, 0.72);
+      --text-dim: rgba(148, 163, 184, 0.85);
+      --cyan: #38bdf8;
+      --blue: #1d4ed8;
+      --amber: #fbbf24;
+      --emerald: #34d399;
+      --rose: #fb7185;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: "Segoe UI", "Inter", "Roboto", Arial, sans-serif;
+      color: var(--text-body);
+      background: linear-gradient(160deg, var(--bg-1), var(--bg-2) 52%, #0f172a);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+
+    .session-shell {
+      width: min(860px, 100%);
+      background: linear-gradient(135deg, rgba(7, 20, 40, 0.98), rgba(13, 26, 49, 0.94));
+      border: 1px solid var(--border-strong);
+      border-radius: 14px;
+      box-shadow:
+        0 24px 44px rgba(2, 8, 23, 0.34),
+        0 10px 18px rgba(15, 23, 42, 0.2);
+      padding: 20px;
+    }
+
+    .session-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+
+    .session-brand {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      min-width: 0;
+    }
+
+    .session-logo {
+      width: 48px;
+      height: 48px;
+      object-fit: contain;
+      border-radius: 10px;
+      padding: 6px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--border);
+    }
+
+    .session-kicker {
+      margin: 0 0 6px;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.16em;
+      color: var(--amber);
+    }
+
+    .session-title {
+      margin: 0;
+      font-size: clamp(24px, 3vw, 32px);
+      line-height: 1.1;
+      font-weight: 800;
+    }
+
+    .session-state {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      justify-content: center;
+      padding: 10px 14px;
+      border-radius: 10px;
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      border: 1px solid rgba(148, 163, 184, 0.2);
+      background: rgba(255, 255, 255, 0.04);
+      color: var(--text-soft);
+      white-space: nowrap;
+    }
+
+    .session-state::before {
+      content: "";
+      width: 8px;
+      height: 8px;
+      border-radius: 999px;
+      background: currentColor;
+      box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.08);
+    }
+
+    .session-state[data-tone="success"] {
+      background: rgba(16, 185, 129, 0.14);
+      border-color: rgba(52, 211, 153, 0.35);
+      color: #d1fae5;
+    }
+
+    .session-state[data-tone="danger"] {
+      background: rgba(239, 68, 68, 0.14);
+      border-color: rgba(248, 113, 113, 0.35);
+      color: #fecaca;
+    }
+
+    .session-state[data-tone="info"] {
+      background: rgba(14, 165, 233, 0.12);
+      border-color: rgba(56, 189, 248, 0.35);
+      color: #bae6fd;
+    }
+
+    .session-main-card,
+    .session-dialog-card {
+      background: var(--panel-soft);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+    }
+
+    .session-main-card {
+      text-align: center;
+    }
+
+    .session-section-label {
+      margin: 0 0 12px;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      color: var(--text-dim);
+    }
+
+    .session-counter {
+      margin: 0;
+      font-size: clamp(42px, 7vw, 64px);
+      line-height: 1;
+      font-weight: 800;
+      letter-spacing: 0;
+      color: var(--emerald);
+    }
+
+    .session-counter-meta {
+      margin: 14px auto 0;
+      max-width: 680px;
+      color: var(--text-soft);
+      line-height: 1.7;
+      font-size: 15px;
+    }
+
+    .session-message {
+      margin: 16px auto 0;
+      max-width: 680px;
+      color: var(--text-soft);
+      line-height: 1.7;
+      font-size: 15px;
+    }
+
+    .session-actions {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 12px;
+      margin-top: 22px;
+    }
+
+    .session-button {
+      min-width: 142px;
+      min-height: 46px;
+      border: 0;
+      border-radius: 10px;
+      padding: 10px 15px;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: transform 0.18s ease, opacity 0.18s ease;
+    }
+
+    .session-button:hover {
+      transform: translateY(-1px);
+    }
+
+    .session-button.primary {
+      background: linear-gradient(135deg, var(--cyan), var(--blue));
+      color: #eff6ff;
+      box-shadow: 0 16px 28px rgba(37, 99, 235, 0.24);
+    }
+
+    .session-button.secondary {
+      background: rgba(255, 255, 255, 0.06);
+      color: var(--text-main);
+      border: 1px solid rgba(148, 163, 184, 0.18);
+    }
+
+    .session-button.danger {
+      background: linear-gradient(135deg, #ef4444, #b91c1c);
+      color: #fff;
+    }
+
+    .session-button:disabled {
+      opacity: 0.62;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .session-info-grid {
+      margin-top: 14px;
+      display: grid;
+      grid-template-columns: repeat(4, minmax(160px, 1fr));
+      gap: 10px;
+    }
+
+    .session-info-item {
+      background: var(--panel-soft);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px;
+    }
+
+    .session-info-label {
+      margin: 0 0 8px;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--text-dim);
+    }
+
+    .session-info-value {
+      margin: 0;
+      font-size: 16px;
+      font-weight: 700;
+      word-break: normal;
+      overflow-wrap: anywhere;
+    }
+
+    .session-speed-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 14px;
+      margin-bottom: 14px;
+    }
+
+    .session-speed-dialog {
+      width: min(620px, 100%);
+    }
+
+    .session-speed-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .session-speed-title {
+      margin: 0;
+      color: var(--text-main);
+      font-size: 16px;
+      font-weight: 800;
+    }
+
+    .session-speed-subtitle {
+      margin: 5px 0 0;
+      color: var(--text-soft);
+      line-height: 1.5;
+      font-size: 13px;
+    }
+
+    .session-speed-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .session-speed-metric {
+      min-height: 82px;
+      padding: 14px;
+      border-radius: 10px;
+      border: 1px solid rgba(148, 163, 184, 0.14);
+      background: rgba(255, 255, 255, 0.035);
+    }
+
+    .session-speed-label {
+      margin: 0 0 8px;
+      color: var(--text-dim);
+      font-size: 12px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      font-weight: 700;
+    }
+
+    .session-speed-value {
+      margin: 0;
+      color: var(--text-main);
+      font-size: 24px;
+      line-height: 1.1;
+      font-weight: 800;
+    }
+
+    .session-speed-unit {
+      color: var(--text-soft);
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .session-speed-status {
+      margin: 12px 0 0;
+      color: var(--text-soft);
+      line-height: 1.5;
+      font-size: 13px;
+    }
+
+    .session-speed-note {
+      margin: 12px 0 0;
+      color: var(--text-dim);
+      line-height: 1.5;
+      font-size: 12px;
+    }
+
+    .session-card-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+
+    .session-inline-note {
+      margin: 8px 0 0;
+      color: var(--text-soft);
+      line-height: 1.6;
+    }
+
+    .session-form {
+      display: grid;
+      gap: 14px;
+    }
+
+    .session-form-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 12px;
+    }
+
+    .session-field {
+      display: grid;
+      gap: 8px;
+    }
+
+    .session-field-label {
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-soft);
+    }
+
+    .session-input {
+      width: 100%;
+      border: 1px solid rgba(148, 163, 184, 0.18);
+      border-radius: 10px;
+      background: rgba(255, 255, 255, 0.04);
+      color: var(--text-main);
+      padding: 12px 44px 12px 14px;
+      font-size: 14px;
+      outline: none;
+    }
+
+    .session-input:focus {
+      border-color: rgba(56, 189, 248, 0.48);
+      box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.12);
+    }
+
+    .session-input:disabled {
+      opacity: 0.65;
+      cursor: not-allowed;
+    }
+
+    .session-password-wrap {
+      position: relative;
+    }
+
+    .session-toggle-password {
+      position: absolute;
+      top: 50%;
+      right: 8px;
+      transform: translateY(-50%);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 30px;
+      height: 30px;
+      border: 1px solid rgba(148, 163, 184, 0.16);
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.06);
+      color: var(--text-soft);
+      cursor: pointer;
+      font-size: 0;
+    }
+
+    .session-toggle-password:hover {
+      color: var(--text-main);
+      border-color: rgba(56, 189, 248, 0.34);
+    }
+
+    .session-toggle-password::before {
+      content: "";
+      width: 16px;
+      height: 16px;
+      border: 2px solid currentColor;
+      border-radius: 999px / 700px;
+      transform: scaleX(1.25);
+    }
+
+    .session-toggle-password::after {
+      content: "";
+      position: absolute;
+      width: 5px;
+      height: 5px;
+      border-radius: 999px;
+      background: currentColor;
+    }
+
+    .session-toggle-password.is-visible::before {
+      border-color: currentColor;
+    }
+
+    .session-toggle-password.is-visible::after {
+      width: 18px;
+      height: 2px;
+      border-radius: 999px;
+      background: currentColor;
+      transform: rotate(-35deg);
+    }
+
+    .session-password-meter {
+      display: grid;
+      gap: 7px;
+      margin-top: 2px;
+    }
+
+    .session-password-meter-track {
+      height: 6px;
+      overflow: hidden;
+      border-radius: 999px;
+      background: rgba(8, 15, 29, 0.5);
+    }
+
+    .session-password-meter-bar {
+      display: block;
+      width: 0%;
+      height: 100%;
+      border-radius: inherit;
+      background: var(--rose);
+      transition: width 0.2s ease, background 0.2s ease;
+    }
+
+    .session-password-meter-text {
+      color: var(--text-soft);
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    .session-feedback {
+      display: none;
+      margin: 0;
+      padding: 12px 14px;
+      border-radius: 14px;
+      line-height: 1.6;
+    }
+
+    .session-modal {
+      position: fixed;
+      inset: 0;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 18px;
+      background: rgba(2, 6, 23, 0.66);
+      z-index: 20;
+    }
+
+    .session-modal.is-open {
+      display: flex;
+    }
+
+    .session-dialog-card {
+      width: min(520px, 100%);
+      box-shadow: 0 24px 60px rgba(2, 8, 23, 0.46);
+      background:
+        linear-gradient(135deg, rgba(10, 22, 42, 0.98), rgba(18, 32, 55, 0.98));
+    }
+
+    .session-dialog-close {
+      border: 1px solid rgba(148, 163, 184, 0.18);
+      border-radius: 10px;
+      background: rgba(255, 255, 255, 0.06);
+      color: var(--text-main);
+      min-width: 36px;
+      min-height: 36px;
+      cursor: pointer;
+      font-size: 18px;
+      line-height: 1;
+    }
+
+    .session-dialog-close:disabled {
+      opacity: 0.58;
+      cursor: not-allowed;
+    }
+
+    .session-feedback.is-visible {
+      display: block;
+    }
+
+    .session-feedback[data-tone="success"] {
+      border: 1px solid rgba(52, 211, 153, 0.35);
+      background: rgba(16, 185, 129, 0.12);
+      color: #d1fae5;
+    }
+
+    .session-feedback[data-tone="danger"] {
+      border: 1px solid rgba(248, 113, 113, 0.32);
+      background: rgba(239, 68, 68, 0.14);
+      color: #fecaca;
+    }
+
+    .session-feedback[data-tone="info"] {
+      border: 1px solid rgba(56, 189, 248, 0.3);
+      background: rgba(14, 165, 233, 0.12);
+      color: #bae6fd;
+    }
+
+    .session-error {
+      display: none;
+      margin-bottom: 16px;
+      padding: 14px 18px;
+      border-radius: 16px;
+      border: 1px solid rgba(248, 113, 113, 0.32);
+      background: rgba(239, 68, 68, 0.14);
+      color: #fecaca;
+      line-height: 1.6;
+    }
+
+    .session-error.is-visible {
+      display: block;
+    }
+
+    .mono {
+      font-family: "Cascadia Mono", "Consolas", "Courier New", monospace;
+      font-variant-numeric: tabular-nums;
+    }
+
+    @media (max-width: 820px) {
+      .session-info-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+
+    @media (max-width: 640px) {
+      body {
+        padding: 14px;
+      }
+
+      .session-shell {
+        padding: 16px;
+      }
+
+      .session-header {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+
+      .session-info-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .session-speed-header {
+        flex-direction: column;
+      }
+
+      .session-speed-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .session-actions {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .session-button {
+        width: 100%;
+        min-width: 0;
+      }
+
+      .session-counter {
+        font-size: 48px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <main class="session-shell">
+    <section class="session-header">
+      <div class="session-brand">
+        <img class="session-logo" src="./iconnho.png" alt="FW logo" />
+        <div>
+          <p class="session-kicker">Captive Portal</p>
+          <h1 class="session-title">NAC Session</h1>
+        </div>
+      </div>
+
+      <div id="sessionState" class="session-state" data-tone="info">Checking session</div>
+    </section>
+
+    <div id="sessionError" class="session-error"></div>
+
+    <section class="session-main-card">
+      <p class="session-section-label">Online Duration</p>
+      <p id="sessionCounter" class="session-counter mono">--:--:--</p>
+      <p id="sessionCounterMeta" class="session-counter-meta">
+        Waiting for session data from the portal.
+      </p>
+
+      <p id="sessionMessage" class="session-message">
+        Keep this page open if you want to watch the session timer in real time.
+      </p>
+
+      <div class="session-actions">
+        <a id="continueButton" class="session-button primary" href="#">
+          <span>Continue Browsing</span>
+        </a>
+        <button id="refreshButton" class="session-button secondary" type="button">
+          <span>Refresh</span>
+        </button>
+        <button id="toggleChangePasswordButton" class="session-button secondary" type="button" aria-expanded="false">
+          <span>Change Password</span>
+        </button>
+        <button id="openSpeedTestButton" class="session-button secondary" type="button" aria-expanded="false">
+          <span>Speed Test</span>
+        </button>
+        <button id="logoutButton" class="session-button danger" type="button">
+          <span>Logout</span>
+        </button>
+      </div>
+    </section>
+
+    <section class="session-info-grid">
+      <div class="session-info-item">
+        <p class="session-info-label">User</p>
+        <p id="sessionUser" class="session-info-value">--</p>
+      </div>
+      <div class="session-info-item">
+        <p class="session-info-label">IP Address</p>
+        <p id="sessionIp" class="session-info-value mono">--</p>
+      </div>
+      <div class="session-info-item">
+        <p class="session-info-label">MAC Address</p>
+        <p id="sessionMac" class="session-info-value mono">--</p>
+      </div>
+      <div class="session-info-item">
+        <p class="session-info-label">Session Limit</p>
+        <p id="sessionLimit" class="session-info-value mono">--</p>
+      </div>
+    </section>
+
+  </main>
+
+  <div id="speedTestModal" class="session-modal" role="dialog" aria-modal="true" aria-labelledby="speedTestTitle">
+    <section class="session-dialog-card session-speed-dialog">
+      <div class="session-speed-header">
+        <div>
+          <p id="speedTestTitle" class="session-speed-title">Internet Speed Test</p>
+          <p class="session-speed-subtitle">Multi-connection test for this client's internet path through the firewall.</p>
+        </div>
+        <button id="closeSpeedTestButton" class="session-dialog-close" type="button" aria-label="Close">X</button>
+      </div>
+
+      <div class="session-speed-grid">
+        <div class="session-speed-metric">
+          <p class="session-speed-label">Latency</p>
+          <p id="speedLatencyValue" class="session-speed-value mono">-- <span class="session-speed-unit">ms</span></p>
+        </div>
+        <div class="session-speed-metric">
+          <p class="session-speed-label">Download</p>
+          <p id="speedDownloadValue" class="session-speed-value mono">-- <span class="session-speed-unit">Mbps</span></p>
+        </div>
+        <div class="session-speed-metric">
+          <p class="session-speed-label">Upload</p>
+          <p id="speedUploadValue" class="session-speed-value mono">-- <span class="session-speed-unit">Mbps</span></p>
+        </div>
+      </div>
+
+      <p id="speedTestStatus" class="session-speed-status">
+        Speed test is idle. It runs only when requested.
+      </p>
+      <p class="session-speed-note">
+        Download uses 4 parallel connections. Upload uses 4 parallel connections. The result is closer to a normal speed test but still depends on the remote endpoint.
+      </p>
+
+      <div class="session-speed-actions">
+        <button id="speedTestButton" class="session-button primary" type="button">
+          <span>Run Speed Test</span>
+        </button>
+      </div>
+    </section>
+  </div>
+
+  <div id="changePasswordModal" class="session-modal" role="dialog" aria-modal="true" aria-labelledby="changePasswordTitle">
+    <section id="changePasswordSection" class="session-dialog-card">
+      <div class="session-card-header">
+        <div class="session-card-header-copy">
+          <p class="session-section-label">Change Password</p>
+          <p id="changePasswordTitle" class="session-inline-note">
+            Update the password for your current captive portal account.
+          </p>
+        </div>
+        <button id="closeChangePasswordButton" class="session-dialog-close" type="button" aria-label="Close">X</button>
+      </div>
+
+      <form id="changePasswordForm" class="session-form">
+        <div class="session-form-grid">
+          <label class="session-field">
+            <span class="session-field-label">Current Password</span>
+            <span class="session-password-wrap">
+              <input id="currentPasswordInput" class="session-input" type="password" autocomplete="current-password" />
+              <button class="session-toggle-password" type="button" data-target="currentPasswordInput" aria-label="Show password" title="Show password"></button>
+            </span>
+          </label>
+
+          <label class="session-field">
+            <span class="session-field-label">New Password</span>
+            <span class="session-password-wrap">
+              <input id="newPasswordInput" class="session-input" type="password" autocomplete="new-password" />
+              <button class="session-toggle-password" type="button" data-target="newPasswordInput" aria-label="Show password" title="Show password"></button>
+            </span>
+          </label>
+
+          <label class="session-field">
+            <span class="session-field-label">Confirm Password</span>
+            <span class="session-password-wrap">
+              <input id="confirmPasswordInput" class="session-input" type="password" autocomplete="new-password" />
+              <button class="session-toggle-password" type="button" data-target="confirmPasswordInput" aria-label="Show password" title="Show password"></button>
+            </span>
+          </label>
+        </div>
+
+        <div class="session-password-meter" aria-live="polite">
+          <div class="session-password-meter-track" aria-hidden="true">
+            <span id="passwordStrengthBar" class="session-password-meter-bar"></span>
+          </div>
+          <div id="passwordStrengthText" class="session-password-meter-text">
+            Use a new password with at least 4 characters. Longer mixed passwords are safer.
+          </div>
+        </div>
+
+        <div class="session-actions">
+          <button id="changePasswordButton" class="session-button secondary" type="submit">
+            <span>Change Password</span>
+          </button>
+        </div>
+
+        <p id="passwordChangeFeedback" class="session-feedback" data-tone="info"></p>
+      </form>
+    </section>
+  </div>
+  <script>
+    const PORTAL_SKIP_ACTIVE_CHECK_UNTIL_KEY = "portalSkipActiveCheckUntilV1";
+    const CONTINUE_BROWSING_URL = "https://www.google.com/";
+    const SPEEDTEST_DOWNLOAD_URL = "https://speed.cloudflare.com/__down";
+    const SPEEDTEST_UPLOAD_URL = "https://speed.cloudflare.com/__up";
+    const SPEEDTEST_LATENCY_ATTEMPTS = 3;
+    const SPEEDTEST_DOWNLOAD_CONNECTIONS = 4;
+    const SPEEDTEST_DOWNLOAD_BYTES_PER_CONNECTION = 12582912;
+    const SPEEDTEST_UPLOAD_CONNECTIONS = 4;
+    const SPEEDTEST_UPLOAD_BYTES_PER_CONNECTION = 2097152;
+    const SPEEDTEST_TIMEOUT_MS = 30000;
+    const POLL_INTERVAL_MS = 5000;
+    const TICK_INTERVAL_MS = 1000;
+
+    let uamip = "";
+    let uamport = "3990";
+    let userurl = "";
+    let clientIp = "";
+    let sessionSnapshot = null;
+    let snapshotTakenAtMs = 0;
+    let logoutInFlight = false;
+    let passwordChangeInFlight = false;
+    let isChangePasswordSectionVisible = false;
+    let isSpeedTestVisible = false;
+    let sessionFetchInFlight = false;
+    let speedTestInFlight = false;
+    let counterTimer = null;
+    let sessionPollTimer = null;
+
+    const stateEl = document.getElementById("sessionState");
+    const counterEl = document.getElementById("sessionCounter");
+    const counterMetaEl = document.getElementById("sessionCounterMeta");
+    const messageEl = document.getElementById("sessionMessage");
+    const errorEl = document.getElementById("sessionError");
+    const userEl = document.getElementById("sessionUser");
+    const ipEl = document.getElementById("sessionIp");
+    const macEl = document.getElementById("sessionMac");
+    const limitEl = document.getElementById("sessionLimit");
+    const continueButtonEl = document.getElementById("continueButton");
+    const refreshButtonEl = document.getElementById("refreshButton");
+    const logoutButtonEl = document.getElementById("logoutButton");
+    const toggleChangePasswordButtonEl = document.getElementById("toggleChangePasswordButton");
+    const changePasswordModalEl = document.getElementById("changePasswordModal");
+    const closeChangePasswordButtonEl = document.getElementById("closeChangePasswordButton");
+    const changePasswordSectionEl = document.getElementById("changePasswordSection");
+    const openSpeedTestButtonEl = document.getElementById("openSpeedTestButton");
+    const speedTestModalEl = document.getElementById("speedTestModal");
+    const closeSpeedTestButtonEl = document.getElementById("closeSpeedTestButton");
+    const changePasswordFormEl = document.getElementById("changePasswordForm");
+    const currentPasswordInputEl = document.getElementById("currentPasswordInput");
+    const newPasswordInputEl = document.getElementById("newPasswordInput");
+    const confirmPasswordInputEl = document.getElementById("confirmPasswordInput");
+    const changePasswordButtonEl = document.getElementById("changePasswordButton");
+    const passwordChangeFeedbackEl = document.getElementById("passwordChangeFeedback");
+    const passwordStrengthBarEl = document.getElementById("passwordStrengthBar");
+    const passwordStrengthTextEl = document.getElementById("passwordStrengthText");
+    const passwordToggleButtons = Array.from(document.querySelectorAll(".session-toggle-password"));
+    const speedTestButtonEl = document.getElementById("speedTestButton");
+    const speedLatencyValueEl = document.getElementById("speedLatencyValue");
+    const speedDownloadValueEl = document.getElementById("speedDownloadValue");
+    const speedUploadValueEl = document.getElementById("speedUploadValue");
+    const speedTestStatusEl = document.getElementById("speedTestStatus");
+
+    function setButtonContent(button, icon, text) {
+      button.textContent = text;
+    }
+
+    function escapeText(value) {
+      return value === null || value === undefined || value === "" ? "--" : String(value);
+    }
+
+    function showError(message) {
+      errorEl.textContent = message;
+      errorEl.classList.add("is-visible");
+    }
+
+    function hideError() {
+      errorEl.textContent = "";
+      errorEl.classList.remove("is-visible");
+    }
+
+    function showPasswordFeedback(message, tone) {
+      passwordChangeFeedbackEl.textContent = message;
+      passwordChangeFeedbackEl.setAttribute("data-tone", tone || "info");
+      passwordChangeFeedbackEl.classList.add("is-visible");
+    }
+
+    function hidePasswordFeedback() {
+      passwordChangeFeedbackEl.textContent = "";
+      passwordChangeFeedbackEl.classList.remove("is-visible");
+    }
+
+    function setState(label, tone) {
+      stateEl.textContent = label;
+      stateEl.setAttribute("data-tone", tone || "info");
+    }
+
+    function getActiveUsername() {
+      const username = String(sessionSnapshot?.user || "").trim();
+      if (!username || username === "unknown") {
+        return "";
+      }
+      return username;
+    }
+
+    function renderChangePasswordSectionVisibility() {
+      if (isChangePasswordSectionVisible) {
+        changePasswordModalEl.classList.add("is-open");
+      } else {
+        changePasswordModalEl.classList.remove("is-open");
+      }
+
+      toggleChangePasswordButtonEl.setAttribute("aria-expanded", String(isChangePasswordSectionVisible));
+    }
+
+    function openChangePasswordSection() {
+      isChangePasswordSectionVisible = true;
+      renderChangePasswordSectionVisibility();
+      currentPasswordInputEl.focus();
+    }
+
+    function closeChangePasswordSection() {
+      isChangePasswordSectionVisible = false;
+      renderChangePasswordSectionVisibility();
+    }
+
+    function renderSpeedTestVisibility() {
+      if (isSpeedTestVisible) {
+        speedTestModalEl.classList.add("is-open");
+      } else {
+        speedTestModalEl.classList.remove("is-open");
+      }
+
+      openSpeedTestButtonEl.setAttribute("aria-expanded", String(isSpeedTestVisible));
+    }
+
+    function openSpeedTest() {
+      isSpeedTestVisible = true;
+      renderSpeedTestVisibility();
+      speedTestButtonEl.focus();
+    }
+
+    function closeSpeedTest() {
+      isSpeedTestVisible = false;
+      renderSpeedTestVisibility();
+    }
+
+    function updateChangePasswordAvailability() {
+      const canChangePassword = Boolean(getActiveUsername());
+      const isDisabled = !canChangePassword || passwordChangeInFlight;
+
+      currentPasswordInputEl.disabled = isDisabled;
+      newPasswordInputEl.disabled = isDisabled;
+      confirmPasswordInputEl.disabled = isDisabled;
+      changePasswordButtonEl.disabled = isDisabled;
+      passwordToggleButtons.forEach((button) => {
+        button.disabled = isDisabled;
+      });
+
+      if (passwordChangeInFlight) {
+        setButtonContent(changePasswordButtonEl, "", "Updating...");
+      } else {
+        setButtonContent(changePasswordButtonEl, "", "Change Password");
+      }
+
+      if (!canChangePassword && !passwordChangeInFlight) {
+        showPasswordFeedback("Password change is available after an active portal session is detected.", "info");
+      } else if (canChangePassword && passwordChangeFeedbackEl.getAttribute("data-tone") === "info") {
+        hidePasswordFeedback();
+      }
+    }
+
+    function scorePassword(value) {
+      const password = String(value || "");
+      let score = 0;
+
+      if (password.length >= 4) score += 1;
+      if (password.length >= 8) score += 1;
+      if (/[a-z]/.test(password) && /[A-Z]/.test(password)) score += 1;
+      if (/\d/.test(password)) score += 1;
+      if (/[^A-Za-z0-9]/.test(password)) score += 1;
+
+      return score;
+    }
+
+    function updatePasswordStrength() {
+      const password = newPasswordInputEl.value;
+      const score = scorePassword(password);
+      const width = Math.min(100, score * 20);
+      let color = "var(--rose)";
+      let text = "Password is too weak.";
+
+      if (!password) {
+        text = "Use a new password with at least 4 characters. Longer mixed passwords are safer.";
+      } else if (score >= 5) {
+        color = "var(--emerald)";
+        text = "Strong password.";
+      } else if (score >= 3) {
+        color = "var(--amber)";
+        text = "Acceptable password. Add more character types for stronger protection.";
+      }
+
+      passwordStrengthBarEl.style.width = `${width}%`;
+      passwordStrengthBarEl.style.background = color;
+      passwordStrengthTextEl.textContent = text;
+    }
+
+    function formatMbps(value) {
+      if (!Number.isFinite(value) || value <= 0) {
+        return "--";
+      }
+
+      return value >= 100 ? value.toFixed(0) : value.toFixed(1);
+    }
+
+    function formatMs(value) {
+      if (!Number.isFinite(value) || value < 0) {
+        return "--";
+      }
+
+      return value >= 100 ? value.toFixed(0) : value.toFixed(1);
+    }
+
+    function setSpeedMetric(element, value, unit) {
+      element.innerHTML = `${value} <span class="session-speed-unit">${unit}</span>`;
+    }
+
+    function setSpeedStatus(message) {
+      speedTestStatusEl.textContent = message;
+    }
+
+    function buildSpeedTestUrl(baseUrl, bytes) {
+      const url = new URL(baseUrl);
+      url.searchParams.set("bytes", String(bytes));
+      url.searchParams.set("_", String(Date.now()));
+      return url.toString();
+    }
+
+    async function fetchWithTimeout(url, options) {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), SPEEDTEST_TIMEOUT_MS);
+
+      try {
+        return await fetch(url, {
+          ...(options || {}),
+          cache: "no-store",
+          signal: controller.signal
+        });
+      } finally {
+        clearTimeout(timeout);
+      }
+    }
+
+    async function measureLatency() {
+      const samples = [];
+
+      for (let index = 0; index < SPEEDTEST_LATENCY_ATTEMPTS; index += 1) {
+        const startedAt = performance.now();
+        const res = await fetchWithTimeout(buildSpeedTestUrl(SPEEDTEST_DOWNLOAD_URL, 0));
+        if (!res.ok) {
+          throw new Error(`Latency test failed with HTTP ${res.status}.`);
+        }
+        await res.arrayBuffer();
+        samples.push(performance.now() - startedAt);
+      }
+
+      return samples.reduce((sum, value) => sum + value, 0) / samples.length;
+    }
+
+    async function consumeDownloadResponse(res) {
+      if (!res.body || !res.body.getReader) {
+        const buffer = await res.arrayBuffer();
+        return buffer.byteLength;
+      }
+
+      const reader = res.body.getReader();
+      let totalBytes = 0;
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) {
+          break;
+        }
+
+        totalBytes += value ? value.byteLength : 0;
+      }
+
+      return totalBytes;
+    }
+
+    async function measureDownload() {
+      setSpeedStatus(`Testing download with ${SPEEDTEST_DOWNLOAD_CONNECTIONS} parallel connections...`);
+      const startedAt = performance.now();
+      const jobs = Array.from({ length: SPEEDTEST_DOWNLOAD_CONNECTIONS }, async (_, index) => {
+        const url = buildSpeedTestUrl(SPEEDTEST_DOWNLOAD_URL, SPEEDTEST_DOWNLOAD_BYTES_PER_CONNECTION);
+        const res = await fetchWithTimeout(`${url}&stream=${index + 1}`);
+        if (!res.ok) {
+          throw new Error(`Download test failed with HTTP ${res.status}.`);
+        }
+
+        return consumeDownloadResponse(res);
+      });
+      const results = await Promise.all(jobs);
+      const totalBytes = results.reduce((sum, value) => sum + value, 0);
+
+      const elapsedSeconds = Math.max(0.001, (performance.now() - startedAt) / 1000);
+      return (totalBytes * 8) / elapsedSeconds / 1000000;
+    }
+
+    async function measureUpload() {
+      setSpeedStatus(`Testing upload with ${SPEEDTEST_UPLOAD_CONNECTIONS} parallel connections...`);
+      const startedAt = performance.now();
+      const jobs = Array.from({ length: SPEEDTEST_UPLOAD_CONNECTIONS }, async (_, index) => {
+        const payload = new Uint8Array(SPEEDTEST_UPLOAD_BYTES_PER_CONNECTION);
+        const res = await fetchWithTimeout(`${SPEEDTEST_UPLOAD_URL}?_=${Date.now()}&stream=${index + 1}`, {
+          method: "POST",
+          body: payload
+        });
+        if (!res.ok) {
+          throw new Error(`Upload test failed with HTTP ${res.status}.`);
+        }
+        await res.text();
+
+        return SPEEDTEST_UPLOAD_BYTES_PER_CONNECTION;
+      });
+      const results = await Promise.all(jobs);
+      const totalBytes = results.reduce((sum, value) => sum + value, 0);
+
+      const elapsedSeconds = Math.max(0.001, (performance.now() - startedAt) / 1000);
+      return (totalBytes * 8) / elapsedSeconds / 1000000;
+    }
+
+    async function runSpeedTest() {
+      if (speedTestInFlight) {
+        return;
+      }
+
+      speedTestInFlight = true;
+      speedTestButtonEl.disabled = true;
+      openSpeedTestButtonEl.disabled = true;
+      closeSpeedTestButtonEl.disabled = true;
+      setButtonContent(speedTestButtonEl, "", "Testing...");
+      setSpeedMetric(speedLatencyValueEl, "--", "ms");
+      setSpeedMetric(speedDownloadValueEl, "--", "Mbps");
+      setSpeedMetric(speedUploadValueEl, "--", "Mbps");
+      setSpeedStatus("Starting internet speed test...");
+
+      try {
+        const latencyMs = await measureLatency();
+        setSpeedMetric(speedLatencyValueEl, formatMs(latencyMs), "ms");
+        setSpeedStatus("Latency done. Testing download...");
+
+        const downloadMbps = await measureDownload();
+        setSpeedMetric(speedDownloadValueEl, formatMbps(downloadMbps), "Mbps");
+        setSpeedStatus("Download done. Testing upload...");
+
+        const uploadMbps = await measureUpload();
+        setSpeedMetric(speedUploadValueEl, formatMbps(uploadMbps), "Mbps");
+        setSpeedStatus("Speed test completed.");
+      } catch (error) {
+        console.error("Speed test failed:", error);
+        setSpeedStatus(error.message || "Speed test failed.");
+      } finally {
+        speedTestInFlight = false;
+        speedTestButtonEl.disabled = false;
+        openSpeedTestButtonEl.disabled = false;
+        closeSpeedTestButtonEl.disabled = false;
+        setButtonContent(speedTestButtonEl, "", "Run Speed Test");
+      }
+    }
+
+    function formatDuration(totalSeconds) {
+      const safeSeconds = Math.max(0, Number(totalSeconds) || 0);
+      const days = Math.floor(safeSeconds / 86400);
+      const hours = Math.floor((safeSeconds % 86400) / 3600);
+      const minutes = Math.floor((safeSeconds % 3600) / 60);
+      const seconds = safeSeconds % 60;
+      const parts = [
+        hours < 10 ? "0" + hours : String(hours),
+        minutes < 10 ? "0" + minutes : String(minutes),
+        seconds < 10 ? "0" + seconds : String(seconds)
+      ];
+
+      return days > 0 ? days + "d " + parts.join(":") : parts.join(":");
+    }
+
+    function getLiveCurrentSeconds() {
+      if (!sessionSnapshot || sessionSnapshot.current_seconds === null) {
+        return null;
+      }
+
+      const elapsed = Math.max(0, Math.floor((Date.now() - snapshotTakenAtMs) / 1000));
+      const current = Number(sessionSnapshot.current_seconds) + elapsed;
+
+      if (sessionSnapshot.total_seconds !== null) {
+        return Math.min(Number(sessionSnapshot.total_seconds), current);
+      }
+
+      return current;
+    }
+
+    function parseDurationToken(value) {
+      const rawValue = String(value || "").trim();
+      if (!rawValue) {
+        return null;
+      }
+
+      if (/^\d+$/.test(rawValue)) {
+        return Number(rawValue);
+      }
+
+      if (/^\d{1,3}:\d{1,2}:\d{1,2}$/.test(rawValue)) {
+        const [hours, minutes, seconds] = rawValue.split(":").map(Number);
+        return (hours * 3600) + (minutes * 60) + seconds;
+      }
+
+      if (/^\d{1,2}:\d{1,2}$/.test(rawValue)) {
+        const [minutes, seconds] = rawValue.split(":").map(Number);
+        return (minutes * 60) + seconds;
+      }
+
+      return null;
+    }
+
+    function parseRawSessionValue(rawSession) {
+      const sessionValue = String(rawSession || "").trim();
+      if (!sessionValue) {
+        return null;
+      }
+
+      if (!sessionValue.includes("/")) {
+        const currentSeconds = parseDurationToken(sessionValue);
+        if (currentSeconds === null) {
+          return null;
+        }
+
+        return {
+          current_seconds: currentSeconds,
+          total_seconds: null
+        };
+      }
+
+      const [currentToken, totalToken] = sessionValue.split("/", 2);
+      const currentSeconds = parseDurationToken(currentToken);
+      const totalSeconds = parseDurationToken(totalToken);
+
+      if (currentSeconds === null) {
+        return null;
+      }
+
+      return {
+        current_seconds: currentSeconds,
+        total_seconds: totalSeconds !== null && totalSeconds > 0 ? totalSeconds : null
+      };
+    }
+
+    function normalizeSessionSnapshot(session) {
+      if (!session) {
+        return null;
+      }
+
+      const currentSecondsValue = Number(session.current_seconds);
+      const totalSecondsValue = Number(session.total_seconds);
+      const parsedRawSession = parseRawSessionValue(session.raw_session);
+      const normalizedCurrentSeconds = Number.isFinite(currentSecondsValue) && currentSecondsValue >= 0
+        ? currentSecondsValue
+        : parsedRawSession?.current_seconds ?? null;
+      const normalizedTotalSeconds = Number.isFinite(totalSecondsValue) && totalSecondsValue > 0
+        ? totalSecondsValue
+        : parsedRawSession?.total_seconds ?? null;
+
+      return {
+        ...session,
+        current_seconds: normalizedCurrentSeconds,
+        total_seconds: normalizedTotalSeconds
+      };
+    }
+
+    function updateDetails(session) {
+      userEl.textContent = escapeText(session && session.user);
+      ipEl.textContent = escapeText(session && session.ip);
+      macEl.textContent = escapeText(session && session.mac);
+
+      if (session && session.total_seconds !== null) {
+        limitEl.textContent = formatDuration(session.total_seconds);
+      } else {
+        limitEl.textContent = "No limit";
+      }
+    }
+
+    function updateCounterView() {
+      if (!sessionSnapshot) {
+        counterEl.textContent = "--:--:--";
+        counterMetaEl.textContent = "No active portal session found for this device.";
+        return;
+      }
+
+      const liveCurrent = getLiveCurrentSeconds();
+      if (liveCurrent === null) {
+        counterEl.textContent = escapeText(sessionSnapshot.raw_session);
+        counterMetaEl.textContent = "This session does not expose a numeric duration.";
+        return;
+      }
+
+      counterEl.textContent = formatDuration(liveCurrent);
+
+      if (sessionSnapshot.total_seconds !== null) {
+        const remaining = Math.max(0, Number(sessionSnapshot.total_seconds) - liveCurrent);
+        counterMetaEl.textContent = `Used ${formatDuration(liveCurrent)} of ${formatDuration(sessionSnapshot.total_seconds)}. Remaining ${formatDuration(remaining)}.`;
+      } else {
+        counterMetaEl.textContent = `This account has been online for ${formatDuration(liveCurrent)}.`;
+      }
+    }
+
+    function renderSession(payload) {
+      const session = normalizeSessionSnapshot(payload && payload.session ? payload.session : null);
+      const collectedAtSeconds = Number(payload && payload.collected_at);
+      sessionSnapshot = session;
+      snapshotTakenAtMs = Number.isFinite(collectedAtSeconds) && collectedAtSeconds > 0
+        ? collectedAtSeconds * 1000
+        : Date.now();
+      updateDetails(session);
+
+      if (!session) {
+        setState("No active session", "info");
+        messageEl.textContent = "Your portal session is not active right now.";
+        updateCounterView();
+        updateChangePasswordAvailability();
+        return;
+      }
+
+      if (String(session.state || "").toLowerCase() === "pass") {
+        setState("Connected", "success");
+        messageEl.textContent = "Your internet session is active. You can continue browsing or disconnect at any time.";
+      } else {
+        setState("Connected", "info");
+        messageEl.textContent = "Your session was found, but the portal reported a non-standard state.";
+      }
+
+      updateCounterView();
+      updateChangePasswordAvailability();
+    }
+
+    function updatePortalLinks() {
+      continueButtonEl.href = CONTINUE_BROWSING_URL;
+      continueButtonEl.style.display = "inline-flex";
+    }
+
+    function buildLoginPageUrl() {
+      const loginPageUrl = new URL("/portal.html", window.location.origin);
+      if (clientIp) {
+        loginPageUrl.searchParams.set("client_ip", clientIp);
+      }
+      if (uamip) {
+        loginPageUrl.searchParams.set("uamip", uamip);
+      }
+      if (uamport) {
+        loginPageUrl.searchParams.set("uamport", uamport);
+      }
+      if (userurl) {
+        loginPageUrl.searchParams.set("userurl", userurl);
+      }
+      return loginPageUrl.toString();
+    }
+
+    function markPostLogoutRedirect() {
+      try {
+        window.localStorage.setItem(PORTAL_SKIP_ACTIVE_CHECK_UNTIL_KEY, String(Date.now() + 5000));
+      } catch (error) {
+        console.warn("Unable to store post-logout redirect guard:", error);
+      }
+    }
+
+    function resetLogoutButton() {
+      logoutInFlight = false;
+      logoutButtonEl.disabled = false;
+      setButtonContent(logoutButtonEl, "", "Logout");
+    }
+
+    function triggerDirectLogoutFallback() {
+      if (!uamip) {
+        throw new Error("Missing portal logout endpoint.");
+      }
+
+      const logoutUrl = `http://${uamip}:${uamport}/logout`;
+      const logoutPing = new Image();
+      logoutPing.referrerPolicy = "no-referrer";
+      logoutPing.src = `${logoutUrl}${logoutUrl.includes("?") ? "&" : "?"}_ts=${Date.now()}`;
+      window.__portalLogoutPing = logoutPing;
+      markPostLogoutRedirect();
+
+      setTimeout(() => {
+        window.location.href = buildLoginPageUrl();
+      }, 1200);
+    }
+
+    function extractQuery() {
+      const params = new URLSearchParams(window.location.search);
+      clientIp = params.get("client_ip") || "";
+      userurl = params.get("userurl") || "";
+      uamip = params.get("uamip") || "";
+      uamport = params.get("uamport") || "3990";
+      updatePortalLinks();
+    }
+
+    async function fetchSession() {
+      if (sessionFetchInFlight) {
+        return;
+      }
+
+      sessionFetchInFlight = true;
+
+      try {
+        const sessionUrl = `/cgi-bin/portal_session.sh?client_ip=${encodeURIComponent(clientIp)}`;
+        const res = await fetch(sessionUrl, { cache: "no-store" });
+        const rawBody = await res.text();
+        let data = null;
+
+        try {
+          data = rawBody ? JSON.parse(rawBody) : null;
+        } catch (parseError) {
+          const compactBody = String(rawBody || "").trim();
+          if (/forbidden/i.test(compactBody)) {
+            throw new Error("CGI /cgi-bin/portal_session.sh bi tu choi. Hay kiem tra quyen thuc thi va cau hinh CGI tren server.");
+          }
+          throw new Error("Portal session endpoint khong tra ve JSON hop le.");
+        }
+
+        if (!res.ok || (data && !(data.status === 0 || String(data.status) === "0"))) {
+          throw new Error(data?.message || "Unable to load session data.");
+        }
+
+        hideError();
+        renderSession(data);
+      } catch (error) {
+        console.error("Session load failed:", error);
+        showError(error.message || "Unable to load portal session data.");
+        setState("Connection issue", "danger");
+      } finally {
+        sessionFetchInFlight = false;
+      }
+    }
+
+    function startPortalTimers() {
+      if (!counterTimer) {
+        counterTimer = setInterval(updateCounterView, TICK_INTERVAL_MS);
+      }
+
+      if (!sessionPollTimer) {
+        sessionPollTimer = setInterval(fetchSession, POLL_INTERVAL_MS);
+      }
+    }
+
+    function stopPortalTimers() {
+      if (counterTimer) {
+        clearInterval(counterTimer);
+        counterTimer = null;
+      }
+
+      if (sessionPollTimer) {
+        clearInterval(sessionPollTimer);
+        sessionPollTimer = null;
+      }
+    }
+
+    async function logoutSession() {
+      if (logoutInFlight) {
+        return;
+      }
+
+      logoutInFlight = true;
+      logoutButtonEl.disabled = true;
+      setButtonContent(logoutButtonEl, "", "Logging out...");
+      hideError();
+
+      try {
+        const logoutUrl = `/cgi-bin/portal_logout.sh?client_ip=${encodeURIComponent(clientIp)}`;
+        const res = await fetch(logoutUrl, { cache: "no-store" });
+        const rawBody = await res.text();
+        let data = null;
+
+        try {
+          data = rawBody ? JSON.parse(rawBody) : null;
+        } catch (parseError) {
+          console.warn("Portal logout CGI returned non-JSON response, fallback to direct UAM logout.");
+          triggerDirectLogoutFallback();
+          return;
+        }
+
+        if (!res.ok || !data || !(data.status === 0 || String(data.status) === "0")) {
+          console.warn("Portal logout CGI failed, fallback to direct UAM logout.", data);
+          triggerDirectLogoutFallback();
+          return;
+        }
+
+        markPostLogoutRedirect();
+        window.location.href = buildLoginPageUrl();
+      } catch (error) {
+        console.error("Logout failed:", error);
+        try {
+          triggerDirectLogoutFallback();
+        } catch (fallbackError) {
+          console.error("Direct logout fallback failed:", fallbackError);
+          showError(fallbackError.message || error.message || "Unable to logout portal session.");
+          resetLogoutButton();
+        }
+      }
+    }
+
+    async function changePassword(event) {
+      event.preventDefault();
+      const username = getActiveUsername();
+      const currentPassword = currentPasswordInputEl.value;
+      const newPassword = newPasswordInputEl.value;
+      const confirmPassword = confirmPasswordInputEl.value;
+
+      if (!username) {
+        showPasswordFeedback("No active account was detected for this session.", "danger");
+        updateChangePasswordAvailability();
+        return;
+      }
+
+      if (!currentPassword || !newPassword || !confirmPassword) {
+        showPasswordFeedback("Please fill in all password fields.", "danger");
+        return;
+      }
+
+      if (newPassword !== confirmPassword) {
+        showPasswordFeedback("New password confirmation does not match.", "danger");
+        return;
+      }
+
+      if (newPassword.length < 4) {
+        showPasswordFeedback("New password must be at least 4 characters.", "danger");
+        return;
+      }
+
+      passwordChangeInFlight = true;
+      updateChangePasswordAvailability();
+      hidePasswordFeedback();
+
+      try {
+        const res = await fetch("/cgi-bin/portal_change_password.sh", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            username,
+            current_password: currentPassword,
+            new_password: newPassword,
+            client_ip: clientIp
+          })
+        });
+        const rawBody = await res.text();
+        let data = null;
+
+        try {
+          data = rawBody ? JSON.parse(rawBody) : null;
+        } catch (parseError) {
+          const compactBody = String(rawBody || "").trim();
+          if (/forbidden/i.test(compactBody)) {
+            throw new Error("CGI /cgi-bin/portal_change_password.sh bi tu choi. Hay kiem tra quyen thuc thi va cau hinh CGI tren server.");
+          }
+          throw new Error("Portal change password endpoint khong tra ve JSON hop le.");
+        }
+
+        if (!res.ok || !data || !(data.status === 0 || String(data.status) === "0")) {
+          throw new Error(data?.message || "Unable to change password.");
+        }
+
+        changePasswordFormEl.reset();
+        updatePasswordStrength();
+        showPasswordFeedback(data.message || "Password updated successfully.", "success");
+        closeChangePasswordSection();
+      } catch (error) {
+        console.error("Password change failed:", error);
+        showPasswordFeedback(error.message || "Unable to change password.", "danger");
+      } finally {
+        passwordChangeInFlight = false;
+        updateChangePasswordAvailability();
+      }
+    }
+
+    extractQuery();
+    refreshButtonEl.addEventListener("click", async () => {
+      refreshButtonEl.disabled = true;
+      setButtonContent(refreshButtonEl, "", "Refreshing...");
+      await fetchSession();
+      refreshButtonEl.disabled = false;
+      setButtonContent(refreshButtonEl, "", "Refresh");
+    });
+    logoutButtonEl.addEventListener("click", logoutSession);
+    toggleChangePasswordButtonEl.addEventListener("click", openChangePasswordSection);
+    closeChangePasswordButtonEl.addEventListener("click", closeChangePasswordSection);
+    openSpeedTestButtonEl.addEventListener("click", openSpeedTest);
+    closeSpeedTestButtonEl.addEventListener("click", closeSpeedTest);
+    changePasswordModalEl.addEventListener("click", (event) => {
+      if (event.target === changePasswordModalEl) {
+        closeChangePasswordSection();
+      }
+    });
+    speedTestModalEl.addEventListener("click", (event) => {
+      if (event.target === speedTestModalEl && !speedTestInFlight) {
+        closeSpeedTest();
+      }
+    });
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "Escape" && isChangePasswordSectionVisible) {
+        closeChangePasswordSection();
+      } else if (event.key === "Escape" && isSpeedTestVisible && !speedTestInFlight) {
+        closeSpeedTest();
+      }
+    });
+    document.addEventListener("visibilitychange", () => {
+      if (document.hidden) {
+        stopPortalTimers();
+        return;
+      }
+
+      updateCounterView();
+      fetchSession();
+      startPortalTimers();
+    });
+    changePasswordFormEl.addEventListener("submit", changePassword);
+    speedTestButtonEl.addEventListener("click", runSpeedTest);
+    newPasswordInputEl.addEventListener("input", updatePasswordStrength);
+    passwordToggleButtons.forEach((button) => {
+      button.addEventListener("click", () => {
+        const input = document.getElementById(button.dataset.target || "");
+        if (!input) return;
+        const visible = input.type !== "text";
+        input.type = visible ? "text" : "password";
+        button.classList.toggle("is-visible", visible);
+        button.setAttribute("aria-label", visible ? "Hide password" : "Show password");
+        button.setAttribute("title", visible ? "Hide password" : "Show password");
+        input.focus({ preventScroll: true });
+      });
+    });
+
+    renderChangePasswordSectionVisibility();
+    renderSpeedTestVisibility();
+    updatePasswordStrength();
+    updateChangePasswordAvailability();
+    fetchSession();
+    startPortalTimers();
+  </script>
+</body>
+
+</html>

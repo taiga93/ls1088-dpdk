@@ -1,0 +1,3 @@
+boot_id=22222222-bbbb
+answer={"status":0,"message":"Tăng tốc phần cứng enabled","enabled":true,"action":"start","commands":["modprobe cdx","modprobe auto_bridge","modprobe fci","/etc/init.d/cmm start"]}
+saved=1

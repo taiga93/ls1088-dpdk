@@ -1,0 +1,2 @@
+{"status":0,"message":"Tăng tốc phần cứng: connections of blocked machines to take out","commands":["ip neigh replace 192.168.5.40 dev br-lan use","ip neigh replace 192.168.5.99 dev br-lan use","ip neigh replace fd00::40 dev br-lan use"]}
+exit=0

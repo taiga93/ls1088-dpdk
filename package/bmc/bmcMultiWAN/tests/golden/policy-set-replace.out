@@ -1,0 +1,9 @@
+{"status":0,"message":"Chính sách WAN b_first saved","uci_batch":"delete mwan3.b_first.use_member
+add_list mwan3.b_first.use_member='wan2_m1'
+set mwan3.wan3_m2=member
+set mwan3.wan3_m2.interface='wan3'
+set mwan3.wan3_m2.metric='2'
+set mwan3.wan3_m2.weight='1'
+add_list mwan3.b_first.use_member='wan3_m2'
+delete mwan3.wan_m2","commands":[]}
+exit=0

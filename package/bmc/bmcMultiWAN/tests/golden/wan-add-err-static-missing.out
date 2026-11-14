@@ -1,0 +1,2 @@
+{"status":-1,"message":"option --gateway is required with --proto static","field":"gateway"}
+exit=1

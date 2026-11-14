@@ -1,0 +1,2 @@
+{"status":-1,"message":"--remote-as must follow --peer","field":"peers"}
+exit=1

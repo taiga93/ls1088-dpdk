@@ -1,0 +1,3 @@
+{"status":0,"message":"RIP disabled","uci_batch":"set bmcDynRouting.rip=rip
+set bmcDynRouting.rip.enabled='0'"}
+exit=0

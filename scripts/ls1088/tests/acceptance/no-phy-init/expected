@@ -1,0 +1,38 @@
+== board root@192.168.1.1 ==
+Linux bmc 6.12.94 #0 SMP PREEMPT Mon Oct 19 12:00:00 2026 aarch64 GNU/Linux
+[    4.700182] fsl_mc_bus 80c000000.fsl-mc: MC firmware version: 10.39.0
+Mon Oct 19 12:01:05 2026 user.notice phy_init: dpmac.1: eth0 (dpni.0)
+Mon Oct 19 12:01:26 2026 user.notice phy_init: dpmac.9: eth8 (dpni.8)
+eth0 dpni.0 00:04:9f:06:12:03 speed 10000 changes 1
+eth1 dpni.1 00:04:9f:06:12:04 speed 10000 changes 1
+eth8 dpni.8 00:04:9f:06:12:0b speed -1 changes 0
+br-lan           UP             00:04:9f:06:12:04 <BROADCAST,MULTICAST,UP,LOWER_UP>
+eth0             UP             00:04:9f:06:12:03 <BROADCAST,MULTICAST,UP,LOWER_UP>
+eth1             UP             00:04:9f:06:12:04 <BROADCAST,MULTICAST,UP,LOWER_UP>
+== results ==
+boot           FAIL  kernel 6.12.94; 1 ethN ports, not those phy_init makes; without a port: dpmac.1 dpmac.2 dpmac.3 dpmac.4 dpmac.6 dpmac.7 dpmac.8 dpmac.9 dpmac.10; MC 10.39.0; 0 hugepages; 0 kernel line(s) of trouble
+               - phy_init has not run in this boot
+               - eth0 (dpni.0) is on dpmac.5, need dpmac.1
+               - eth0 (dpni.0) has 64 flow steering entries, need 1
+               - there is no eth1 (dpmac.2)
+               - there is no eth2 (dpmac.3)
+               - there is no eth3 (dpmac.4)
+               - there is no eth4 (dpmac.5)
+               - there is no eth5 (dpmac.6)
+               - there is no eth6 (dpmac.7)
+               - there is no eth7 (dpmac.8)
+               - there is no eth8 (dpmac.9)
+               - the board has 1 ethN ports, need 9
+               - dpmac.1 has no port
+               - dpmac.2 has no port
+               - dpmac.3 has no port
+               - dpmac.4 has no port
+               - dpmac.6 has no port
+               - dpmac.7 has no port
+               - dpmac.8 has no port
+               - dpmac.9 has no port
+RESULT: FAIL
+exit=1
+-- calls --
+ssh info
+ssh layout

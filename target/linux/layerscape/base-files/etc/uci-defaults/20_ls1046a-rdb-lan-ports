@@ -1,0 +1,41 @@
+#!/bin/sh
+# LS1046A-RDB: leave eth3 (MAC6) out of the bridge when it cannot be opened.
+# Our board has no PHY on MAC6. The SDK DPAA driver connects the PHY when a
+# port is opened, so netifd would fail on that port, with an error in the
+# kernel log, every time it brings br-lan up. Only this port is tried: a
+# port that is merely slow to come up must not lose its place in the bridge.
+. /lib/functions.sh
+
+case "$(board_name)" in
+fsl,ls1046a-rdb|fsl,ls1046a-rdb-sdboot) ;;
+*) exit 0 ;;
+esac
+
+PORT=eth3
+
+drop_unopenable_port() {
+	local type name
+
+	config_get type "$1" type
+	[ "$type" = bridge ] || return
+	list_contains() { [ "$1" = "$PORT" ] && found=1; }
+	found=0
+	config_list_foreach "$1" ports list_contains
+	[ $found -eq 1 ] || return
+	config_get name "$1" name
+	uci del_list "network.$1.ports=$PORT"
+	logger -t network "$PORT cannot be opened (no PHY?), left out of $name"
+}
+
+# A port the kernel does not have causes no error; keep it.
+ip link show dev "$PORT" >/dev/null 2>&1 || exit 0
+if ip link set dev "$PORT" up 2>/dev/null; then
+	ip link set dev "$PORT" down
+	exit 0
+fi
+
+config_load network
+config_foreach drop_unopenable_port device
+uci commit network
+
+exit 0

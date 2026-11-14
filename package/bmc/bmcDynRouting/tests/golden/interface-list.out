@@ -1,0 +1,2 @@
+{"status":0,"message":"Network interfaces","interfaces":[{"name":"lan","device":"br-lan","link":false},{"name":"wan","device":"eth0","link":false},{"name":"wan6","device":"eth0","link":false},{"name":"guest","device":"br-guest","link":false},{"name":"link_eth7","device":"eth7","link":true}]}
+exit=0

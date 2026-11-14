@@ -1,0 +1,44 @@
+#!/bin/sh
+# Fake curl for acceptance-test.sh. The request is "<method> <path>", from -X
+# and the URL (the last argument). Each call is logged to $FIXTURE_LOG and
+# answered from $FIXTURE/curl-<method>-<path, "/" as "_">: its first line is
+# the HTTP status, the rest the body, which goes to the file of -o. A request
+# with a body (--data) that has a file with "-data" at the end of the name gets
+# that one. A file with ".head" behind that name holds the headers, for -D.
+# Without a file the status is 000.
+method=GET; out=/dev/null; head=/dev/null; data=; prev=; n=0
+for a; do
+	n=$((n + 1))
+	case "$prev" in
+	-X) method=$a ;;
+	-o) out=$a ;;
+	-D) head=$a ;;
+	--data) data=$a ;;
+	-w|-m|-H|-b|--interface) ;;
+	*)
+		# Anything else that is not an option would be one more URL to
+		# the real curl; only the last argument may be one.
+		case "$a" in
+		-*) ;;
+		*) [ $n -eq $# ] || { echo "curl: unexpected argument '$a'" >> "$FIXTURE_LOG"; echo 000; exit 0; } ;;
+		esac
+		;;
+	esac
+	case "$prev" in -X|-o|-D|--data|-w|-m|-H|-b|--interface) prev= ;; *) prev=$a ;; esac
+	url=$a
+done
+path=/${url#*://*/}
+echo "curl $method $path" >> "$FIXTURE_LOG"
+f="$FIXTURE/curl-$method-$(printf '%s' "$path" | tr / _)"
+# A login with the password of the scenario, not the wrong one the item tries.
+case "$data" in *'"password":"wrong"'*) ;; *) [ -z "$data" ] || [ ! -f "$f-data" ] || f="$f-data" ;; esac
+: > "$head"
+[ ! -f "$f.head" ] || cat "$f.head" > "$head"
+if [ -f "$f" ]; then
+	sed 1d "$f" > "$out"
+	head -1 "$f"
+else
+	: > "$out"
+	echo 000
+fi
+exit 0

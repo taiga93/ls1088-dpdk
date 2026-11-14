@@ -1,0 +1,29 @@
+== board root@192.168.1.1 ==
+Linux OpenWrt 6.12.94 #0 SMP Thu Oct  1 08:00:00 2026 aarch64 GNU/Linux
+[    1.812345] fsl-fman 1a00000.fman: FMan-Controller code (ver 210.10.1)
+[   34.101010] cdx: FMAN firmware 210.10.1 - ASK supported
+eth0 soc:fsl,dpaa:ethernet@2 02:00:00:46:00:00
+eth1 soc:fsl,dpaa:ethernet@3 02:00:00:46:00:01
+eth2 soc:fsl,dpaa:ethernet@4 02:00:00:46:00:02
+eth3 soc:fsl,dpaa:ethernet@5 02:00:00:46:00:03
+eth4 soc:fsl,dpaa:ethernet@8 02:00:00:46:00:04
+eth5 soc:fsl,dpaa:ethernet@9 02:00:00:46:00:05
+br-lan           UP             02:00:00:46:00:01 <BROADCAST,MULTICAST,UP,LOWER_UP>
+eth0             UP             02:00:00:46:00:00 <BROADCAST,MULTICAST,UP,LOWER_UP>
+eth1             UP             02:00:00:46:00:01 <BROADCAST,MULTICAST,UP,LOWER_UP>
+== results ==
+net            wan eth0 has no address from DHCP; using 192.168.2.1/24 until the script ends
+mwan-in        on the PC of ISP B run now:  iperf3 -c 192.168.3.1 -p 5302 -B 198.51.100.2 -t 60 -P 4
+mwan-in        FAIL  PC1 192.168.1.10; wan2:5302 to 192.168.1.10:5301: not seen
+               - no connection to port 5302 of wan2 (192.168.3.1) was handed to the hardware within 180 s; 0 such connection(s) were translated to 192.168.1.10:5301 at all
+RESULT: FAIL
+exit=1
+-- calls --
+ssh info
+ssh net plain
+ssh mwan setup
+ssh mwan forward
+ssh mwan inbound
+ssh mwan unforward
+ssh mwan end
+ssh unnet

@@ -1,0 +1,470 @@
+$ bmchwaccel status
+{"status":0,"message":"Tăng tốc phần cứng is unavailable: its kernel modules did not load","state":"unavailable","reason":"module","enabled":true,"reboot_required":false,"accelerated":0,"on_cpu":[]}
+exit=0
+$ bmchwaccel apply
+{"status":0,"message":"Tăng tốc phần cứng started","action":"start","commands":["modprobe cdx","modprobe auto_bridge","modprobe fci","/etc/init.d/cmm start"]}
+exit=0
+calls:
+modprobe cdx (mark: 1)
+modprobe auto_bridge (mark: 1)
+modprobe fci (mark: 1)
+/etc/init.d/cmm start
+logger -t bmcHwAccel Tăng tốc phần cứng turned on
+$ bmchwaccel status
+{"status":0,"message":"Tăng tốc phần cứng is on","state":"on","enabled":true,"reboot_required":false,"accelerated":7,"on_cpu":[]}
+exit=0
+$ bmchwaccel apply
+{"status":0,"message":"Tăng tốc phần cứng: nothing to do","action":"none","commands":[]}
+exit=0
+calls:
+$ bmchwaccel disable
+{"status":0,"message":"Tăng tốc phần cứng disabled","enabled":false,"action":"stop","commands":["/etc/init.d/cmm stop"]}
+exit=0
+calls:
+/etc/init.d/cmm stop
+logger -t bmcHwAccel Tăng tốc phần cứng turned off
+saved: 0
+$ bmchwaccel status
+{"status":0,"message":"Tăng tốc phần cứng is off","state":"off","enabled":false,"reboot_required":false,"accelerated":0,"on_cpu":[]}
+exit=0
+$ bmchwaccel enable
+{"status":0,"message":"Tăng tốc phần cứng enabled","enabled":true,"action":"start","commands":["/etc/init.d/cmm start"]}
+exit=0
+calls:
+/etc/init.d/cmm start
+logger -t bmcHwAccel Tăng tốc phần cứng turned on
+saved: 1
+$ bmchwaccel disable
+{"status":0,"message":"Tăng tốc phần cứng disabled","enabled":false,"action":"stop","commands":["/etc/init.d/cmm stop"]}
+exit=0
+calls:
+/etc/init.d/cmm stop
+logger -t bmcHwAccel Tăng tốc phần cứng turned off
+$ bmchwaccel status
+{"status":0,"message":"Tăng tốc phần cứng is off","state":"off","enabled":false,"reboot_required":false,"accelerated":0,"on_cpu":[]}
+exit=0
+$ bmchwaccel enable
+{"status":0,"message":"Tăng tốc phần cứng enabled","enabled":true,"action":"start","commands":["/etc/init.d/cmm start"]}
+exit=0
+calls:
+/etc/init.d/cmm start
+logger -t bmcHwAccel Tăng tốc phần cứng turned on
+$ bmchwaccel disable
+{"status":-1,"message":"Saved, but Tăng tốc phần cứng failed to stop","enabled":false,"action":"stop","commands":["/etc/init.d/cmm stop"]}
+exit=1
+calls:
+/etc/init.d/cmm stop
+saved: 0
+$ bmchwaccel status
+{"status":0,"message":"Tăng tốc phần cứng is on","state":"on","enabled":false,"reboot_required":false,"accelerated":7,"on_cpu":[]}
+exit=0
+$ bmchwaccel enable
+{"status":0,"message":"Tăng tốc phần cứng enabled","enabled":true,"action":"none","commands":[]}
+exit=0
+calls:
+$ bmchwaccel apply
+{"status":-1,"message":"Tăng tốc phần cứng failed to start: its kernel modules did not load","reason":"module","action":"start","commands":["modprobe cdx","modprobe auto_bridge","modprobe fci","/etc/init.d/cmm start"]}
+exit=1
+calls:
+modprobe cdx (mark: 1)
+modprobe auto_bridge (mark: 1)
+logger -t bmcHwAccel Tăng tốc phần cứng unavailable: its kernel modules did not load
+mark: none
+$ bmchwaccel status
+{"status":0,"message":"Tăng tốc phần cứng is unavailable: its kernel modules did not load","state":"unavailable","reason":"module","enabled":true,"reboot_required":false,"accelerated":0,"on_cpu":[]}
+exit=0
+$ bmchwaccel apply
+{"status":-1,"message":"Tăng tốc phần cứng failed to start: its kernel modules did not load","reason":"module","action":"start","commands":["modprobe auto_bridge","modprobe fci","/etc/init.d/cmm start"]}
+exit=1
+calls:
+modprobe auto_bridge (mark: 1)
+$ bmchwaccel disable
+{"status":0,"message":"Tăng tốc phần cứng disabled","enabled":false,"action":"none","commands":[]}
+exit=0
+calls:
+logger -t bmcHwAccel Tăng tốc phần cứng turned off
+$ bmchwaccel enable
+{"status":-1,"message":"Saved, but Tăng tốc phần cứng failed to start: its kernel modules did not load","enabled":true,"reason":"module","action":"start","commands":["modprobe auto_bridge","modprobe fci","/etc/init.d/cmm start"]}
+exit=1
+calls:
+modprobe auto_bridge (mark: 1)
+logger -t bmcHwAccel Tăng tốc phần cứng unavailable: its kernel modules did not load
+$ bmchwaccel apply
+{"status":-1,"message":"Tăng tốc phần cứng failed to start: the microcode of the network hardware does not support it","reason":"microcode","action":"start","commands":["modprobe cdx","modprobe auto_bridge","modprobe fci","/etc/init.d/cmm start"]}
+exit=1
+calls:
+modprobe cdx (mark: 1)
+logger -t bmcHwAccel Tăng tốc phần cứng unavailable: the microcode of the network hardware does not support it
+$ bmchwaccel status
+{"status":0,"message":"Tăng tốc phần cứng is unavailable: the microcode of the network hardware does not support it","state":"unavailable","reason":"microcode","enabled":true,"reboot_required":false,"accelerated":0,"on_cpu":[]}
+exit=0
+$ bmchwaccel disable
+{"status":0,"message":"Tăng tốc phần cứng disabled","enabled":false,"action":"none","commands":[]}
+exit=0
+calls:
+logger -t bmcHwAccel Tăng tốc phần cứng turned off
+$ bmchwaccel enable
+{"status":-1,"message":"Saved, but Tăng tốc phần cứng failed to start: the microcode of the network hardware does not support it","enabled":true,"reason":"microcode","action":"start","commands":["modprobe cdx","modprobe auto_bridge","modprobe fci","/etc/init.d/cmm start"]}
+exit=1
+calls:
+modprobe cdx (mark: 1)
+logger -t bmcHwAccel Tăng tốc phần cứng unavailable: the microcode of the network hardware does not support it
+$ bmchwaccel apply
+{"status":-1,"message":"Tăng tốc phần cứng failed to start: its service is not running","reason":"daemon","action":"start","commands":["modprobe cdx","modprobe auto_bridge","modprobe fci","/etc/init.d/cmm start"]}
+exit=1
+calls:
+modprobe cdx (mark: 1)
+modprobe auto_bridge (mark: 1)
+modprobe fci (mark: 1)
+/etc/init.d/cmm start
+logger -t bmcHwAccel Tăng tốc phần cứng unavailable: its service is not running
+$ bmchwaccel status
+{"status":0,"message":"Tăng tốc phần cứng is unavailable: its service is not running","state":"unavailable","reason":"daemon","enabled":true,"reboot_required":false,"accelerated":0,"on_cpu":[]}
+exit=0
+$ bmchwaccel apply
+exit=137
+calls:
+modprobe cdx (mark: 1)
+mark: 1
+$ bmchwaccel apply
+exit=137
+calls:
+modprobe auto_bridge (mark: 2)
+mark: 2
+$ bmchwaccel apply
+{"status":-1,"message":"Tăng tốc phần cứng is unavailable: not started after two failed boots in a row; enable it to try again","reason":"boot_skipped","action":"skip","commands":[]}
+exit=1
+calls:
+logger -t bmcHwAccel Tăng tốc phần cứng unavailable: not started after two failed boots in a row; enable it to try again
+$ bmchwaccel status
+{"status":0,"message":"Tăng tốc phần cứng is unavailable: not started after two failed boots in a row; enable it to try again","state":"unavailable","reason":"boot_skipped","enabled":true,"reboot_required":false,"accelerated":0,"on_cpu":[]}
+exit=0
+$ bmchwaccel apply
+{"status":-1,"message":"Tăng tốc phần cứng is unavailable: not started after two failed boots in a row; enable it to try again","reason":"boot_skipped","action":"skip","commands":[]}
+exit=1
+calls:
+$ bmchwaccel disable
+{"status":0,"message":"Tăng tốc phần cứng disabled","enabled":false,"action":"none","commands":[]}
+exit=0
+calls:
+logger -t bmcHwAccel Tăng tốc phần cứng turned off
+mark: 2
+$ bmchwaccel enable
+{"status":0,"message":"Tăng tốc phần cứng enabled","enabled":true,"action":"start","commands":["modprobe fci","/etc/init.d/cmm start"]}
+exit=0
+calls:
+modprobe fci (mark: 1)
+/etc/init.d/cmm start
+logger -t bmcHwAccel Tăng tốc phần cứng turned on
+mark: none
+$ bmchwaccel status
+{"status":0,"message":"Tăng tốc phần cứng is on","state":"on","enabled":true,"reboot_required":false,"accelerated":7,"on_cpu":[]}
+exit=0
+$ bmchwaccel disable
+{"status":0,"message":"Tăng tốc phần cứng disabled","enabled":false,"action":"stop","commands":["/etc/init.d/cmm stop"]}
+exit=0
+calls:
+/etc/init.d/cmm stop
+logger -t bmcHwAccel Tăng tốc phần cứng turned off
+starts=2
+exit=0
+calls:
+daemon started
+cmm -R
+logger -t bmcHwAccel Tăng tốc phần cứng unavailable: its service is not running
+daemon started
+logger -t bmcHwAccel Tăng tốc phần cứng turned on
+daemon got SIGTERM
+exit=1
+state=unavailable daemon starts=5
+calls:
+daemon started
+cmm -R
+logger -t bmcHwAccel Tăng tốc phần cứng unavailable: its service is not running
+daemon started
+cmm -R
+daemon started
+cmm -R
+daemon started
+cmm -R
+daemon started
+cmm -R
+$ bmchwaccel enable
+{"status":0,"message":"Tăng tốc phần cứng enabled","enabled":true,"action":"start","commands":["/etc/init.d/cmm start"]}
+exit=0
+calls:
+/etc/init.d/cmm start
+logger -t bmcHwAccel Tăng tốc phần cứng turned on
+$ bmchwaccel keep bmcqos wan eth0
+{"status":0,"message":"Tăng tốc phần cứng keeps wan eth0 on the CPU for bmcqos","on_cpu":[{"scope":"wan","device":"eth0","reason":"bmcqos"}],"action":"install","commands":["iptables -w -t mangle -N BMCHWACCEL_KEEP","iptables -w -t mangle -F BMCHWACCEL_KEEP","iptables -w -t mangle -A BMCHWACCEL_KEEP -o eth0 -j CONNMARK --set-xmark 0x10000/0x10000","iptables -w -t mangle -A BMCHWACCEL_KEEP -i eth0 -j CONNMARK --set-xmark 0x10000/0x10000","iptables -w -t mangle -D FORWARD -j BMCHWACCEL_KEEP","iptables -w -t mangle -I FORWARD -j BMCHWACCEL_KEEP","ip6tables -w -t mangle -N BMCHWACCEL_KEEP","ip6tables -w -t mangle -F BMCHWACCEL_KEEP","ip6tables -w -t mangle -A BMCHWACCEL_KEEP -o eth0 -j CONNMARK --set-xmark 0x10000/0x10000","ip6tables -w -t mangle -A BMCHWACCEL_KEEP -i eth0 -j CONNMARK --set-xmark 0x10000/0x10000","ip6tables -w -t mangle -D FORWARD -j BMCHWACCEL_KEEP","ip6tables -w -t mangle -I FORWARD -j BMCHWACCEL_KEEP","/etc/init.d/cmm stop","conntrack -U --mark 0x10000/0x10000","conntrack -U -f ipv6 --mark 0x10000/0x10000","/etc/init.d/cmm start"]}
+exit=0
+calls:
+iptables -N BMCHWACCEL_KEEP
+iptables -F BMCHWACCEL_KEEP
+iptables -A BMCHWACCEL_KEEP -o eth0 -j CONNMARK --set-xmark 0x10000/0x10000
+iptables -A BMCHWACCEL_KEEP -i eth0 -j CONNMARK --set-xmark 0x10000/0x10000
+iptables -D FORWARD -j BMCHWACCEL_KEEP
+iptables -I FORWARD -j BMCHWACCEL_KEEP
+ip6tables -N BMCHWACCEL_KEEP
+ip6tables -F BMCHWACCEL_KEEP
+ip6tables -A BMCHWACCEL_KEEP -o eth0 -j CONNMARK --set-xmark 0x10000/0x10000
+ip6tables -A BMCHWACCEL_KEEP -i eth0 -j CONNMARK --set-xmark 0x10000/0x10000
+ip6tables -D FORWARD -j BMCHWACCEL_KEEP
+ip6tables -I FORWARD -j BMCHWACCEL_KEEP
+/etc/init.d/cmm stop
+conntrack -U --mark 0x10000/0x10000
+conntrack -U -f ipv6 --mark 0x10000/0x10000
+/etc/init.d/cmm start
+logger -t bmcHwAccel Tăng tốc phần cứng keeps on the CPU: wan eth0 (bmcqos)
+kept: bmcqos wan eth0
+$ bmchwaccel status
+{"status":0,"message":"Tăng tốc phần cứng is on","state":"on","enabled":true,"reboot_required":false,"accelerated":7,"on_cpu":[{"scope":"wan","device":"eth0","reason":"bmcqos"}]}
+exit=0
+$ bmchwaccel keep bmcqos wan eth0
+{"status":0,"message":"Tăng tốc phần cứng keeps wan eth0 on the CPU for bmcqos","on_cpu":[{"scope":"wan","device":"eth0","reason":"bmcqos"}],"action":"none","commands":[]}
+exit=0
+calls:
+$ bmchwaccel refresh
+{"status":0,"message":"Tăng tốc phần cứng: what is kept on the CPU is in place","on_cpu":[{"scope":"wan","device":"eth0","reason":"bmcqos"}],"action":"install","commands":["iptables -w -t mangle -N BMCHWACCEL_KEEP","iptables -w -t mangle -F BMCHWACCEL_KEEP","iptables -w -t mangle -A BMCHWACCEL_KEEP -o eth0 -j CONNMARK --set-xmark 0x10000/0x10000","iptables -w -t mangle -A BMCHWACCEL_KEEP -i eth0 -j CONNMARK --set-xmark 0x10000/0x10000","iptables -w -t mangle -D FORWARD -j BMCHWACCEL_KEEP","iptables -w -t mangle -I FORWARD -j BMCHWACCEL_KEEP","ip6tables -w -t mangle -N BMCHWACCEL_KEEP","ip6tables -w -t mangle -F BMCHWACCEL_KEEP","ip6tables -w -t mangle -A BMCHWACCEL_KEEP -o eth0 -j CONNMARK --set-xmark 0x10000/0x10000","ip6tables -w -t mangle -A BMCHWACCEL_KEEP -i eth0 -j CONNMARK --set-xmark 0x10000/0x10000","ip6tables -w -t mangle -D FORWARD -j BMCHWACCEL_KEEP","ip6tables -w -t mangle -I FORWARD -j BMCHWACCEL_KEEP","/etc/init.d/cmm stop","conntrack -U --mark 0x10000/0x10000","conntrack -U -f ipv6 --mark 0x10000/0x10000","/etc/init.d/cmm start"]}
+exit=0
+calls:
+iptables -N BMCHWACCEL_KEEP
+iptables -F BMCHWACCEL_KEEP
+iptables -A BMCHWACCEL_KEEP -o eth0 -j CONNMARK --set-xmark 0x10000/0x10000
+iptables -A BMCHWACCEL_KEEP -i eth0 -j CONNMARK --set-xmark 0x10000/0x10000
+iptables -D FORWARD -j BMCHWACCEL_KEEP
+iptables -I FORWARD -j BMCHWACCEL_KEEP
+ip6tables -N BMCHWACCEL_KEEP
+ip6tables -F BMCHWACCEL_KEEP
+ip6tables -A BMCHWACCEL_KEEP -o eth0 -j CONNMARK --set-xmark 0x10000/0x10000
+ip6tables -A BMCHWACCEL_KEEP -i eth0 -j CONNMARK --set-xmark 0x10000/0x10000
+ip6tables -D FORWARD -j BMCHWACCEL_KEEP
+ip6tables -I FORWARD -j BMCHWACCEL_KEEP
+/etc/init.d/cmm stop
+conntrack -U --mark 0x10000/0x10000
+conntrack -U -f ipv6 --mark 0x10000/0x10000
+/etc/init.d/cmm start
+logger -t bmcHwAccel Tăng tốc phần cứng keeps on the CPU: wan eth0 (bmcqos)
+$ bmchwaccel refresh
+{"status":0,"message":"Tăng tốc phần cứng: what is kept on the CPU is in place","on_cpu":[{"scope":"wan","device":"eth0","reason":"bmcqos"}],"action":"none","commands":[]}
+exit=0
+calls:
+$ bmchwaccel disable
+{"status":0,"message":"Tăng tốc phần cứng disabled","enabled":false,"action":"stop","commands":["/etc/init.d/cmm stop"]}
+exit=0
+calls:
+/etc/init.d/cmm stop
+logger -t bmcHwAccel Tăng tốc phần cứng turned off
+$ bmchwaccel keep bmcqos wan pppoe-wan
+{"status":0,"message":"Tăng tốc phần cứng keeps wan pppoe-wan on the CPU for bmcqos","on_cpu":[{"scope":"wan","device":"pppoe-wan","reason":"bmcqos"}],"action":"install","commands":["iptables -w -t mangle -N BMCHWACCEL_KEEP","iptables -w -t mangle -F BMCHWACCEL_KEEP","iptables -w -t mangle -A BMCHWACCEL_KEEP -o pppoe-wan -j CONNMARK --set-xmark 0x10000/0x10000","iptables -w -t mangle -A BMCHWACCEL_KEEP -i pppoe-wan -j CONNMARK --set-xmark 0x10000/0x10000","iptables -w -t mangle -D FORWARD -j BMCHWACCEL_KEEP","iptables -w -t mangle -I FORWARD -j BMCHWACCEL_KEEP","ip6tables -w -t mangle -N BMCHWACCEL_KEEP","ip6tables -w -t mangle -F BMCHWACCEL_KEEP","ip6tables -w -t mangle -A BMCHWACCEL_KEEP -o pppoe-wan -j CONNMARK --set-xmark 0x10000/0x10000","ip6tables -w -t mangle -A BMCHWACCEL_KEEP -i pppoe-wan -j CONNMARK --set-xmark 0x10000/0x10000","ip6tables -w -t mangle -D FORWARD -j BMCHWACCEL_KEEP","ip6tables -w -t mangle -I FORWARD -j BMCHWACCEL_KEEP","conntrack -U --mark 0x10000/0x10000","conntrack -U -f ipv6 --mark 0x10000/0x10000"]}
+exit=0
+calls:
+iptables -N BMCHWACCEL_KEEP
+iptables -F BMCHWACCEL_KEEP
+iptables -A BMCHWACCEL_KEEP -o pppoe-wan -j CONNMARK --set-xmark 0x10000/0x10000
+iptables -A BMCHWACCEL_KEEP -i pppoe-wan -j CONNMARK --set-xmark 0x10000/0x10000
+iptables -D FORWARD -j BMCHWACCEL_KEEP
+iptables -I FORWARD -j BMCHWACCEL_KEEP
+ip6tables -N BMCHWACCEL_KEEP
+ip6tables -F BMCHWACCEL_KEEP
+ip6tables -A BMCHWACCEL_KEEP -o pppoe-wan -j CONNMARK --set-xmark 0x10000/0x10000
+ip6tables -A BMCHWACCEL_KEEP -i pppoe-wan -j CONNMARK --set-xmark 0x10000/0x10000
+ip6tables -D FORWARD -j BMCHWACCEL_KEEP
+ip6tables -I FORWARD -j BMCHWACCEL_KEEP
+conntrack -U --mark 0x10000/0x10000
+conntrack -U -f ipv6 --mark 0x10000/0x10000
+logger -t bmcHwAccel Tăng tốc phần cứng keeps on the CPU: wan pppoe-wan (bmcqos)
+$ bmchwaccel status
+{"status":0,"message":"Tăng tốc phần cứng is off","state":"off","enabled":false,"reboot_required":false,"accelerated":0,"on_cpu":[{"scope":"wan","device":"pppoe-wan","reason":"bmcqos"}]}
+exit=0
+$ bmchwaccel enable
+{"status":0,"message":"Tăng tốc phần cứng enabled","enabled":true,"action":"start","commands":["iptables -w -t mangle -N BMCHWACCEL_KEEP","iptables -w -t mangle -F BMCHWACCEL_KEEP","iptables -w -t mangle -A BMCHWACCEL_KEEP -o pppoe-wan -j CONNMARK --set-xmark 0x10000/0x10000","iptables -w -t mangle -A BMCHWACCEL_KEEP -i pppoe-wan -j CONNMARK --set-xmark 0x10000/0x10000","iptables -w -t mangle -D FORWARD -j BMCHWACCEL_KEEP","iptables -w -t mangle -I FORWARD -j BMCHWACCEL_KEEP","ip6tables -w -t mangle -N BMCHWACCEL_KEEP","ip6tables -w -t mangle -F BMCHWACCEL_KEEP","ip6tables -w -t mangle -A BMCHWACCEL_KEEP -o pppoe-wan -j CONNMARK --set-xmark 0x10000/0x10000","ip6tables -w -t mangle -A BMCHWACCEL_KEEP -i pppoe-wan -j CONNMARK --set-xmark 0x10000/0x10000","ip6tables -w -t mangle -D FORWARD -j BMCHWACCEL_KEEP","ip6tables -w -t mangle -I FORWARD -j BMCHWACCEL_KEEP","conntrack -U --mark 0x10000/0x10000","conntrack -U -f ipv6 --mark 0x10000/0x10000","/etc/init.d/cmm start"]}
+exit=0
+calls:
+iptables -N BMCHWACCEL_KEEP
+iptables -F BMCHWACCEL_KEEP
+iptables -A BMCHWACCEL_KEEP -o pppoe-wan -j CONNMARK --set-xmark 0x10000/0x10000
+iptables -A BMCHWACCEL_KEEP -i pppoe-wan -j CONNMARK --set-xmark 0x10000/0x10000
+iptables -D FORWARD -j BMCHWACCEL_KEEP
+iptables -I FORWARD -j BMCHWACCEL_KEEP
+ip6tables -N BMCHWACCEL_KEEP
+ip6tables -F BMCHWACCEL_KEEP
+ip6tables -A BMCHWACCEL_KEEP -o pppoe-wan -j CONNMARK --set-xmark 0x10000/0x10000
+ip6tables -A BMCHWACCEL_KEEP -i pppoe-wan -j CONNMARK --set-xmark 0x10000/0x10000
+ip6tables -D FORWARD -j BMCHWACCEL_KEEP
+ip6tables -I FORWARD -j BMCHWACCEL_KEEP
+conntrack -U --mark 0x10000/0x10000
+conntrack -U -f ipv6 --mark 0x10000/0x10000
+/etc/init.d/cmm start
+logger -t bmcHwAccel Tăng tốc phần cứng turned on
+$ bmchwaccel refresh
+{"status":-1,"message":"failed to install the rules of what is kept on the CPU; Tăng tốc phần cứng stays stopped","on_cpu":[{"scope":"wan","device":"pppoe-wan","reason":"bmcqos"}],"action":"install","commands":["iptables -w -t mangle -N BMCHWACCEL_KEEP","iptables -w -t mangle -F BMCHWACCEL_KEEP","iptables -w -t mangle -A BMCHWACCEL_KEEP -o pppoe-wan -j CONNMARK --set-xmark 0x10000/0x10000","iptables -w -t mangle -A BMCHWACCEL_KEEP -i pppoe-wan -j CONNMARK --set-xmark 0x10000/0x10000","iptables -w -t mangle -D FORWARD -j BMCHWACCEL_KEEP","iptables -w -t mangle -I FORWARD -j BMCHWACCEL_KEEP","ip6tables -w -t mangle -N BMCHWACCEL_KEEP","ip6tables -w -t mangle -F BMCHWACCEL_KEEP","ip6tables -w -t mangle -A BMCHWACCEL_KEEP -o pppoe-wan -j CONNMARK --set-xmark 0x10000/0x10000","ip6tables -w -t mangle -A BMCHWACCEL_KEEP -i pppoe-wan -j CONNMARK --set-xmark 0x10000/0x10000","ip6tables -w -t mangle -D FORWARD -j BMCHWACCEL_KEEP","ip6tables -w -t mangle -I FORWARD -j BMCHWACCEL_KEEP","/etc/init.d/cmm stop","conntrack -U --mark 0x10000/0x10000","conntrack -U -f ipv6 --mark 0x10000/0x10000","/etc/init.d/cmm start"]}
+exit=1
+calls:
+iptables -N BMCHWACCEL_KEEP
+iptables -F BMCHWACCEL_KEEP
+iptables -A BMCHWACCEL_KEEP -o pppoe-wan -j CONNMARK --set-xmark 0x10000/0x10000
+iptables -A BMCHWACCEL_KEEP -i pppoe-wan -j CONNMARK --set-xmark 0x10000/0x10000
+iptables -D FORWARD -j BMCHWACCEL_KEEP
+iptables -I FORWARD -j BMCHWACCEL_KEEP
+ip6tables -N BMCHWACCEL_KEEP
+ip6tables -F BMCHWACCEL_KEEP
+ip6tables -A BMCHWACCEL_KEEP -o pppoe-wan -j CONNMARK --set-xmark 0x10000/0x10000
+ip6tables -A BMCHWACCEL_KEEP -i pppoe-wan -j CONNMARK --set-xmark 0x10000/0x10000
+ip6tables -D FORWARD -j BMCHWACCEL_KEEP
+ip6tables -I FORWARD -j BMCHWACCEL_KEEP
+/etc/init.d/cmm stop
+conntrack -U --mark 0x10000/0x10000
+conntrack -U -f ipv6 --mark 0x10000/0x10000
+logger -t bmcHwAccel Tăng tốc phần cứng unavailable: its service is not running
+$ bmchwaccel status
+{"status":0,"message":"Tăng tốc phần cứng is unavailable: its service is not running","state":"unavailable","reason":"daemon","enabled":true,"reboot_required":false,"accelerated":0,"on_cpu":[{"scope":"wan","device":"pppoe-wan","reason":"bmcqos"}]}
+exit=0
+$ bmchwaccel apply
+{"status":-1,"message":"Tăng tốc phần cứng failed to start: its service is not running","reason":"daemon","action":"start","commands":["iptables -w -t mangle -N BMCHWACCEL_KEEP","iptables -w -t mangle -F BMCHWACCEL_KEEP","iptables -w -t mangle -A BMCHWACCEL_KEEP -o pppoe-wan -j CONNMARK --set-xmark 0x10000/0x10000","iptables -w -t mangle -A BMCHWACCEL_KEEP -i pppoe-wan -j CONNMARK --set-xmark 0x10000/0x10000","iptables -w -t mangle -D FORWARD -j BMCHWACCEL_KEEP","iptables -w -t mangle -I FORWARD -j BMCHWACCEL_KEEP","ip6tables -w -t mangle -N BMCHWACCEL_KEEP","ip6tables -w -t mangle -F BMCHWACCEL_KEEP","ip6tables -w -t mangle -A BMCHWACCEL_KEEP -o pppoe-wan -j CONNMARK --set-xmark 0x10000/0x10000","ip6tables -w -t mangle -A BMCHWACCEL_KEEP -i pppoe-wan -j CONNMARK --set-xmark 0x10000/0x10000","ip6tables -w -t mangle -D FORWARD -j BMCHWACCEL_KEEP","ip6tables -w -t mangle -I FORWARD -j BMCHWACCEL_KEEP","conntrack -U --mark 0x10000/0x10000","conntrack -U -f ipv6 --mark 0x10000/0x10000","/etc/init.d/cmm start"]}
+exit=1
+calls:
+iptables -N BMCHWACCEL_KEEP
+iptables -F BMCHWACCEL_KEEP
+iptables -A BMCHWACCEL_KEEP -o pppoe-wan -j CONNMARK --set-xmark 0x10000/0x10000
+iptables -A BMCHWACCEL_KEEP -i pppoe-wan -j CONNMARK --set-xmark 0x10000/0x10000
+iptables -D FORWARD -j BMCHWACCEL_KEEP
+iptables -I FORWARD -j BMCHWACCEL_KEEP
+ip6tables -N BMCHWACCEL_KEEP
+ip6tables -F BMCHWACCEL_KEEP
+ip6tables -A BMCHWACCEL_KEEP -o pppoe-wan -j CONNMARK --set-xmark 0x10000/0x10000
+ip6tables -A BMCHWACCEL_KEEP -i pppoe-wan -j CONNMARK --set-xmark 0x10000/0x10000
+ip6tables -D FORWARD -j BMCHWACCEL_KEEP
+ip6tables -I FORWARD -j BMCHWACCEL_KEEP
+conntrack -U --mark 0x10000/0x10000
+conntrack -U -f ipv6 --mark 0x10000/0x10000
+$ bmchwaccel apply
+{"status":0,"message":"Tăng tốc phần cứng started","action":"start","commands":["iptables -w -t mangle -N BMCHWACCEL_KEEP","iptables -w -t mangle -F BMCHWACCEL_KEEP","iptables -w -t mangle -A BMCHWACCEL_KEEP -o pppoe-wan -j CONNMARK --set-xmark 0x10000/0x10000","iptables -w -t mangle -A BMCHWACCEL_KEEP -i pppoe-wan -j CONNMARK --set-xmark 0x10000/0x10000","iptables -w -t mangle -D FORWARD -j BMCHWACCEL_KEEP","iptables -w -t mangle -I FORWARD -j BMCHWACCEL_KEEP","ip6tables -w -t mangle -N BMCHWACCEL_KEEP","ip6tables -w -t mangle -F BMCHWACCEL_KEEP","ip6tables -w -t mangle -A BMCHWACCEL_KEEP -o pppoe-wan -j CONNMARK --set-xmark 0x10000/0x10000","ip6tables -w -t mangle -A BMCHWACCEL_KEEP -i pppoe-wan -j CONNMARK --set-xmark 0x10000/0x10000","ip6tables -w -t mangle -D FORWARD -j BMCHWACCEL_KEEP","ip6tables -w -t mangle -I FORWARD -j BMCHWACCEL_KEEP","conntrack -U --mark 0x10000/0x10000","conntrack -U -f ipv6 --mark 0x10000/0x10000","/etc/init.d/cmm start"]}
+exit=0
+calls:
+iptables -N BMCHWACCEL_KEEP
+iptables -F BMCHWACCEL_KEEP
+iptables -A BMCHWACCEL_KEEP -o pppoe-wan -j CONNMARK --set-xmark 0x10000/0x10000
+iptables -A BMCHWACCEL_KEEP -i pppoe-wan -j CONNMARK --set-xmark 0x10000/0x10000
+iptables -D FORWARD -j BMCHWACCEL_KEEP
+iptables -I FORWARD -j BMCHWACCEL_KEEP
+ip6tables -N BMCHWACCEL_KEEP
+ip6tables -F BMCHWACCEL_KEEP
+ip6tables -A BMCHWACCEL_KEEP -o pppoe-wan -j CONNMARK --set-xmark 0x10000/0x10000
+ip6tables -A BMCHWACCEL_KEEP -i pppoe-wan -j CONNMARK --set-xmark 0x10000/0x10000
+ip6tables -D FORWARD -j BMCHWACCEL_KEEP
+ip6tables -I FORWARD -j BMCHWACCEL_KEEP
+conntrack -U --mark 0x10000/0x10000
+conntrack -U -f ipv6 --mark 0x10000/0x10000
+/etc/init.d/cmm start
+logger -t bmcHwAccel Tăng tốc phần cứng turned on
+$ bmchwaccel status
+{"status":0,"message":"Tăng tốc phần cứng is on","state":"on","enabled":true,"reboot_required":false,"accelerated":7,"on_cpu":[{"scope":"wan","device":"pppoe-wan","reason":"bmcqos"}]}
+exit=0
+$ bmchwaccel refresh
+{"status":-1,"message":"Tăng tốc phần cứng failed to stop","on_cpu":[{"scope":"wan","device":"pppoe-wan","reason":"bmcqos"}],"action":"install","commands":["iptables -w -t mangle -N BMCHWACCEL_KEEP","iptables -w -t mangle -F BMCHWACCEL_KEEP","iptables -w -t mangle -A BMCHWACCEL_KEEP -o pppoe-wan -j CONNMARK --set-xmark 0x10000/0x10000","iptables -w -t mangle -A BMCHWACCEL_KEEP -i pppoe-wan -j CONNMARK --set-xmark 0x10000/0x10000","iptables -w -t mangle -D FORWARD -j BMCHWACCEL_KEEP","iptables -w -t mangle -I FORWARD -j BMCHWACCEL_KEEP","ip6tables -w -t mangle -N BMCHWACCEL_KEEP","ip6tables -w -t mangle -F BMCHWACCEL_KEEP","ip6tables -w -t mangle -A BMCHWACCEL_KEEP -o pppoe-wan -j CONNMARK --set-xmark 0x10000/0x10000","ip6tables -w -t mangle -A BMCHWACCEL_KEEP -i pppoe-wan -j CONNMARK --set-xmark 0x10000/0x10000","ip6tables -w -t mangle -D FORWARD -j BMCHWACCEL_KEEP","ip6tables -w -t mangle -I FORWARD -j BMCHWACCEL_KEEP","/etc/init.d/cmm stop","conntrack -U --mark 0x10000/0x10000","conntrack -U -f ipv6 --mark 0x10000/0x10000","/etc/init.d/cmm start"]}
+exit=1
+calls:
+iptables -N BMCHWACCEL_KEEP
+iptables -F BMCHWACCEL_KEEP
+iptables -A BMCHWACCEL_KEEP -o pppoe-wan -j CONNMARK --set-xmark 0x10000/0x10000
+iptables -A BMCHWACCEL_KEEP -i pppoe-wan -j CONNMARK --set-xmark 0x10000/0x10000
+iptables -D FORWARD -j BMCHWACCEL_KEEP
+iptables -I FORWARD -j BMCHWACCEL_KEEP
+ip6tables -N BMCHWACCEL_KEEP
+ip6tables -F BMCHWACCEL_KEEP
+ip6tables -A BMCHWACCEL_KEEP -o pppoe-wan -j CONNMARK --set-xmark 0x10000/0x10000
+ip6tables -A BMCHWACCEL_KEEP -i pppoe-wan -j CONNMARK --set-xmark 0x10000/0x10000
+ip6tables -D FORWARD -j BMCHWACCEL_KEEP
+ip6tables -I FORWARD -j BMCHWACCEL_KEEP
+/etc/init.d/cmm stop
+$ bmchwaccel refresh
+{"status":0,"message":"Tăng tốc phần cứng: what is kept on the CPU is in place","on_cpu":[{"scope":"wan","device":"pppoe-wan","reason":"bmcqos"}],"action":"install","commands":["iptables -w -t mangle -N BMCHWACCEL_KEEP","iptables -w -t mangle -F BMCHWACCEL_KEEP","iptables -w -t mangle -A BMCHWACCEL_KEEP -o pppoe-wan -j CONNMARK --set-xmark 0x10000/0x10000","iptables -w -t mangle -A BMCHWACCEL_KEEP -i pppoe-wan -j CONNMARK --set-xmark 0x10000/0x10000","iptables -w -t mangle -D FORWARD -j BMCHWACCEL_KEEP","iptables -w -t mangle -I FORWARD -j BMCHWACCEL_KEEP","ip6tables -w -t mangle -N BMCHWACCEL_KEEP","ip6tables -w -t mangle -F BMCHWACCEL_KEEP","ip6tables -w -t mangle -A BMCHWACCEL_KEEP -o pppoe-wan -j CONNMARK --set-xmark 0x10000/0x10000","ip6tables -w -t mangle -A BMCHWACCEL_KEEP -i pppoe-wan -j CONNMARK --set-xmark 0x10000/0x10000","ip6tables -w -t mangle -D FORWARD -j BMCHWACCEL_KEEP","ip6tables -w -t mangle -I FORWARD -j BMCHWACCEL_KEEP","/etc/init.d/cmm stop","conntrack -U --mark 0x10000/0x10000","conntrack -U -f ipv6 --mark 0x10000/0x10000","/etc/init.d/cmm start"]}
+exit=0
+calls:
+iptables -N BMCHWACCEL_KEEP
+iptables -F BMCHWACCEL_KEEP
+iptables -A BMCHWACCEL_KEEP -o pppoe-wan -j CONNMARK --set-xmark 0x10000/0x10000
+iptables -A BMCHWACCEL_KEEP -i pppoe-wan -j CONNMARK --set-xmark 0x10000/0x10000
+iptables -D FORWARD -j BMCHWACCEL_KEEP
+iptables -I FORWARD -j BMCHWACCEL_KEEP
+ip6tables -N BMCHWACCEL_KEEP
+ip6tables -F BMCHWACCEL_KEEP
+ip6tables -A BMCHWACCEL_KEEP -o pppoe-wan -j CONNMARK --set-xmark 0x10000/0x10000
+ip6tables -A BMCHWACCEL_KEEP -i pppoe-wan -j CONNMARK --set-xmark 0x10000/0x10000
+ip6tables -D FORWARD -j BMCHWACCEL_KEEP
+ip6tables -I FORWARD -j BMCHWACCEL_KEEP
+/etc/init.d/cmm stop
+conntrack -U --mark 0x10000/0x10000
+conntrack -U -f ipv6 --mark 0x10000/0x10000
+/etc/init.d/cmm start
+logger -t bmcHwAccel Tăng tốc phần cứng keeps on the CPU: wan pppoe-wan (bmcqos)
+$ bmchwaccel refresh
+{"status":-1,"message":"Tăng tốc phần cứng failed to start again: its service is not running","on_cpu":[{"scope":
+exit=1
+calls:
+iptables -N BMCHWACCEL_KEEP
+iptables -F BMCHWACCEL_KEEP
+iptables -A BMCHWACCEL_KEEP -o pppoe-wan -j CONNMARK --set-xmark 0x10000/0x10000
+iptables -A BMCHWACCEL_KEEP -i pppoe-wan -j CONNMARK --set-xmark 0x10000/0x10000
+iptables -D FORWARD -j BMCHWACCEL_KEEP
+iptables -I FORWARD -j BMCHWACCEL_KEEP
+ip6tables -N BMCHWACCEL_KEEP
+ip6tables -F BMCHWACCEL_KEEP
+ip6tables -A BMCHWACCEL_KEEP -o pppoe-wan -j CONNMARK --set-xmark 0x10000/0x10000
+ip6tables -A BMCHWACCEL_KEEP -i pppoe-wan -j CONNMARK --set-xmark 0x10000/0x10000
+ip6tables -D FORWARD -j BMCHWACCEL_KEEP
+ip6tables -I FORWARD -j BMCHWACCEL_KEEP
+/etc/init.d/cmm stop
+conntrack -U --mark 0x10000/0x10000
+conntrack -U -f ipv6 --mark 0x10000/0x10000
+logger -t bmcHwAccel Tăng tốc phần cứng unavailable: its service is not running
+$ bmchwaccel status
+{"status":0,"message":"Tăng tốc phần cứng is unavailable: its kernel modules did not load","state":"unavailable","reason":"module","enabled":true,"reboot_required":false,"accelerated":0,"on_cpu":[{"scope":"wan","device":"pppoe-wan","reason":"bmcqos"}]}
+exit=0
+$ bmchwaccel refresh
+{"status":0,"message":"Tăng tốc phần cứng: what is kept on the CPU is in place","on_cpu":[{"scope":"wan","device"
+exit=0
+calls:
+iptables -N BMCHWACCEL_KEEP
+iptables -F BMCHWACCEL_KEEP
+iptables -A BMCHWACCEL_KEEP -o pppoe-wan -j CONNMARK --set-xmark 0x10000/0x10000
+iptables -A BMCHWACCEL_KEEP -i pppoe-wan -j CONNMARK --set-xmark 0x10000/0x10000
+iptables -D FORWARD -j BMCHWACCEL_KEEP
+iptables -I FORWARD -j BMCHWACCEL_KEEP
+ip6tables -N BMCHWACCEL_KEEP
+ip6tables -F BMCHWACCEL_KEEP
+ip6tables -A BMCHWACCEL_KEEP -o pppoe-wan -j CONNMARK --set-xmark 0x10000/0x10000
+ip6tables -A BMCHWACCEL_KEEP -i pppoe-wan -j CONNMARK --set-xmark 0x10000/0x10000
+ip6tables -D FORWARD -j BMCHWACCEL_KEEP
+ip6tables -I FORWARD -j BMCHWACCEL_KEEP
+conntrack -U --mark 0x10000/0x10000
+conntrack -U -f ipv6 --mark 0x10000/0x10000
+/etc/init.d/cmm start
+logger -t bmcHwAccel Tăng tốc phần cứng turned on
+logger -t bmcHwAccel Tăng tốc phần cứng keeps on the CPU: wan pppoe-wan (bmcqos)
+$ bmchwaccel status
+{"status":0,"message":"Tăng tốc phần cứng is on","state":"on","enabled":true,"reboot_required":false,"accelerated":7,"on_cpu":[{"scope":"wan","device":"pppoe-wan","reason":"bmcqos"}]}
+exit=0
+$ bmchwaccel release bmcqos
+{"status":0,"message":"Tăng tốc phần cứng keeps nothing on the CPU for bmcqos","on_cpu":[],"action":"remove","commands":["iptables -w -t mangle -D FORWARD -j BMCHWACCEL_KEEP","iptables -w -t mangle -F BMCHWACCEL_KEEP","iptables -w -t mangle -X BMCHWACCEL_KEEP","ip6tables -w -t mangle -D FORWARD -j BMCHWACCEL_KEEP","ip6tables -w -t mangle -F BMCHWACCEL_KEEP","ip6tables -w -t mangle -X BMCHWACCEL_KEEP","/etc/init.d/cmm stop","conntrack -U --mark 0/0x10000","conntrack -U -f ipv6 --mark 0/0x10000","/etc/init.d/cmm start"]}
+exit=0
+calls:
+iptables -D FORWARD -j BMCHWACCEL_KEEP
+iptables -F BMCHWACCEL_KEEP
+iptables -X BMCHWACCEL_KEEP
+ip6tables -D FORWARD -j BMCHWACCEL_KEEP
+ip6tables -F BMCHWACCEL_KEEP
+ip6tables -X BMCHWACCEL_KEEP
+/etc/init.d/cmm stop
+conntrack -U --mark 0/0x10000
+conntrack -U -f ipv6 --mark 0/0x10000
+/etc/init.d/cmm start
+logger -t bmcHwAccel Tăng tốc phần cứng keeps on the CPU: nothing
+$ bmchwaccel status
+{"status":0,"message":"Tăng tốc phần cứng is on","state":"on","enabled":true,"reboot_required":false,"accelerated":7,"on_cpu":[]}
+exit=0
+$ bmchwaccel release bmcqos
+{"status":0,"message":"Tăng tốc phần cứng keeps nothing on the CPU for bmcqos","on_cpu":[],"action":"none","commands":[]}
+exit=0
+calls:

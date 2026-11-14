@@ -1,0 +1,2 @@
+{"status":-1,"message":"garbage timer must be an integer from 5 to 32767","field":"garbage_timer"}
+exit=1

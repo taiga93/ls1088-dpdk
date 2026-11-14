@@ -1,0 +1,2 @@
+{"status":0,"message":"Tăng tốc phần cứng keeps wan eth0 on the CPU for bmcqos","on_cpu":[{"scope":"wan","device":"eth0","reason":"bmcqos"}],"action":"none","commands":[]}
+exit=0

@@ -1,0 +1,2 @@
+{"status":0,"message":"BGP configuration","enabled":true,"local_as":"65001","redistribute_static":false,"redistribute_connected":false,"redistribute_ospf":false,"redistribute_rip":false,"networks":["192.168.1.0/24","10.0.12.0/30"],"peers":[{"address":"203.0.113.1","remote_as":"64500","description":"ISP-A uplink","enabled":true,"password_set":true,"receive":"all","max_prefix":"","keepalive":"","hold":""}],"advanced_lines":["router bgp 65001"," bgp log-neighbor-changes"],"warnings":[]}
+exit=0

@@ -1,0 +1,14 @@
+{"status":0,"message":"Chính sách WAN c_first saved","uci_batch":"set mwan3.c_first=policy
+set mwan3.c_first.last_resort='default'
+set mwan3.wan3_m1=member
+set mwan3.wan3_m1.interface='wan3'
+set mwan3.wan3_m1.metric='1'
+set mwan3.wan3_m1.weight='1'
+add_list mwan3.c_first.use_member='wan3_m1'
+add_list mwan3.c_first.use_member='wan2_m2'
+set mwan3.wan_m3=member
+set mwan3.wan_m3.interface='wan'
+set mwan3.wan_m3.metric='3'
+set mwan3.wan_m3.weight='1'
+add_list mwan3.c_first.use_member='wan_m3'","commands":[]}
+exit=0

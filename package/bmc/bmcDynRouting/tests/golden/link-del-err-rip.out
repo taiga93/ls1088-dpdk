@@ -1,0 +1,2 @@
+{"status":-1,"message":"cannot delete Link định tuyến on port eth5: it is still an Interface RIP, remove it from RIP first"}
+exit=1

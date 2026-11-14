@@ -1,0 +1,5 @@
+#!/bin/sh
+
+# CLI tự quyết định: chỉ apply lại khi $INTERFACE là Interface OSPF (OSPF bật) hoặc Interface RIP (RIP bật).
+[ "$ACTION" = ifup ] || [ "$ACTION" = ifupdate ] || exit 0
+exec /usr/sbin/bmcdynrouting hotplug "$INTERFACE" >/dev/null 2>&1

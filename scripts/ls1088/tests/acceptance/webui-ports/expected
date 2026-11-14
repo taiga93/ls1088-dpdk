@@ -1,0 +1,33 @@
+== board root@192.168.1.1 ==
+Linux bmc 6.12.94 #0 SMP PREEMPT Mon Oct 19 12:00:00 2026 aarch64 GNU/Linux
+[    4.700182] fsl_mc_bus 80c000000.fsl-mc: MC firmware version: 10.39.0
+Mon Oct 19 12:01:05 2026 user.notice phy_init: dpmac.1: eth0 (dpni.0)
+Mon Oct 19 12:01:26 2026 user.notice phy_init: dpmac.9: eth8 (dpni.8)
+eth0 dpni.0 00:04:9f:06:12:03 speed 10000 changes 1
+eth1 dpni.1 00:04:9f:06:12:04 speed 10000 changes 1
+eth8 dpni.8 00:04:9f:06:12:0b speed -1 changes 0
+br-lan           UP             00:04:9f:06:12:04 <BROADCAST,MULTICAST,UP,LOWER_UP>
+eth0             UP             00:04:9f:06:12:03 <BROADCAST,MULTICAST,UP,LOWER_UP>
+eth1             UP             00:04:9f:06:12:04 <BROADCAST,MULTICAST,UP,LOWER_UP>
+== results ==
+net            wan eth0 has no address from DHCP; using 192.168.2.1/24 until the script ends
+webui-ports    PASS  719 Mbps, 720 Mbps in the 10 s window, 10.85 s between the reads, eth1 link active speed 10000, eth0 link active speed 10000, eth1 rx_bytes +945000000, eth0 tx_bytes +950000000; the copper side of eth0 is what PC2 shows
+webui-ports-back FAIL  719 Mbps, 720 Mbps in the 10 s window, 10.85 s between the reads, eth1 link inactive speed unknown, eth0 link active speed 10000, eth0 rx_bytes +30000000, eth1 tx_bytes +948000000; the copper side of eth0 is what PC2 shows
+               - the web UI: eth1 link inactive while iperf3 runs
+               - the web UI: eth1 speed unknown
+               - eth0 rx_bytes grew by 30000000 bytes in 10.85 s, need at least 830025000 (85% of the 976500000 bytes iperf3 carried)
+               | {"status":"0","message":{"sessions":{"total":12,"tcp":6,"udp":5,"other":1,"internet":8,"top_source_ips":[{"ip":"192.168.5.10","count":9}]},"dns":[{"domain":"example.com","count":2}],"traffic":{"rx_bytes":6216000000,"tx_bytes":3122000000},"interfaces":[{"interface":"br-lan","rx_bytes":1200000,"tx_bytes":3400000,"rx_packets":9000,"tx_packets":12000,"rx_errors":0,"tx_errors":0,"rx_dropped":0,"tx_dropped":0},{"interface":"eth0","rx_bytes":3071000000,"tx_bytes":3050000000,"rx_packets":800000,"tx_packets":1400000,"rx_errors":0,"tx_errors":0,"rx_dropped":0,"tx_dropped":0},{"interface":"eth1","rx_bytes":3145000000,"tx_bytes":72000000,"rx_packets":1450000,"tx_packets":810000,"rx_errors":0,"tx_errors":0,"rx_dropped":0,"tx_dropped":0},{"interface":"eth1.30","rx_bytes":0,"tx_bytes":0,"rx_packets":0,"tx_packets":0,"rx_errors":0,"tx_errors":0,"rx_dropped":0,"tx_dropped":0}]}}
+               | {"status":"0","message":{"sessions":{"total":12,"tcp":6,"udp":5,"other":1,"internet":8,"top_source_ips":[{"ip":"192.168.5.10","count":9}]},"dns":[{"domain":"example.com","count":2}],"traffic":{"rx_bytes":6266000000,"tx_bytes":4090000000},"interfaces":[{"interface":"br-lan","rx_bytes":1200000,"tx_bytes":3400000,"rx_packets":9000,"tx_packets":12000,"rx_errors":0,"tx_errors":0,"rx_dropped":0,"tx_dropped":0},{"interface":"eth0","rx_bytes":3101000000,"tx_bytes":3070000000,"rx_packets":800000,"tx_packets":1400000,"rx_errors":0,"tx_errors":0,"rx_dropped":0,"tx_dropped":0},{"interface":"eth1","rx_bytes":3165000000,"tx_bytes":1020000000,"rx_packets":1450000,"tx_packets":810000,"rx_errors":0,"tx_errors":0,"rx_dropped":0,"tx_dropped":0},{"interface":"eth1.30","rx_bytes":0,"tx_bytes":0,"rx_packets":0,"tx_packets":0,"rx_errors":0,"tx_errors":0,"rx_dropped":0,"tx_dropped":0}]}}
+               | {"status":"0","message":[{"interface":"eth0","status":"active","speed":"10000Mb/s"},{"interface":"eth1","status":"inactive","speed":"unknown"},{"interface":"eth2","status":"inactive","speed":"unknown"}]}
+RESULT: FAIL
+exit=1
+-- calls --
+ssh info
+ssh net plain
+ssh flush
+ssh webports webui-ports
+ssh flush
+ssh webports webui-ports-back
+ssh unnet
+iperf3 webui-ports
+iperf3 webui-ports-back

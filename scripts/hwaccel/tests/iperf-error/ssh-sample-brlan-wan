@@ -1,0 +1,63 @@
+@ports eth0 eth1 eth2 eth4 eth5
+@before eth0
+     rx packets [CPU 0]: 1
+     rx packets [CPU 1]: 0
+     rx packets [CPU 2]: 0
+     rx packets [CPU 3]: 0
+     rx packets [TOTAL]: 1
+@before eth1
+     rx packets [CPU 0]: 1
+     rx packets [CPU 1]: 0
+     rx packets [CPU 2]: 0
+     rx packets [CPU 3]: 0
+     rx packets [TOTAL]: 1
+@before eth2
+     rx packets [CPU 0]: 1
+     rx packets [CPU 1]: 0
+     rx packets [CPU 2]: 0
+     rx packets [CPU 3]: 0
+     rx packets [TOTAL]: 1
+@before eth4
+     rx packets [CPU 0]: 1
+     rx packets [CPU 1]: 0
+     rx packets [CPU 2]: 0
+     rx packets [CPU 3]: 0
+     rx packets [TOTAL]: 1
+@before eth5
+     rx packets [CPU 0]: 1
+     rx packets [CPU 1]: 0
+     rx packets [CPU 2]: 0
+     rx packets [CPU 3]: 0
+     rx packets [TOTAL]: 1
+@after eth0
+     rx packets [CPU 0]: 1
+     rx packets [CPU 1]: 0
+     rx packets [CPU 2]: 0
+     rx packets [CPU 3]: 0
+     rx packets [TOTAL]: 1
+@after eth1
+     rx packets [CPU 0]: 1
+     rx packets [CPU 1]: 0
+     rx packets [CPU 2]: 0
+     rx packets [CPU 3]: 0
+     rx packets [TOTAL]: 1
+@after eth2
+     rx packets [CPU 0]: 1
+     rx packets [CPU 1]: 0
+     rx packets [CPU 2]: 0
+     rx packets [CPU 3]: 0
+     rx packets [TOTAL]: 1
+@after eth4
+     rx packets [CPU 0]: 1
+     rx packets [CPU 1]: 0
+     rx packets [CPU 2]: 0
+     rx packets [CPU 3]: 0
+     rx packets [TOTAL]: 1
+@after eth5
+     rx packets [CPU 0]: 1
+     rx packets [CPU 1]: 0
+     rx packets [CPU 2]: 0
+     rx packets [CPU 3]: 0
+     rx packets [TOTAL]: 1
+status={"status":0,"message":"Tăng tốc phần cứng is off","state":"off","enabled":true,"accelerated":0,"on_cpu":[]}
+@conntrack

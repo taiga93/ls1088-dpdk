@@ -1,0 +1,42 @@
+{
+	"start":	{
+		"version":	"iperf 3.16",
+		"test_start":	{
+			"protocol":	"TCP",
+			"num_streams":	4,
+			"duration":	30
+		}
+	},
+	"intervals":	[{
+			"sum":	{
+				"start":	0,
+				"end":	8.000102,
+				"bits_per_second":	700345678.1
+			}
+		}, {
+			"sum":	{
+				"start":	8.000102,
+				"end":	18.000102,
+				"bits_per_second":	720123456.5
+			}
+		}],
+	"end":	{
+		"sum_sent":	{
+			"start":	0,
+			"end":	30.000123,
+			"seconds":	30.000123,
+			"bytes":	2700000000,
+			"bits_per_second":	725000000,
+			"retransmits":	3,
+			"sender":	true
+		},
+		"sum_received":	{
+			"start":	0,
+			"end":	30.004211,
+			"seconds":	30.000123,
+			"bytes":	2697000000,
+			"bits_per_second":	719000000.25,
+			"sender":	true
+		}
+	}
+}

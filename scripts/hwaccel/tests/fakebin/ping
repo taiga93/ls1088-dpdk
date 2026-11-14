@@ -1,0 +1,13 @@
+#!/bin/sh
+# Fake ping for acceptance-test.sh: answers from $FIXTURE/ping-<host>, nothing
+# when there is no such file. A file named after the last call the fake ssh
+# logged, ping-<host>@<that call, spaces as "-">, comes first: what a host
+# answers can depend on what the board was told before.
+for a; do host=$a; done
+last=$(tail -1 "$FIXTURE_LOG" 2>/dev/null | sed -n 's/^ssh //p' | tr ' ' -)
+for f in "$FIXTURE/ping-$host@$last" "$FIXTURE/ping-$host"; do
+	[ -f "$f" ] || continue
+	cat "$f"
+	break
+done
+exit 0

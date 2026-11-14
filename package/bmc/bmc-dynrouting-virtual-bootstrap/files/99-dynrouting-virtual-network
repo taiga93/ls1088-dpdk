@@ -1,0 +1,132 @@
+#!/bin/sh
+
+# Cụm ảo DynRouting (scripts/dynrouting-cluster): every QEMU NIC gets a stable MAC, and eth0's MAC tells this
+# guest which machine of the topology it is. Runs after 99-bmcDynRouting (uci-defaults run in name order).
+#
+#   r1, r2, r3   BMC routers, configured later by the harness through the bmcdynrouting CLI only
+#   ispa, ispb   plain FRR eBGP speakers (AS 64500, AS 64501) on the WAN of r1 and r2
+#   legacy       a plain FRR ripd router on r3's legacy port
+mac=$(cat /sys/class/net/eth0/address 2>/dev/null)
+
+# serial_exec.py logs in with this password; the guests are only reachable through their serial consoles.
+# Only set on a guest of the topology, never on a machine whose MAC does not match.
+set_test_password() {
+	(printf '%s\n' 'VirtualQemuRoot1!'; sleep 1; printf '%s\n' 'VirtualQemuRoot1!') | passwd root >/dev/null 2>&1
+}
+
+reset_network() {
+	uci -q delete network.lan
+	uci -q delete network.wan
+	uci -q delete network.wan6
+	while uci -q delete 'network.@device[0]'; do :; done
+}
+
+# A BMC router as shipped: every port but the WAN in br-lan, the stock lan/wan firewall zones. The ports that
+# become Link định tuyến are moved out of br-lan by `bmcdynrouting link add`, as an operator would.
+# $1 LAN address, $2 WAN device ('' = no WAN), $3 WAN address/prefix, $4... br-lan ports.
+configure_bmc_router() {
+	lan_ip=$1 wan_device=$2 wan_cidr=$3
+	shift 3
+	reset_network
+	uci set network.br_lan='device'
+	uci set network.br_lan.name='br-lan'
+	uci set network.br_lan.type='bridge'
+	for port in "$@"; do uci add_list network.br_lan.ports="$port"; done
+	uci set network.lan='interface'
+	uci set network.lan.device='br-lan'
+	uci set network.lan.proto='static'
+	uci set network.lan.ipaddr="$lan_ip/24"
+	if [ -n "$wan_device" ]; then
+		uci set network.wan='interface'
+		uci set network.wan.device="$wan_device"
+		uci set network.wan.proto='static'
+		uci set network.wan.ipaddr="$wan_cidr"
+	fi
+	uci commit network
+}
+
+# ISP and legacy router: no firewall, no bmcDynRouting; FRR runs the static configuration below.
+# $1 address/prefix of eth0, $2 FRR daemon besides zebra; frr.conf comes on stdin.
+configure_plain_frr() {
+	reset_network
+	uci set network.wan='interface'
+	uci set network.wan.device='eth0'
+	uci set network.wan.proto='static'
+	uci set network.wan.ipaddr="$1"
+	uci commit network
+	while uci -q delete 'firewall.@zone[0]'; do :; done
+	while uci -q delete 'firewall.@forwarding[0]'; do :; done
+	while uci -q delete 'firewall.@rule[0]'; do :; done
+	uci set 'firewall.@defaults[0].input=ACCEPT'
+	uci set 'firewall.@defaults[0].forward=ACCEPT'
+	uci commit firewall
+	/etc/init.d/bmcDynRouting disable
+	rm -f /etc/hotplug.d/iface/90-bmcDynRouting
+	cat > /etc/frr/frr.conf
+	printf 'zebra=yes\n%s=yes\nwatchfrr=yes\n' "$2" > /etc/frr/daemons
+	/etc/init.d/frr enable
+}
+
+case "$mac" in
+	02:44:52:00:0[1-6]:00) set_test_password ;;
+esac
+
+case "$mac" in
+	02:44:52:00:01:00)
+		configure_bmc_router 192.168.1.1 eth1 203.0.113.2/24 eth0 eth2 eth3
+		;;
+	02:44:52:00:02:00)
+		configure_bmc_router 192.168.2.1 eth1 198.51.100.2/24 eth0 eth2 eth3
+		;;
+	02:44:52:00:03:00)
+		configure_bmc_router 192.168.3.1 '' '' eth0 eth1 eth2 eth3
+		;;
+	02:44:52:00:04:00)
+		configure_plain_frr 203.0.113.1/24 bgpd <<'EOF'
+hostname ispa
+router bgp 64500
+ bgp router-id 203.0.113.1
+ no bgp ebgp-requires-policy
+ no bgp network import-check
+ neighbor 203.0.113.2 remote-as 65001
+ address-family ipv4 unicast
+  network 100.64.1.0/24
+  neighbor 203.0.113.2 default-originate
+ exit-address-family
+exit
+EOF
+		;;
+	02:44:52:00:05:00)
+		configure_plain_frr 198.51.100.1/24 bgpd <<'EOF'
+hostname ispb
+router bgp 64501
+ bgp router-id 198.51.100.1
+ no bgp ebgp-requires-policy
+ no bgp network import-check
+ neighbor 198.51.100.2 remote-as 65001
+ address-family ipv4 unicast
+  network 100.64.2.0/24
+  neighbor 198.51.100.2 default-originate
+ exit-address-family
+exit
+EOF
+		;;
+	02:44:52:00:06:00)
+		configure_plain_frr 192.168.50.254/24 ripd <<'EOF'
+hostname legacy
+router rip
+ version 2
+ network eth0
+ network eth1
+ passive-interface eth1
+exit
+EOF
+		# The customer LAN behind the legacy router.
+		uci set network.lan='interface'
+		uci set network.lan.device='eth1'
+		uci set network.lan.proto='static'
+		uci set network.lan.ipaddr='192.168.60.1/24'
+		uci commit network
+		;;
+esac
+exit 0

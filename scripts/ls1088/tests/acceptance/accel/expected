@@ -1,0 +1,43 @@
+== board root@192.168.1.1 ==
+Linux bmc 6.12.94 #0 SMP PREEMPT Mon Oct 19 12:00:00 2026 aarch64 GNU/Linux
+[    4.700182] fsl_mc_bus 80c000000.fsl-mc: MC firmware version: 10.39.0
+Mon Oct 19 12:01:05 2026 user.notice phy_init: dpmac.1: eth0 (dpni.0)
+Mon Oct 19 12:01:26 2026 user.notice phy_init: dpmac.9: eth8 (dpni.8)
+eth0 dpni.0 00:04:9f:06:12:03 speed 10000 changes 1
+eth1 dpni.1 00:04:9f:06:12:04 speed 10000 changes 1
+eth8 dpni.8 00:04:9f:06:12:0b speed -1 changes 0
+br-lan           UP             00:04:9f:06:12:04 <BROADCAST,MULTICAST,UP,LOWER_UP>
+eth0             UP             00:04:9f:06:12:03 <BROADCAST,MULTICAST,UP,LOWER_UP>
+eth1             UP             00:04:9f:06:12:04 <BROADCAST,MULTICAST,UP,LOWER_UP>
+== results ==
+net            wan eth0 has no address from DHCP; using 192.168.2.1/24 until the script ends
+accel          PASS  719 Mbps (102 % of 704 Mbps in the kernel layout); in 10 s: kernel eth0 +5, kernel eth1 +7, engine eth1 +960000; bmchwaccel status: on, 4 accelerated
+accel-back     FAIL  719 Mbps (121 % of 592 Mbps in the kernel layout); in 10 s: kernel eth0 +4, kernel eth1 +1500, engine eth0 +750000; bmchwaccel status: on, 4 accelerated
+               - 1500 packets of eth1 went through the kernel in 10 s, need fewer than 1000
+               | ipv4     2 tcp      6 7438 ESTABLISHED src=192.168.5.10 dst=192.168.2.10 sport=53122 dport=5201 [ASSURED] mark=0 zone=0 use=2
+keep-mark      PASS  marked: out of the engine after 40 ms, kernel eth1 +690000 in 10 s; cleared: back after 30 ms, in 10 s: kernel eth0 +4, kernel eth1 +7, engine eth1 +900000; bmchwaccel status: on, 4 accelerated; iperf3 719 Mbps
+daemon-kill    PASS  daemon 100 killed: the engine let go of everything after 10 ms, unavailable/daemon, kernel eth1 +320000 in 10 s; daemon 200 again, connections back after 0 s; iperf3 719 Mbps, 0 s under 1 Mbps
+RESULT: FAIL
+exit=1
+-- calls --
+ssh info
+ssh net plain
+ssh flush
+ssh accelsample accel
+ssh flush
+ssh accelsample accel-back
+ssh flush
+ssh markwatch mark
+ssh accelsample mark-kept
+ssh markwatch clear
+ssh accelsample mark-back
+ssh flush
+ssh daemonkill before
+ssh daemonkill kill
+ssh accelsample dk-kernel
+ssh daemonkill after
+ssh unnet
+iperf3 accel
+iperf3 accel-back
+iperf3 keep-mark
+iperf3 daemon-kill

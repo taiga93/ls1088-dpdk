@@ -1,0 +1,68 @@
+@ports eth0 eth1 eth2 eth4 eth5
+@before eth0
+     rx packets [CPU 0]: 3752
+     rx packets [CPU 1]: 0
+     rx packets [CPU 2]: 0
+     rx packets [CPU 3]: 0
+     rx packets [TOTAL]: 3752
+@before eth1
+     rx packets [CPU 0]: 2100
+     rx packets [CPU 1]: 0
+     rx packets [CPU 2]: 0
+     rx packets [CPU 3]: 0
+     rx packets [TOTAL]: 2100
+@before eth2
+     rx packets [CPU 0]: 10
+     rx packets [CPU 1]: 0
+     rx packets [CPU 2]: 0
+     rx packets [CPU 3]: 0
+     rx packets [TOTAL]: 10
+@before eth4
+     rx packets [CPU 0]: 0
+     rx packets [CPU 1]: 0
+     rx packets [CPU 2]: 0
+     rx packets [CPU 3]: 0
+     rx packets [TOTAL]: 0
+@before eth5
+     rx packets [CPU 0]: 0
+     rx packets [CPU 1]: 0
+     rx packets [CPU 2]: 0
+     rx packets [CPU 3]: 0
+     rx packets [TOTAL]: 0
+@after eth0
+     rx packets [CPU 0]: 3819
+     rx packets [CPU 1]: 0
+     rx packets [CPU 2]: 0
+     rx packets [CPU 3]: 0
+     rx packets [TOTAL]: 3819
+@after eth1
+     rx packets [CPU 0]: 2110
+     rx packets [CPU 1]: 0
+     rx packets [CPU 2]: 0
+     rx packets [CPU 3]: 0
+     rx packets [TOTAL]: 2110
+@after eth2
+     rx packets [CPU 0]: 10
+     rx packets [CPU 1]: 0
+     rx packets [CPU 2]: 0
+     rx packets [CPU 3]: 0
+     rx packets [TOTAL]: 10
+@after eth4
+     rx packets [CPU 0]: 0
+     rx packets [CPU 1]: 0
+     rx packets [CPU 2]: 0
+     rx packets [CPU 3]: 0
+     rx packets [TOTAL]: 0
+@after eth5
+     rx packets [CPU 0]: 0
+     rx packets [CPU 1]: 0
+     rx packets [CPU 2]: 0
+     rx packets [CPU 3]: 0
+     rx packets [TOTAL]: 0
+status={"status":0,"message":"Tăng tốc phần cứng is on","state":"on","enabled":true,"accelerated":12,"on_cpu":[]}
+@conntrack
+ipv4     2 tcp      6 src=192.168.1.10 dst=192.168.2.10 sport=50011 dport=5201 [PERMANENT] packets=3 bytes=164 src=192.168.2.10 dst=192.168.2.1 sport=5201 dport=50011 packets=1 bytes=60 [ASSURED] mark=0 zone=0 use=3
+ipv4     2 tcp      6 src=192.168.1.10 dst=192.168.2.10 sport=50012 dport=5201 [PERMANENT] packets=3 bytes=164 src=192.168.2.10 dst=192.168.2.1 sport=5201 dport=50012 packets=1 bytes=60 [ASSURED] mark=0 zone=0 use=3
+ipv4     2 tcp      6 src=192.168.1.10 dst=192.168.2.10 sport=50013 dport=5201 [PERMANENT] packets=3 bytes=164 src=192.168.2.10 dst=192.168.2.1 sport=5201 dport=50013 packets=1 bytes=60 [ASSURED] mark=0 zone=0 use=3
+ipv4     2 tcp      6 src=192.168.1.10 dst=192.168.2.10 sport=50014 dport=5201 [PERMANENT] packets=3 bytes=164 src=192.168.2.10 dst=192.168.2.1 sport=5201 dport=50014 packets=1 bytes=60 [ASSURED] mark=0 zone=0 use=3
+ipv4     2 tcp      6 src=192.168.1.10 dst=192.168.2.10 sport=50015 dport=5201 [PERMANENT] packets=3 bytes=164 src=192.168.2.10 dst=192.168.2.1 sport=5201 dport=50015 packets=1 bytes=60 [ASSURED] mark=0 zone=0 use=3

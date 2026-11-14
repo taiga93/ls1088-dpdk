@@ -1,0 +1,2 @@
+{"status":-1,"message":"cannot delete Link định tuyến on port eth7: it is still an Interface OSPF, remove it from OSPF first"}
+exit=1

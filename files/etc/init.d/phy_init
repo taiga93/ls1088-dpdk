@@ -1,0 +1,145 @@
+#!/bin/sh /etc/rc.common
+# The network ports of a DPAA2 board: one DPNI for each MAC (dpmac) in the root
+# container dprc.1, made at boot and bound to the kernel driver dpaa2-eth. On
+# the LS1088A-RDB dpmac.1 becomes eth0 (wan), dpmac.2 to dpmac.8 eth1 to eth7
+# (br-lan) and dpmac.9 eth8 (not used); dpmac.10 gets no DPNI. The DPL of the
+# board leaves a DPNI of its own, dpni.0, which goes first. On a board without
+# DPAA2 nothing is done.
+#
+# What the MC of this board allows (measured on the board for the hardware
+# acceleration of the LS1088):
+#   - all DPNIs share one memory for the keys of flow steering; nine ports with
+#     the default of 64 entries nearly fill it, so a port gets one entry. RSS
+#     spreads the traffic the same with it.
+#   - a quick series of changes in dprc.1 has made the kernel drop a live port
+#     while it rescanned, so the ports are made one at a time, with a pause
+#     after each.
+#   - every ls-addni takes 8 of the about 82 DPCONs of the chip. The ports are
+#     made once a boot, and a MAC that has a DPNI already is left alone.
+#
+# Two layouts (ADR-0013), chosen by Tăng tốc phần cứng when its package for
+# DPAA2 (bmcHwAccelDpdk) is installed, and decided for the whole boot:
+#   kernel  the above, every MAC a DPNI of dpaa2-eth
+#   engine  the MACs of the engine (dpmac.1, dpmac.2) belong to the container
+#           of bmchwaccel-engine, made first; the kernel's port of each is a
+#           DPNI linked to the engine's DPNI of that MAC (DPNI to DPNI), with
+#           the MAC address of the MAC, so that it has the name and address
+#           it has in the kernel layout. When the container cannot be made,
+#           the MACs that are still free become the kernel's ports, a MAC
+#           the container took gets a port without a link (so that the names
+#           after it, wan on eth0 first, stay), and the next boots are in the
+#           kernel layout.
+# Nothing is made in dprc.1 after this script.
+
+START=90
+USE_PROCD=1
+
+DONE=/var/run/phy_init.done
+UNBIND=/sys/bus/fsl-mc/drivers/fsl_dpaa2_eth/unbind
+ENGINE=/usr/lib/bmcHwAccelDpdk
+# Seconds after each change in dprc.1.
+PAUSE=2
+
+log() { logger -t phy_init "$*"; }
+
+# The MACs that get a port, in the order of the port names: the first is eth0.
+board_macs() {
+	case "$(board_name)" in
+	fsl,ls1088a-rdb|fsl,ls1088a-rdb-sdboot) echo "1 2 3 4 5 6 7 8 9" ;;
+	esac
+}
+
+# The object at the other end of a MAC ("dpni.3"), none when it is free.
+endpoint_of() {
+	restool dpmac info "$1" 2>/dev/null | sed -n 's/^endpoint: \(dp[a-z]*\.[0-9]*\).*/\1/p'
+}
+
+# The kernel's port of engine MAC $1: a DPNI not linked to the MAC, with its
+# address, linked to the engine's side $2; to nothing without $2, so that the
+# port keeps its name when the engine has no side for the MAC.
+kernel_side() {
+	local mac=$1 side=$2 addr out z
+
+	addr=$(restool dpmac info $mac 2>/dev/null | sed -n 's/^MAC address: //p')
+	case "$addr" in ''|00:00:00:00:00:00) addr= ;; esac
+	out=$(ls-addni -n --fs-entries=1 ${addr:+--mac-addr=$addr} 2>&1) || { echo "$out"; return 1; }
+	[ -n "$side" ] || { echo "$out"; return 0; }
+	z=$(echo "$out" | sed -n 's/^Created interface: [^ ]* (object:\([^,]*\),.*/\1/p')
+	[ -n "$z" ] || { echo "$out"; return 1; }
+	restool dprc connect dprc.1 --endpoint1=$z --endpoint2=$side >/dev/null 2>&1 ||
+		{ echo "$z could not be linked to $side"; return 1; }
+	echo "$out" | sed "s/endpoint: )/endpoint: $side)/"
+}
+
+start_service() {
+	local macs=$(board_macs) n=0 mac out peer port layout=kernel engine_macs= failed_macs= side held made
+
+	[ -n "$macs" ] || return 0
+	[ ! -e $DONE ] || return 0
+	touch $DONE
+	echo "Init PHY Ether Ports..."
+	[ ! -x $ENGINE/layout ] || layout=$($ENGINE/layout)
+
+	if restool dpni info dpni.0 >/dev/null 2>&1; then
+		{ echo dpni.0 > $UNBIND; } 2>/dev/null
+		restool dpni destroy dpni.0 >/dev/null 2>&1 || log "dpni.0 of the DPL could not be destroyed"
+		sleep $PAUSE
+	fi
+
+	if [ "$layout" = engine ]; then
+		engine_macs=$($ENGINE/layout ports)
+		out=$($ENGINE/container build $engine_macs 2>&1) || {
+			$ENGINE/layout fail "its ports could not be made at boot"
+			failed_macs=$engine_macs
+			engine_macs=
+		}
+		log "Tăng tốc phần cứng: $(echo $out)"
+		sleep $PAUSE
+	fi
+
+	for mac in $macs; do
+		mac=dpmac.$mac
+		side= held=
+		case " $engine_macs " in *" $mac "*) side=$($ENGINE/container side $mac 2>/dev/null) || side= ;; esac
+		case " $failed_macs " in *" $mac "*) held=1 ;; esac
+		peer=$(endpoint_of $mac)
+		if [ -n "$peer" ] && [ -z "$side" ] && [ -n "$held" ]; then
+			# a MAC the container took before it failed: wan stays on eth0
+			if out=$(kernel_side $mac ""); then
+				port=$(echo "$out" | sed -n 's/^Created interface: \([^ ]*\) (object:\([^,]*\),.*/\1 (\2)/p')
+				log "$mac has $peer already: ${port:-$(echo $out)} without a link, for the names after it"
+			else
+				log "$mac has $peer already, and no port without a link: $(echo $out)"
+			fi
+			sleep $PAUSE
+		elif [ -n "$peer" ] && [ -z "$side" ]; then
+			log "$mac has $peer already, left as it is"
+		else
+			made=0
+			if [ -n "$side" ]; then
+				out=$(kernel_side $mac $side) && made=1
+			else
+				out=$(ls-addni --fs-entries=1 $mac 2>&1) && made=1
+			fi
+			if [ $made = 1 ]; then
+				port=$(echo "$out" | sed -n 's/^Created interface: \([^ ]*\) (object:\([^,]*\),.*/\1 (\2)/p')
+				log "$mac: ${port:-$(echo $out)}"
+				[ "${port%% *}" = "eth$n" ] ||
+					log "$mac should have been eth$n; the names of the ports after it are shifted"
+			else
+				log "$mac: no port: $(echo $out)"
+			fi
+			sleep $PAUSE
+		fi
+		n=$((n + 1))
+	done
+
+	if [ -n "$engine_macs" ] && ! out=$($ENGINE/container check 2>&1); then
+		log "Tăng tốc phần cứng: $(echo "$out" | grep '^container:')"
+		$ENGINE/layout fail "its ports are not complete after the boot made them"
+	fi
+}
+
+stop_service() {
+	echo "Stopping PHY Ether Ports"
+}

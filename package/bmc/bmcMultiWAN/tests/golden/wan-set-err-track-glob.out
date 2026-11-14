@@ -1,0 +1,2 @@
+{"status":-1,"message":"ping target * is not an IPv4 address","field":"track_ip"}
+exit=1

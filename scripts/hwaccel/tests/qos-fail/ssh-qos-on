@@ -1,0 +1,4 @@
+dev=eth0
+up=qdisc mq 0: root
+down=Cannot find device "ifb-eth0"
+status={"status":0,"message":"Tăng tốc phần cứng is on","state":"on","enabled":true,"accelerated":3,"on_cpu":[{"scope":"wan","device":"eth0","reason":"bmcqos"}]}

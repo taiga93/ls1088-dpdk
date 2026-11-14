@@ -1,0 +1,25 @@
+#!/bin/sh /etc/rc.common
+# c-icap init script for OpenWrt
+
+START=92
+STOP=10
+USE_PROCD=1
+PROG=/usr/bin/c-icap
+PID_FILE=/var/run/c-icap/c-icap.pid
+
+start_service() {
+	local enabled
+	config_load clamav
+	config_get enabled clamav enabled 1
+	[ "$enabled" = "1" ] || return 0
+
+	mkdir -p /var/run/c-icap /var/log/c-icap
+	procd_open_instance
+	procd_set_param command $PROG -S -N -D -d 3 -f /etc/c-icap/c-icap.conf
+	procd_set_param respawn
+	procd_close_instance
+}
+
+stop_service() {
+	[ -f "$PID_FILE" ] && kill "$(cat $PID_FILE)" 2>/dev/null
+}
